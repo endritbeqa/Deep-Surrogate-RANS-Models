@@ -21,7 +21,7 @@ freestream_length = 10.           # len * (1. ... factor)
 freestream_length_factor = 10.    # length factor
 
 airfoil_database  = "./airfoil_database/"
-output_dir        = "../data/train/"
+output_dir        = "./train/"
 
 seed = random.randint(0, 2**32 - 1)
 np.random.seed(seed)
@@ -128,7 +128,7 @@ def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfi
                 npOutput[4][x][y] = 0
                 npOutput[5][x][y] = 0
 
-    os.makedirs('data_pictures/%04d'%(imageIndex))
+    os.makedirs('data_pictures/%04d'%(imageIndex), exist_ok=True)
     utils.saveAsImage('data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
     utils.saveAsImage('data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
     utils.saveAsImage('data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
@@ -174,25 +174,15 @@ def create_sample(n):
 
 
     runSim(fsX, fsY)
-    os.chdir("")
+    os.chdir("..")
 
     outputProcessing(basename, fsX, fsY, imageIndex=n)
     print("\tdone")
 
 for n in range(samples):
 
-    timeout = 5
+    create_sample(n)
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future = executor.submit(create_sample, n)
-        try:
-            result = future.result(timeout=timeout)
-            print(result)
-        except concurrent.futures.TimeoutError:
-            shutil.rmtree("OpenFOAM")
-            shutil.copytree(src="OpenFOAMCopy", dst="OpenFOAM")
-        except Exception as e:
-            print(f"An error occurred: {e}")
 
 
 

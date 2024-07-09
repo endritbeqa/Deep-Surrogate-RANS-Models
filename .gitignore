@@ -163,3 +163,5 @@ cython_debug/
 /data/
 /.venv/
 /.idea/
+/data_generation/data_pictures/
+/data_generation/train/
