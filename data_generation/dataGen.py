@@ -1,18 +1,11 @@
-################
-#
-# Deep Flow Prediction - N. Thuerey, K. Weissenov, H. Mehrotra, N. Mainali, L. Prantl, X. Hu (TUM)
-#
-# Generate training data via OpenFOAM
-#
-################
-
-import os, math, random
-import shutil
+import os, signal, math, random
+import shlex
+import subprocess
+import threading
+import time
 
 import numpy as np
 import utils
-import concurrent.futures
-
 
 
 samples           = 100           # no. of datasets to produce
@@ -26,6 +19,31 @@ output_dir        = "./train/"
 seed = random.randint(0, 2**32 - 1)
 np.random.seed(seed)
 print("Seed: {}".format(seed))
+
+
+class Command(object):
+    def __init__(self, cmd):
+        self.cmd = cmd
+        self.process = None
+
+    def run(self, timeout):
+        def target():
+            print('Thread with following command {} started'.format(self.cmd))
+            self.process = subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid)
+            self.process.communicate()
+            print('Thread with following command {} finished'.format(self.cmd))
+
+        thread = threading.Thread(target=target)
+        thread.start()
+
+        thread.join(timeout)
+        if thread.is_alive():
+            print('Terminating process')
+            os.killpg(self.process.pid, signal.SIGTERM)
+            thread.join()
+            return self.process.returncode
+        return self.process.returncode
+
 
 def genMesh(airfoilFile):
     ar = np.loadtxt(airfoilFile, skiprows=1)
@@ -47,13 +65,16 @@ def genMesh(airfoilFile):
                 line = line.replace("LAST_POINT_INDEX", "{}".format(pointIndex-1))
                 outFile.write(line)
 
-    if os.system("gmsh -format msh2 airfoil.geo -3 -o airfoil.msh > /dev/null") != 0:
-        print("error during mesh creation!")
-        return(-1)
 
-    if os.system("gmshToFoam airfoil.msh > /dev/null") != 0:
-        print("error during conversion to OpenFoam mesh!")
-        return(-1)
+    command_gmsh = Command("gmsh -format msh2 airfoil.geo -3 -o airfoil.msh > /dev/null")
+    if command_gmsh.run(15) != 0:
+        print("gmsh timed out, moving on")
+        return -1
+
+    command_gmshToFoam = Command("gmshToFoam airfoil.msh > /dev/null")
+    if command_gmshToFoam.run(40) !=0:
+        print("gmshToFoam timed out, moving on")
+        return -1
 
     with open("constant/polyMesh/boundary", "rt") as inFile:
         with open("constant/polyMesh/boundaryTemp", "wt") as outFile:
@@ -73,7 +94,7 @@ def genMesh(airfoilFile):
                 outFile.write(line)
     os.rename("constant/polyMesh/boundaryTemp","constant/polyMesh/boundary")
 
-    return(0)
+    return 0
 
 def runSim(freestreamX, freestreamY):
     with open("U_template", "rt") as inFile:
@@ -83,7 +104,13 @@ def runSim(freestreamX, freestreamY):
                 line = line.replace("VEL_Y", "{}".format(freestreamY))
                 outFile.write(line)
 
-    os.system("./Allclean && simpleFoam > foam.log")
+    command_simpleFoam = Command("./Allclean && simpleFoam > foam.log")
+    if command_simpleFoam.run(200) != 0:
+        print("simpleFoam timed out, moving on")
+        return -1
+    return 0
+
+
 
 def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfile='OpenFOAM/postProcessing/internalCloud/500/cloud_p.xy', ufile='OpenFOAM/postProcessing/internalCloud/500/cloud_U.xy', res=32, imageIndex=0):
     # output layout channels:
@@ -140,48 +167,43 @@ def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfi
     print("\tsaving in " + fileName + ".npz")
     np.savez_compressed(fileName, a=npOutput)
 
+def create_sample(idx:int, basename:str ,length:float, angle:float   ):
 
-files = os.listdir(airfoil_database)
-files.sort()
-if len(files)==0:
-	print("error - no airfoils found in %s" % airfoil_database)
-	exit(1)
+    print("Run {}:".format(idx))
+    print("\tusing {}".format(basename))
 
-utils.makeDirs(["./data_pictures", "./train", "./OpenFOAM/constant/polyMesh/sets", "./OpenFOAM/constant/polyMesh"])
-
-
-
-
-def create_sample(n):
-    print("Run {}:".format(n))
-
-    fileNumber = np.random.randint(0, len(files))
-    basename = os.path.splitext(os.path.basename(files[fileNumber]))[0]
-    print("\tusing {}".format(files[fileNumber]))
-
-    length = freestream_length * np.random.uniform(1., freestream_length_factor)
-    angle = np.random.uniform(-freestream_angle, freestream_angle)
     fsX = math.cos(angle) * length
     fsY = -math.sin(angle) * length
 
-    print("\tUsing len %5.3f angle %+5.3f " % (length, angle))
-    print("\tResulting freestream vel x,y: {},{}".format(fsX, fsY))
-
     os.chdir("OpenFOAM/")
-    if genMesh("../" + airfoil_database + files[fileNumber]) != 0:
-        print("\tmesh generation failed, aborting");
-        os.chdir("")
+    os.system("./PrepareDirectory")
+    utils.makeDirs(["./constant/polyMesh/sets", "./constant/polyMesh"])
+    if genMesh("../" + airfoil_database + basename) != 0:
+        print("\tmesh generation failed, moving on")
+        os.chdir("..")
+        return
 
+    if runSim(fsX, fsY) != 0:
+        print("\tSimulation failed , moving on")
+        os.chdir("..")
+        return
 
-    runSim(fsX, fsY)
     os.chdir("..")
 
-    outputProcessing(basename, fsX, fsY, imageIndex=n)
+    outputProcessing(basename, fsX, fsY, imageIndex=idx)
     print("\tdone")
+    return
 
-for n in range(samples):
 
-    create_sample(n)
+def generator(samples, working_directory):
+
+    os.chdir(working_directory)
+    utils.makeDirs(["./data_pictures", "./train", "./OpenFOAM/constant/polyMesh/sets", "./OpenFOAM/constant/polyMesh"])
+    for params in samples:
+        create_sample(params[0], params[1], params[2], params[3])
+
+
+
 
 
 

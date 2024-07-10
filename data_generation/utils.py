@@ -77,6 +77,7 @@ def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfo
     for i in range(sample_times):
         if name_airfoil is None:
             name = os.path.splitext(os.path.basename(files[np.random.randint(0, len(files))]))[0]
+            name = name + ".dat"
         else:
             name = name_airfoil+'.dat'
         results.append([i,name,np.random.uniform(min_velocity, max_velocity),np.random.uniform(min_AoA, max_AoA) ])
