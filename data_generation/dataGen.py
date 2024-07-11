@@ -1,20 +1,15 @@
 import os, signal, math, random
-import shlex
 import subprocess
 import threading
-import time
-
 import numpy as np
 import utils
+from ml_collections import config_dict
 
 
 samples           = 100           # no. of datasets to produce
 freestream_angle  = math.pi / 8.  # -angle ... angle
 freestream_length = 10.           # len * (1. ... factor)
 freestream_length_factor = 10.    # length factor
-
-airfoil_database  = "./airfoil_database/"
-output_dir        = "./train/"
 
 seed = random.randint(0, 2**32 - 1)
 np.random.seed(seed)
@@ -45,7 +40,7 @@ class Command(object):
         return self.process.returncode
 
 
-def genMesh(airfoilFile):
+def genMesh(config: config_dict,airfoilFile):
     ar = np.loadtxt(airfoilFile, skiprows=1)
 
     # removing duplicate end point
@@ -67,12 +62,12 @@ def genMesh(airfoilFile):
 
 
     command_gmsh = Command("gmsh -format msh2 airfoil.geo -3 -o airfoil.msh > /dev/null")
-    if command_gmsh.run(15) != 0:
+    if command_gmsh.run(config.gmsh_timeout) != 0:
         print("gmsh timed out, moving on")
         return -1
 
     command_gmshToFoam = Command("gmshToFoam airfoil.msh > /dev/null")
-    if command_gmshToFoam.run(40) !=0:
+    if command_gmshToFoam.run(config.gmshToFoam_timeout) !=0:
         print("gmshToFoam timed out, moving on")
         return -1
 
@@ -96,7 +91,7 @@ def genMesh(airfoilFile):
 
     return 0
 
-def runSim(freestreamX, freestreamY):
+def runSim(config: config_dict,freestreamX: float, freestreamY: float):
     with open("U_template", "rt") as inFile:
         with open("0/U", "wt") as outFile:
             for line in inFile:
@@ -105,14 +100,14 @@ def runSim(freestreamX, freestreamY):
                 outFile.write(line)
 
     command_simpleFoam = Command("./Allclean && simpleFoam > foam.log")
-    if command_simpleFoam.run(200) != 0:
+    if command_simpleFoam.run(config.simulation_timeout) != 0:
         print("simpleFoam timed out, moving on")
         return -1
     return 0
 
 
 
-def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfile='OpenFOAM/postProcessing/internalCloud/500/cloud_p.xy', ufile='OpenFOAM/postProcessing/internalCloud/500/cloud_U.xy', res=32, imageIndex=0):
+def outputProcessing(config: config_dict,basename:str, freestreamX:float, freestreamY:float, pfile='OpenFOAM/postProcessing/internalCloud/500/cloud_p.xy', ufile='OpenFOAM/postProcessing/internalCloud/500/cloud_U.xy', imageIndex=0):
     # output layout channels:
     # [0] freestream field X + boundary
     # [1] freestream field Y + boundary
@@ -120,15 +115,15 @@ def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfi
     # [3] pressure output
     # [4] velocity X output
     # [5] velocity Y output
-    npOutput = np.zeros((6, res, res))
+    npOutput = np.zeros((6, config.res, config.res))
 
     ar = np.loadtxt(pfile)
     curIndex = 0
 
-    for y in range(res):
-        for x in range(res):
-            xf = (x / res - 0.5) * 2 + 0.5
-            yf = (y / res - 0.5) * 2
+    for y in range(config.res):
+        for x in range(config.res):
+            xf = (x / config.res - 0.5) * 2 + 0.5
+            yf = (y / config.res - 0.5) * 2
             if abs(ar[curIndex][0] - xf)<1e-4 and abs(ar[curIndex][1] - yf)<1e-4:
                 npOutput[3][x][y] = ar[curIndex][3]
                 curIndex += 1
@@ -143,10 +138,10 @@ def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfi
     ar = np.loadtxt(ufile)
     curIndex = 0
 
-    for y in range(res):
-        for x in range(res):
-            xf = (x / res - 0.5) * 2 + 0.5
-            yf = (y / res - 0.5) * 2
+    for y in range(config.res):
+        for x in range(config.res):
+            xf = (x / config.res - 0.5) * 2 + 0.5
+            yf = (y / config.res - 0.5) * 2
             if abs(ar[curIndex][0] - xf)<1e-4 and abs(ar[curIndex][1] - yf)<1e-4:
                 npOutput[4][x][y] = ar[curIndex][3]
                 npOutput[5][x][y] = ar[curIndex][4]
@@ -155,20 +150,21 @@ def outputProcessing(basename, freestreamX, freestreamY, dataDir=output_dir, pfi
                 npOutput[4][x][y] = 0
                 npOutput[5][x][y] = 0
 
-    os.makedirs('data_pictures/%04d'%(imageIndex), exist_ok=True)
-    utils.saveAsImage('data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
-    utils.saveAsImage('data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
-    utils.saveAsImage('data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
-    utils.saveAsImage('data_pictures/%04d/inputX.png' % (imageIndex), npOutput[0])
-    utils.saveAsImage('data_pictures/%04d/inputY.png' % (imageIndex), npOutput[1])
+    if config.save_images:
+        os.makedirs('data_pictures/%04d'%(imageIndex), exist_ok=True)
+        utils.saveAsImage('data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
+        utils.saveAsImage('data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
+        utils.saveAsImage('data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
+        utils.saveAsImage('data_pictures/%04d/inputX.png' % (imageIndex), npOutput[0])
+        utils.saveAsImage('data_pictures/%04d/inputY.png' % (imageIndex), npOutput[1])
 
-    #fileName = dataDir + str(uuid.uuid4()) # randomized name
-    fileName = dataDir + "%s_%d_%d" % (basename, int(freestreamX*100), int(freestreamY*100) )
+    fileName = config.output_dir + "%s_%d_%d" % (basename, int(freestreamX*100), int(freestreamY*100) )
     print("\tsaving in " + fileName + ".npz")
     np.savez_compressed(fileName, a=npOutput)
 
-def create_sample(idx:int, basename:str ,length:float, angle:float   ):
+def create_sample(config: config_dict, params:list):
 
+    idx, basename, length, angle = params
     print("Run {}:".format(idx))
     print("\tusing {}".format(basename))
 
@@ -178,29 +174,29 @@ def create_sample(idx:int, basename:str ,length:float, angle:float   ):
     os.chdir("OpenFOAM/")
     os.system("./PrepareDirectory")
     utils.makeDirs(["./constant/polyMesh/sets", "./constant/polyMesh"])
-    if genMesh("../" + airfoil_database + basename) != 0:
+    if genMesh(config,"../" + config.airfoil_database + basename) != 0:
         print("\tmesh generation failed, moving on")
         os.chdir("..")
         return
 
-    if runSim(fsX, fsY) != 0:
+    if runSim(config,fsX, fsY) != 0:
         print("\tSimulation failed , moving on")
         os.chdir("..")
         return
 
     os.chdir("..")
 
-    outputProcessing(basename, fsX, fsY, imageIndex=idx)
+    outputProcessing(config,basename, fsX, fsY, imageIndex=idx)
     print("\tdone")
     return
 
 
-def generator(samples, working_directory):
+def generator(config: config_dict, samples: list, working_directory: str):
 
     os.chdir(working_directory)
     utils.makeDirs(["./data_pictures", "./train", "./OpenFOAM/constant/polyMesh/sets", "./OpenFOAM/constant/polyMesh"])
     for params in samples:
-        create_sample(params[0], params[1], params[2], params[3])
+        create_sample( config, params)
 
 
 
