@@ -5,8 +5,6 @@ from dataGen import generator
 from config import get_config
 from ml_collections import config_dict
 
-airfoil_database  = "./airfoil_database/"
-
 def work(config: config_dict ,samples: list, directory: str ):
     generator(config, samples, directory)
 
