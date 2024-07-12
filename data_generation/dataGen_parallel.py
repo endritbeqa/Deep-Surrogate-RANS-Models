@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     for idx in range(num_workers):
         os.mkdir("working_case_{}".format(idx))
-        shutil.copytree(airfoil_database, "working_case_{}/airfoil_database".format(idx))
+        shutil.copytree(config.airfoil_database, "working_case_{}/airfoil_database".format(idx))
         shutil.copytree("./OpenFOAM", "working_case_{}/OpenFOAM".format(idx))
         p = multiprocessing.Process(target=work, args=(config,parts[idx],os.path.join(work_dir, "working_case_{}".format(idx))))
         jobs.append(p)
