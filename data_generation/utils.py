@@ -11,6 +11,8 @@ import random
 import numpy as np
 from PIL import Image
 from matplotlib import cm
+from ml_collections import config_dict
+
 
 def makeDirs(directoryList):
     for directory in directoryList:
@@ -47,7 +49,7 @@ def imageOut(filename, outputs_param, targets_param, saveTargets=False):
             im = im.resize((512,512))
             im.save(filename + suffix + "_target.png")
 
-def saveAsImage(filename, field_param):
+def saveAsImage(res, filename, field_param):
     field = np.copy(field_param)
     field = np.flipud(field.transpose())
 
@@ -58,7 +60,7 @@ def saveAsImage(filename, field_param):
     field /= max_value
 
     im = Image.fromarray(cm.magma(field, bytes=True))
-    im = im.resize((32, 32))
+    im = im.resize((res, res))
     im.save(filename)
 
 
@@ -86,4 +88,30 @@ def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfo
 
 
 
+def write_point_coordinates(file_path: str, res: int):
+
+    insert_position = "/*---Insert points here---*/"
+    x_range = (-0.5, 1.5)
+    y_range = (-1, 1)
+    new_contents = []
+
+    with open(file_path, 'r') as file:
+        contents = file.readlines()
+
+    point_coordinates = "points\n(\n"
+
+    for y in np.linspace(y_range[0], y_range[1], res, endpoint=False):
+        for x in np.linspace(x_range[0], x_range[1], res, endpoint=False):
+            point_coordinates += '(' + str(x) + ' ' + str(y) + ' 0.5)\n'
+
+    point_coordinates += ');'
+
+    for line in contents:
+        if insert_position in line:
+            new_contents.append('\n' + point_coordinates + '\n')
+            continue
+        new_contents.append(line)
+
+    with open('./OpenFOAM/system/internalCloud', 'w') as file:
+        file.writelines(new_contents)
 

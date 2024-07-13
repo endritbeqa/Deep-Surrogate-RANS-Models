@@ -1,19 +1,9 @@
-import os, signal, math, random
+import os, signal, math
 import subprocess
 import threading
 import numpy as np
-import utils
 from ml_collections import config_dict
-
-
-samples           = 100           # no. of datasets to produce
-freestream_angle  = math.pi / 8.  # -angle ... angle
-freestream_length = 10.           # len * (1. ... factor)
-freestream_length_factor = 10.    # length factor
-
-seed = random.randint(0, 2**32 - 1)
-np.random.seed(seed)
-print("Seed: {}".format(seed))
+import utils
 
 
 class Command(object):
@@ -152,11 +142,11 @@ def outputProcessing(config: config_dict,basename:str, freestreamX:float, freest
 
     if config.save_images:
         os.makedirs('data_pictures/%04d'%(imageIndex), exist_ok=True)
-        utils.saveAsImage('data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
-        utils.saveAsImage('data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
-        utils.saveAsImage('data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
-        utils.saveAsImage('data_pictures/%04d/inputX.png' % (imageIndex), npOutput[0])
-        utils.saveAsImage('data_pictures/%04d/inputY.png' % (imageIndex), npOutput[1])
+        utils.saveAsImage(config.res, 'data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
+        utils.saveAsImage(config.res,'data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
+        utils.saveAsImage(config.res,'data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
+        utils.saveAsImage(config.res,'data_pictures/%04d/inputX.png' % (imageIndex), npOutput[0])
+        utils.saveAsImage(config.res,'data_pictures/%04d/inputY.png' % (imageIndex), npOutput[1])
 
     fileName = config.output_dir + "%s_%d_%d" % (basename, int(freestreamX*100), int(freestreamY*100) )
     print("\tsaving in " + fileName + ".npz")
