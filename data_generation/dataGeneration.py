@@ -20,29 +20,38 @@ if __name__ == '__main__':
 
     config = get_config()
 
-    samples = generate_uniform_random_parameters(config.num_samples)
-    num_workers = config.num_workers
-    jobs = []
+    for res, res_params in (config.res_params).items():
 
-    k, m = divmod(len(samples), num_workers)
-    parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(num_workers)]
 
-    work_dir = os.getcwd()
+        config.res = int(res)
+        config.num_samples, config.simulation_timeout  = res_params
+        res_folder = "data_res_{}".format(config.res)
 
-    write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
+        os.mkdir(res_folder)
+        samples = generate_uniform_random_parameters(config.num_samples)
+        num_workers = config.num_workers
+        jobs = []
 
-    for idx in range(num_workers):
-        os.mkdir("working_case_{}".format(idx))
-        shutil.copytree(config.airfoil_database, "working_case_{}/airfoil_database".format(idx))
-        shutil.copytree("./OpenFOAM", "working_case_{}/OpenFOAM".format(idx))
-        p = multiprocessing.Process(target=work, args=(config,parts[idx],os.path.join(work_dir, "working_case_{}".format(idx))))
-        jobs.append(p)
-        p.start()
+        k, m = divmod(len(samples), num_workers)
+        parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(num_workers)]
 
-for job in jobs:
-    job.join()
+        work_dir = os.getcwd()
 
-print("Done")
+        write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
+
+        for idx in range(num_workers):
+            os.mkdir("{}/working_case_{}".format(res_folder,idx))
+            shutil.copytree(config.airfoil_database, "{}/working_case_{}/airfoil_database".format(res_folder,idx))
+            shutil.copytree("./OpenFOAM", "{}/working_case_{}/OpenFOAM".format(res_folder,idx))
+            p = multiprocessing.Process(target=work, args=(config,parts[idx],os.path.join(work_dir, "{}/working_case_{}".format(res_folder,idx))))
+            jobs.append(p)
+            p.start()
+
+        for job in jobs:
+            job.join()
+            jobs=[]
+
+    print("Done")
 
 
 
