@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     config = get_config()
 
-    for res, res_params in (config.res_params).items():
+    for res, res_params in (config.res_params):
 
 
         config.res = int(res)
