@@ -11,6 +11,7 @@ import random
 import numpy as np
 from PIL import Image
 from matplotlib import cm
+import shutil
 from ml_collections import config_dict
 
 
@@ -115,3 +116,14 @@ def write_point_coordinates(file_path: str, res: int):
     with open('./OpenFOAM/system/internalCloud', 'w') as file:
         file.writelines(new_contents)
 
+
+def clean_res_dir(config: config_dict,res_dir: str):
+    os.chdir(res_dir)
+    os.mkdir("./pictures")
+    os.mkdir("./data")
+    for idx in range(config.num_workers):
+        for item in os.listdir("working_case_{}/data_pictures".format(idx)):
+            (shutil.move("working_case_{}/data_pictures/{}".format(idx, item), "./pictures"))
+        for item in os.listdir("working_case_{}/train".format(idx)):
+            shutil.move("working_case_{}/train/{}".format(idx, item), "./data")
+        shutil.rmtree("working_case_{}".format(idx))
