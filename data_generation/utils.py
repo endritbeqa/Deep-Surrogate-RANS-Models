@@ -122,8 +122,8 @@ def clean_res_dir(config: config_dict,res_dir: str):
     os.mkdir("./pictures")
     os.mkdir("./data")
     for idx in range(config.num_workers):
-        for item in os.listdir("working_case_{}/data_pictures".format(idx)):
-            (shutil.move("working_case_{}/data_pictures/{}".format(idx, item), "./pictures"))
-        for item in os.listdir("working_case_{}/train".format(idx)):
-            shutil.move("working_case_{}/train/{}".format(idx, item), "./data")
-        shutil.rmtree("working_case_{}".format(idx))
+        for item in os.listdir("worker_{}/data_pictures".format(idx)):
+            (shutil.move("worker_{}/data_pictures/{}".format(idx, item), "./pictures"))
+        for item in os.listdir("worker_{}/train".format(idx)):
+            shutil.move("worker_{}/train/{}".format(idx, item), "./data")
+        shutil.rmtree("worker_{}".format(idx))

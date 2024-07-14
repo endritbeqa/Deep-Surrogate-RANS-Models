@@ -35,10 +35,10 @@ if __name__ == '__main__':
         write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
 
         for idx in range(config.num_workers):
-            os.mkdir("{}/working_case_{}".format(res_dir, idx))
-            shutil.copytree(config.airfoil_database, "{}/working_case_{}/airfoil_database".format(res_dir, idx))
-            shutil.copytree("./OpenFOAM", "{}/working_case_{}/OpenFOAM".format(res_dir, idx))
-            p = multiprocessing.Process(target=work, args=(config,parts[idx],"{}/{}/working_case_{}".format(work_dir,res_dir, idx)))
+            os.mkdir("{}/worker_{}".format(res_dir, idx))
+            shutil.copytree(config.airfoil_database, "{}/worker_{}/airfoil_database".format(res_dir, idx))
+            shutil.copytree("./OpenFOAM", "{}/worker_{}/OpenFOAM".format(res_dir, idx))
+            p = multiprocessing.Process(target=work, args=(config,parts[idx],"{}/{}/worker_{}".format(work_dir,res_dir, idx)))
             jobs.append(p)
             p.start()
 
