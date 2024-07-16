@@ -1,73 +1,88 @@
 import torch
-import torch.nn as nn
+import os
+import json
 import torch.optim as optim
+from models.swin import Swin_CNN
+from data.data_loader import Airfoil_Dataset
+from losses.loss import get_loss_function
+from torch.utils.data import DataLoader
+from utils import plot_losses
+
+class Trainer(object):
+    def __init__(self, config, directory: str):
+        self.model = Swin_CNN(config)
+        self.train_dataset = Airfoil_Dataset(config, mode='train')
+        self.val_dataset = Airfoil_Dataset(config, mode='validation')
+        self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
+        self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
+        self.loss_func = get_loss_function(config.loss_function)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        os.mkdir(directory)
+        os.chdir(directory)
+        for dir in ["Outputs","Outputs/checkpoints","Outputs/logs", "Outputs/config"]:
+            os.mkdir(dir)
 
 
-# Assuming you have already defined your model, criterion, optimizer
-# Example:
-# model = MyModel()
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Training loop
-def train_model(model, criterion, optimizer, train_loader, val_loader, num_epochs=10):
+    def train_model(self, config):
 
-    for epoch in range(num_epochs):
-        # Training phase
-        model.train()  # Set model to training mode
-        train_loss = 0.0
-        correct = 0
-        total = 0
+        train_curve = []
+        val_curve = []
 
-        for inputs, targets in train_loader:
-            inputs, targets = inputs.to(device), targets.to(device)
+        for epoch in range(config.num_epochs):
+            self.model.train()
+            train_loss = 0.0
 
-            # Zero the gradients
-            optimizer.zero_grad()
+            for inputs, targets in self.train_dataloader:
 
-            # Forward pass
-            outputs = model(inputs)
-            loss = criterion(outputs, targets)
+                inputs, targets = inputs.to(self.device), targets.to(self.device)
+                self.optimizer.zero_grad()
+                outputs = self.model(inputs)
+                loss = self.loss_func(outputs, targets)
 
-            # Backward pass and optimize
-            loss.backward()
-            optimizer.step()
+                loss.backward()
+                self.optimizer.step()
+                train_loss += loss.item()
 
-            # Accumulate statistics
-            train_loss += loss.item() * inputs.size(0)
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
+            train_loss = train_loss / len(self.train_dataloader.dataset)
+            train_curve.append(train_loss)
 
-        # Calculate average losses and accuracy
-        train_loss = train_loss / len(train_loader.dataset)
-        train_acc = correct / total
+            self.model.eval()
+            val_loss = 0.0
 
-        # Validation phase
-        model.eval()  # Set model to evaluation mode
-        val_loss = 0.0
-        correct = 0
-        total = 0
+            with torch.no_grad():
+                for inputs, targets in self.val_dataloader:
+                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+                    outputs = self.model(inputs)
+                    loss = self.loss_func(outputs, targets)
+                    val_loss += loss.item()
+            val_loss = val_loss / len(self.val_dataloader.dataset)
+            val_curve.append(val_loss)
 
-        with torch.no_grad():
-            for inputs, targets in val_loader:
-                inputs, targets = inputs.to(device), targets.to(device)
+            with open("Outputs/logs/curves.txt", "+a") as file:
+                file.write("{},{}\n".format(str(train_loss),str(val_loss)))
 
-                # Forward pass
-                outputs = model(inputs)
-                loss = criterion(outputs, targets)
+            if epoch % config.checkpoint_every == 0:
+                checkpoint = {
+                    'epoch': epoch,
+                    'state_dict': self.model.state_dict(),
+                    'optimizer': self.optimizer.state_dict(),
+                    'loss': train_loss,
+                    'val_loss': val_loss,
+                }
+                torch.save(self.model.state_dict(), "Outputs/checkpoints/{}.pth".format(epoch))
 
-                # Accumulate statistics
-                val_loss += loss.item() * inputs.size(0)
-                _, predicted = outputs.max(1)
-                total += targets.size(0)
-                correct += predicted.eq(targets).sum().item()
+        loss_plot = plot_losses(train_curve,val_curve)
+        loss_plot.savefig("Outputs/logs/loss_curves.png")
+        loss_plot.close()
 
-        # Calculate average losses and accuracy
-        val_loss = val_loss / len(val_loader.dataset)
-        val_acc = correct / total
+        config_dict = config.to_dict()
 
-        # Print progress
-        print(f'Epoch [{epoch + 1}/{num_epochs}], '
-              f'Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}, '
-              f'Val Loss: {val_loss:.4f}, Val Acc: {val_acc:.4f}')
+        # Save the dictionary as a JSON file
+        with open("Outputs/config/config.json", '+w') as json_file:
+            json.dump(config_dict, json_file, indent=4)
+
+
+        return val_curve[-1]

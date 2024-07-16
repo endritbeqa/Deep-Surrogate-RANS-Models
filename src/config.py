@@ -4,8 +4,16 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
+    config.data_dir = ''
     config.num_epochs = 50
+    config.batch_size = 32
+    config.normalize = True
     config.optimizer = 'adam'
+    config.loss_function = 'mse'
+    config.checkpoint_every = 10
+
+
+
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32

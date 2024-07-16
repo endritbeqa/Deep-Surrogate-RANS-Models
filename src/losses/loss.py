@@ -1,7 +1,6 @@
 import torch
 import torch.nn.functional as F
 
-
 def get_loss_function(loss_name):
     loss_functions = {
         'mse': F.mse_loss,
@@ -19,8 +18,6 @@ def get_loss_function(loss_name):
     else:
         raise ValueError(f"Loss function '{loss_name}' not supported. Supported losses are: "
                          f"Mean squared error, Mean absolute error, Huber loss, Mean relative loss.")
-
-
 
 def mean_relative_loss_function(input, target):
 

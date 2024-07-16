@@ -1,10 +1,8 @@
-import ml_collections
 import torch.nn as nn
-import huggingface_hub
 from transformers import AutoConfig, AutoModel
 
 
-def load_swin_transformer(model_name: str, config_dict: dict ) -> nn.Module:
+def load_swin_transformer(config_dict: dict ) -> nn.Module:
 
     custom_config = AutoConfig.for_model('swinv2', **config_dict)
     model = AutoModel.from_config(custom_config)
@@ -69,26 +67,15 @@ class CNNDecoder(nn.Module):
         return x
 
 
-# Example usage:
-num_layers = 4
-embedding_dim = 128
-output_size = 64
-num_channels = [128, 64, 32, 16]
-activation_fns = ['relu', 'relu', 'relu', 'relu']
-kernel_sizes = [4, 4, 4, 4]
-strides = [2, 2, 2, 2]
-
-decoder = CNNDecoder(num_layers, embedding_dim, output_size, num_channels, activation_fns, kernel_sizes, strides)
-print(decoder)
-
-# Dummy input
-embedding = torch.randn(8, embedding_dim)
-output_image = decoder(embedding)
-print(output_image.shape)  # Should be (8, output_size, output_size)
 
 
 
-def create_model() -> nn.Module:
-
-
-    encoder = load_swin_transformer()
+class Swin_CNN(nn.Module):
+    def __init__(self, config, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        encoder = load_swin_transformer(config.vit)
+        decoder = CNNDecoder(config.decoder)
+    def forward(self, x):
+        x = self.encoder(x)
+        y = self.decoder(x)
+        return y

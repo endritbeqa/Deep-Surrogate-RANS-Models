@@ -127,3 +127,8 @@ def clean_res_dir(config: config_dict,res_dir: str):
         for item in os.listdir("worker_{}/train".format(idx)):
             shutil.move("worker_{}/train/{}".format(idx, item), "./data")
         shutil.rmtree("worker_{}".format(idx))
+
+
+
+
+
