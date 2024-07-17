@@ -165,4 +165,4 @@ cython_debug/
 /.idea/
 /data_generation/data_pictures/
 /data_generation/train/
-/data_generation/data_res_32/
+/src/data_res_32/

@@ -7,9 +7,15 @@ from data.data_loader import Airfoil_Dataset
 from losses.loss import get_loss_function
 from torch.utils.data import DataLoader
 from utils import plot_losses
+from config import get_config
 
 class Trainer(object):
     def __init__(self, config, directory: str):
+        os.mkdir(directory)
+        os.chdir(directory)
+        for dir in ["Outputs", "Outputs/checkpoints", "Outputs/logs", "Outputs/config"]:
+            os.mkdir(dir)
+
         self.model = Swin_CNN(config)
         self.train_dataset = Airfoil_Dataset(config, mode='train')
         self.val_dataset = Airfoil_Dataset(config, mode='validation')
@@ -18,12 +24,6 @@ class Trainer(object):
         self.loss_func = get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-        os.mkdir(directory)
-        os.chdir(directory)
-        for dir in ["Outputs","Outputs/checkpoints","Outputs/logs", "Outputs/config"]:
-            os.mkdir(dir)
-
 
 
     def train_model(self, config):
@@ -86,3 +86,10 @@ class Trainer(object):
 
 
         return val_curve[-1]
+
+
+
+if __name__ == '__main__':
+    config = get_config()
+    trainer = Trainer(config, './test')
+    trainer.train_model(config)

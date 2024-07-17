@@ -4,20 +4,19 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.data_dir = ''
-    config.num_epochs = 50
+    config.data_dir = '../data_res_32/data'
+    config.num_epochs = 15
     config.batch_size = 32
     config.normalize = True
     config.optimizer = 'adam'
+    config.lr = 1e-4
     config.loss_function = 'mse'
-    config.checkpoint_every = 10
-
-
+    config.checkpoint_every = 5
 
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
-    config.swin_encoder.patch_size = 4
+    config.swin_encoder.patch_size = 2
     config.swin_encoder.num_channels = 3
     config.swin_encoder.embed_dim = 96
     config.swin_encoder.depths = [2, 2, 6, 2]
@@ -39,8 +38,8 @@ def get_config():
 
     config.CNN_decoder = config_dict.ConfigDict()
     config.CNN_decoder.num_layers = 4
-    config.CNN_decoder.embedding_dim = 128
-    config.CNN_decoder.output_size = 64
+    config.CNN_decoder.embedding_dim = 96
+    config.CNN_decoder.output_size = 32
     config.CNN_decoder.num_channels = [128, 64, 32, 16]
     config.CNN_decoder.activation_fns = ['relu', 'relu', 'relu', 'relu']
     config.CNN_decoder.kernel_sizes = [4, 4, 4, 4]

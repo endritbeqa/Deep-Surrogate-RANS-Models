@@ -13,7 +13,7 @@ class Airfoil_Dataset(Dataset):
         self.file_names = [f for f in os.listdir(self.data_dir) if f.endswith('.npz')]
 
 
-    def normalize(self, data):
+    def normalize_target(self, data):
         return data
 
     def __len__(self):
@@ -22,11 +22,12 @@ class Airfoil_Dataset(Dataset):
     def __getitem__(self, idx):
         file_path = os.path.join(self.data_dir, self.file_names[idx])
         data = np.load(file_path)
+        data = data['a']
         input = data[0:2,:,:]
-        target = data[2:,:,:]
+        target = data[2:6,:,:]
 
         if self.normalize:
-            target = self.normalize(target)
+            target = self.normalize_target(target)
 
         return (input, target)
 

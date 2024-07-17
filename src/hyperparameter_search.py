@@ -9,13 +9,10 @@ def objective(trial):
     config = get_config()
     trial_config = config.copy_and_resolve_references()
 
-    batch_size = trial.suggest_int('batch_size', 100, 400, step=4)
-    learning_rate = trial.suggest_float('learning_rate', 1e-9, 1e-3)
-    directory_name = "batch_s".format(batch_size, learning_rate)
+    batch_size = trial.suggest_int('batch_size', 4, 20, step=4)
+    directory_name = "batch_{}".format(batch_size)
     trial_config.output_dir = os.path.join(trial_config.output_dir, 'trials', directory_name)
-
     trial_config.batch_size = batch_size
-    trial_config.learning_rate_end_value = learning_rate
 
     trainer = Trainer(trial_config)
 

@@ -11,28 +11,28 @@ def load_swin_transformer(config_dict: dict ) -> nn.Module:
 
 
 class CNNDecoder(nn.Module):
-    def __init__(self, num_layers, embedding_dim, output_size, num_channels, activation_fns, kernel_sizes, strides):
+    def __init__(self, config):
         super(CNNDecoder, self).__init__()
 
-        self.num_layers = num_layers
-        self.embedding_dim = embedding_dim
-        self.output_size = output_size
-        self.num_channels = num_channels
-        self.activation_fns = activation_fns
-        self.kernel_sizes = kernel_sizes
-        self.strides = strides
+        self.num_layers = config.num_layers
+        self.embedding_dim = config.embedding_dim
+        self.output_size = config.output_size
+        self.num_channels = config.num_channels
+        self.activation_fns = config.activation_fns
+        self.kernel_sizes = config.kernel_sizes
+        self.strides = config.strides
 
         # Initialize the decoder layers
         layers = []
-        in_channels = embedding_dim
+        in_channels = self.embedding_dim
         current_size = 1  # Initial spatial dimension of the embedding
 
         # Adding intermediate layers
-        for i in range(num_layers):
-            out_channels = num_channels[i]
-            kernel_size = kernel_sizes[i]
-            stride = strides[i]
-            activation_fn = self._get_activation_function(activation_fns[i])
+        for i in range(self.num_layers):
+            out_channels = self.num_channels[i]
+            kernel_size = self.kernel_sizes[i]
+            stride = self.strides[i]
+            activation_fn = self._get_activation_function(self.activation_fns[i])
 
             layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride))
             layers.append(nn.BatchNorm2d(out_channels))
@@ -42,9 +42,9 @@ class CNNDecoder(nn.Module):
             in_channels = out_channels
 
         # Final layer to match the output size and channels
-        final_kernel_size = output_size - current_size + kernel_sizes[-1] - 2
-        layers.append(nn.ConvTranspose2d(in_channels, output_size, final_kernel_size))
-        layers.append(nn.Sigmoid())  # Assuming the output image pixel values are normalized between 0 and 1
+        final_kernel_size = self.output_size - current_size + self.kernel_sizes[-1] - 2
+        layers.append(nn.ConvTranspose2d(in_channels, self.output_size, final_kernel_size))
+        #layers.append(nn.Sigmoid())  # Assuming the output image pixel values are normalized between 0 and 1
 
         self.decoder = nn.Sequential(*layers)
 
@@ -73,8 +73,10 @@ class CNNDecoder(nn.Module):
 class Swin_CNN(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        encoder = load_swin_transformer(config.vit)
-        decoder = CNNDecoder(config.decoder)
+        self.encoder = load_swin_transformer(config.swin_encoder)
+        self.decoder = CNNDecoder(config.CNN_decoder)
+
+
     def forward(self, x):
         x = self.encoder(x)
         y = self.decoder(x)
