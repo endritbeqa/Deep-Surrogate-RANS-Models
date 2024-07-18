@@ -1,4 +1,5 @@
 import os, signal, math
+import stat
 import subprocess
 import threading
 import numpy as np

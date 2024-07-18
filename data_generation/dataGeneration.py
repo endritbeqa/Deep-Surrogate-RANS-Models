@@ -11,46 +11,43 @@ def work(config: config_dict ,samples: list, directory: str ):
     generator(config, samples, directory)
 
 
-if __name__ == '__main__':
-    ###TODO find a way to run this since you would have to manually
-    ###do it in a console and then run python dataGeneration.py there
-    # exec(open("/opt/openfoam9/etc/bashrc").read())
-    config = get_config()
-    work_dir = os.getcwd()
 
-    for res, res_params in (config.res_params):
+config = get_config()
+work_dir = os.getcwd()
 
-        os.chdir(work_dir)
-        jobs = []
+for res, res_params in (config.res_params):
 
-        config.res = res
-        config.num_samples, config.simulation_timeout = res_params
-        res_dir = "data_res_{}".format(config.res)
-        os.mkdir(res_dir)
+    os.chdir(work_dir)
+    jobs = []
 
-        samples = generate_uniform_random_parameters(config.num_samples)
-        k, m = divmod(len(samples), config.num_workers)
-        parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
+    config.res = res
+    config.num_samples, config.simulation_timeout = res_params
+    res_dir = "data_res_{}".format(config.res)
+    os.mkdir(res_dir)
 
-        write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
+    samples = generate_uniform_random_parameters(config.num_samples)
+    k, m = divmod(len(samples), config.num_workers)
+    parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
 
-        for idx in range(config.num_workers):
-            os.mkdir("{}/worker_{}".format(res_dir, idx))
-            shutil.copytree(config.airfoil_database, "{}/worker_{}/airfoil_database".format(res_dir, idx))
-            shutil.copytree("./OpenFOAM", "{}/worker_{}/OpenFOAM".format(res_dir, idx))
-            p = multiprocessing.Process(target=work, args=(config,parts[idx],"{}/{}/worker_{}".format(work_dir,res_dir, idx)))
-            jobs.append(p)
-            p.start()
+    write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
 
-        for job in jobs:
-            job.join()
-            jobs=[]
+    for idx in range(config.num_workers):
+        os.mkdir("{}/worker_{}".format(res_dir, idx))
+        shutil.copytree(config.airfoil_database, "{}/worker_{}/airfoil_database".format(res_dir, idx))
+        shutil.copytree("./OpenFOAM", "{}/worker_{}/OpenFOAM".format(res_dir, idx))
+        p = multiprocessing.Process(target=work, args=(config,parts[idx],"{}/{}/worker_{}".format(work_dir,res_dir, idx)))
+        jobs.append(p)
+        p.start()
 
-        if config.clean_res_dir:
-            clean_res_dir(config, res_dir)
+    for job in jobs:
+        job.join()
+        jobs=[]
+
+    if config.clean_res_dir:
+        clean_res_dir(config, res_dir)
 
 
-    print("Done")
+print("Done")
 
 
 
