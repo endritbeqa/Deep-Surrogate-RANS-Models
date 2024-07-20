@@ -11,10 +11,10 @@ from config import get_config
 
 class Trainer(object):
     def __init__(self, config, directory: str):
-        os.mkdir(directory)
-        os.chdir(directory)
-        for dir in ["Outputs", "Outputs/checkpoints", "Outputs/logs", "Outputs/config"]:
-            os.mkdir(dir)
+        #os.mkdir(directory)
+        #os.chdir(directory)
+        #for dir in ["Outputs", "Outputs/checkpoints", "Outputs/logs", "Outputs/config"]:
+            #os.mkdir(dir)
 
         self.model = Swin_CNN(config)
         self.train_dataset = Airfoil_Dataset(config, mode='train')
@@ -40,6 +40,7 @@ class Trainer(object):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
+                print(outputs.shape)
                 loss = self.loss_func(outputs, targets)
 
                 loss.backward()

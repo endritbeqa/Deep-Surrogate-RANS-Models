@@ -24,12 +24,12 @@ class Airfoil_Dataset(Dataset):
         data = np.load(file_path)
         data = data['a']
         input = data[0:2,:,:]
-        target = data[2:6,:,:]
+        target = data[2:5,:,:]
 
         if self.normalize:
             target = self.normalize_target(target)
 
-        return (input, target)
+        return (input.astype(np.float32), target.astype(np.float32))
 
 
 

@@ -4,9 +4,9 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.data_dir = '../data_res_32/data'
+    config.data_dir = './data_res_32/data'
     config.num_epochs = 15
-    config.batch_size = 32
+    config.batch_size = 20
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4
@@ -17,12 +17,12 @@ def get_config():
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
     config.swin_encoder.patch_size = 2
-    config.swin_encoder.num_channels = 3
-    config.swin_encoder.embed_dim = 96
-    config.swin_encoder.depths = [2, 2, 6, 2]
-    config.swin_encoder.num_heads = [3, 6, 12, 24]
-    config.swin_encoder.window_size = 7
-    config.swin_encoder.pretrained_window_sizes = [0, 0, 0, 0]
+    config.swin_encoder.num_channels = 2
+    config.swin_encoder.embed_dim = 48
+    config.swin_encoder.depths = [2, 6, 2]
+    config.swin_encoder.num_heads = [3, 8, 12]
+    config.swin_encoder.window_size = 4
+    config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
     config.swin_encoder.qkv_bias = True
     config.swin_encoder.hidden_dropout_prob = 0.0
@@ -36,14 +36,16 @@ def get_config():
     config.swin_encoder.out_features = None
     config.swin_encoder.out_indices = None
 
+
     config.CNN_decoder = config_dict.ConfigDict()
-    config.CNN_decoder.num_layers = 4
-    config.CNN_decoder.embedding_dim = 96
+    config.CNN_decoder.num_layers = 3
+    config.CNN_decoder.embedding_dim = config.swin_encoder.embed_dim * 2**(len(config.swin_encoder.depths)-1)
     config.CNN_decoder.output_size = 32
-    config.CNN_decoder.num_channels = [128, 64, 32, 16]
-    config.CNN_decoder.activation_fns = ['relu', 'relu', 'relu', 'relu']
-    config.CNN_decoder.kernel_sizes = [4, 4, 4, 4]
-    config.CNN_decoder.strides = [2, 2, 2, 2]
+    config.CNN_decoder.output_channels = 3
+    config.CNN_decoder.num_channels = [128, 64, 32]
+    config.CNN_decoder.activation_fns = ['relu', 'relu', 'relu']
+    config.CNN_decoder.kernel_sizes = [2, 2, 2]
+    config.CNN_decoder.strides = [2, 2, 2]
 
     config.data_preprocessing = config_dict.ConfigDict()
     config.data_preprocessing.fixedAirfoilNormalization = True

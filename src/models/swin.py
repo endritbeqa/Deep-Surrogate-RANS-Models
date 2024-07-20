@@ -1,11 +1,14 @@
+from math import sqrt
+
+import torch
 import torch.nn as nn
 from transformers import AutoConfig, AutoModel
-
+from transformers import AutoImageProcessor, Swinv2Model
 
 def load_swin_transformer(config_dict: dict ) -> nn.Module:
 
     custom_config = AutoConfig.for_model('swinv2', **config_dict)
-    model = AutoModel.from_config(custom_config)
+    model = Swinv2Model(custom_config)
 
     return model
 
@@ -21,6 +24,7 @@ class CNNDecoder(nn.Module):
         self.activation_fns = config.activation_fns
         self.kernel_sizes = config.kernel_sizes
         self.strides = config.strides
+        self.output_channels = config.output_channels
 
         # Initialize the decoder layers
         layers = []
@@ -38,13 +42,8 @@ class CNNDecoder(nn.Module):
             layers.append(nn.BatchNorm2d(out_channels))
             layers.append(activation_fn)
 
-            current_size = (current_size - 1) * stride + kernel_size - 2  # Calculate new spatial dimension
-            in_channels = out_channels
-
-        # Final layer to match the output size and channels
-        final_kernel_size = self.output_size - current_size + self.kernel_sizes[-1] - 2
-        layers.append(nn.ConvTranspose2d(in_channels, self.output_size, final_kernel_size))
-        #layers.append(nn.Sigmoid())  # Assuming the output image pixel values are normalized between 0 and 1
+        # TODO make the kernel and stride calculation automatic
+        layers.append(nn.ConvTranspose2d(in_channels, self.output_channels, 1, 1))
 
         self.decoder = nn.Sequential(*layers)
 
@@ -61,13 +60,8 @@ class CNNDecoder(nn.Module):
             raise ValueError(f"Unsupported activation function: {activation_name}")
 
     def forward(self, x):
-        # Reshape input to the appropriate shape for ConvTranspose2d
-        x = x.view(x.size(0), self.embedding_dim, 1, 1)
         x = self.decoder(x)
         return x
-
-
-
 
 
 class Swin_CNN(nn.Module):
@@ -78,6 +72,15 @@ class Swin_CNN(nn.Module):
 
 
     def forward(self, x):
+
         x = self.encoder(x)
+
+        # turn the output of transformer into a "image" by reshaping it
+        x = x.last_hidden_state.permute(0, 2, 1)
+        b, c, h_w = x.shape
+        l = int(h_w ** 0.5)
+        assert l ** 2 == h_w
+        x = x.view(b, c, l, l)
+
         y = self.decoder(x)
         return y
