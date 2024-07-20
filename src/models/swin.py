@@ -42,6 +42,9 @@ class CNNDecoder(nn.Module):
             layers.append(nn.BatchNorm2d(out_channels))
             layers.append(activation_fn)
 
+            #current_size = (current_size - 1) * stride + kernel_size - 2  # Calculate new spatial dimension of the tensor
+            in_channels = out_channels
+
         # TODO make the kernel and stride calculation automatic
         layers.append(nn.ConvTranspose2d(in_channels, self.output_channels, 1, 1))
 
