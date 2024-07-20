@@ -88,6 +88,32 @@ def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfo
 
 
 
+def write_control_dict(file_path: str, config: config_dict):
+
+    insert_endTime_position = "/*---Insert endTime here---*/"
+    insert_writeInterval_position = "/*---Insert writeInterval here---*/"
+    insert_purgeWrite_position = "/*---Insert purgeWrite here---*/"
+
+    new_contents = []
+
+    with open(file_path, 'r') as file:
+        contents = file.readlines()
+
+    for line in contents:
+        if insert_endTime_position in line:
+            new_contents.append("endTime         "+config.end_time+";")
+            continue
+        elif insert_writeInterval_position in line:
+            new_contents.append("writeInterval   "+config.write_interval+";")
+            continue
+        elif insert_purgeWrite_position in line:
+            new_contents.append("purgeWrite      "+config.purge_write+";")
+            continue
+        new_contents.append(line)
+
+    with open('./OpenFOAM/system/controlDict', 'w') as file:
+        file.writelines(new_contents)
+
 
 def write_point_coordinates(file_path: str, res: int):
 

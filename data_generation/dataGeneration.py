@@ -3,7 +3,7 @@ import multiprocessing
 import shutil
 from ml_collections import config_dict
 
-from utils import generate_uniform_random_parameters, write_point_coordinates, clean_res_dir
+from utils import generate_uniform_random_parameters, write_point_coordinates, clean_res_dir, write_control_dict
 from simFunctions import generator
 from config import get_config
 
@@ -30,6 +30,7 @@ for res, res_params in (config.res_params):
     parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
 
     write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
+    write_control_dict('./OpenFOAM/system/controlDict_template', config)
 
     for idx in range(config.num_workers):
         os.mkdir("{}/worker_{}".format(res_dir, idx))

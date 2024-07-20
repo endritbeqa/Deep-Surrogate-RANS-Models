@@ -98,6 +98,7 @@ def runSim(config: config_dict,freestreamX: float, freestreamY: float):
 
 
 
+# TODO perform outputProcessing every timestep in config.save_timestep
 def outputProcessing(config: config_dict,basename:str, freestreamX:float, freestreamY:float, pfile='OpenFOAM/postProcessing/internalCloud/500/cloud_p.xy', ufile='OpenFOAM/postProcessing/internalCloud/500/cloud_U.xy', imageIndex=0):
     # output layout channels:
     # [0] freestream field X + boundary
