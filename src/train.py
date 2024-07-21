@@ -96,3 +96,9 @@ class Trainer(object):
             json.dump(config_dict, json_file, indent=4)
 
         return val_curve[-1]
+
+
+if __name__ == '__main__':
+    config = get_config()
+    trainer = Trainer(config)
+    trainer.train_model(config)
