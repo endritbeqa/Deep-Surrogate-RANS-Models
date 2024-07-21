@@ -147,6 +147,7 @@ def outputProcessing(config: config_dict,basename:str, freestreamX:float, freest
         utils.saveAsImage(config.res, 'data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
         utils.saveAsImage(config.res,'data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
         utils.saveAsImage(config.res,'data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
+        utils.saveAsImage(config.res, 'data_pictures/%04d/mask.png' % (imageIndex), npOutput[2])
         utils.saveAsImage(config.res,'data_pictures/%04d/inputX.png' % (imageIndex), npOutput[0])
         utils.saveAsImage(config.res,'data_pictures/%04d/inputY.png' % (imageIndex), npOutput[1])
 
