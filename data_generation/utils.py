@@ -101,13 +101,13 @@ def write_control_dict(file_path: str, config: config_dict):
 
     for line in contents:
         if insert_endTime_position in line:
-            new_contents.append("endTime         "+config.end_time+";")
+            new_contents.append("endTime         "+str(config.end_time)+";")
             continue
         elif insert_writeInterval_position in line:
-            new_contents.append("writeInterval   "+config.write_interval+";")
+            new_contents.append("writeInterval   "+str(config.write_interval)+";")
             continue
         elif insert_purgeWrite_position in line:
-            new_contents.append("purgeWrite      "+config.purge_write+";")
+            new_contents.append("purgeWrite      "+str(config.purge_write)+";")
             continue
         new_contents.append(line)
 

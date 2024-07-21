@@ -34,8 +34,7 @@ class Airfoil_Dataset(Dataset):
         return (input, target)
 
     def data_preprocessing(self, data: np.ndarray) -> np.ndarray:
-        # TODO this not is only for the 32 res dataset because the boundary is encoded as 1 there
-        if not any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):
+        if any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):
             return data
 
         boundary = ~ data[2].flatten().astype(bool)
