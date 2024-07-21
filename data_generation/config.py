@@ -11,8 +11,8 @@ def get_config():
     config.write_interval = 500 # interval to write simulation to disk
     # TODO write assertion to make sure the time steps below are available after the simulation
     config.save_timestep = [1500,1800,1900] # simulation timesteps to interpolate into arrays
-    config.res_params = [(32, [100,100])]# res: [num_samples, simulation_timeout]
-    config.num_workers = 2
+    config.res_params = [(32, [10,100])]# res: [num_samples, simulation_timeout]
+    config.num_workers = 4
     config.num_samples = 0 ## this will be set by the program from the num_samples_per_res dict
     config.res = 0 #this will be set by the program from the num_samples_per_res dict
     config.freestream_angle = math.pi / 8.  # -angle ... angle
