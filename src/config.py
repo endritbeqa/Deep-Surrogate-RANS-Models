@@ -4,20 +4,21 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.data_dir = '../data_res_32/data'
-    config.num_epochs = 15
+    config.data_dir = './data_res_32/data'
+    config.output_dir = './Output'
+    config.num_epochs = 3
     config.batch_size = 20
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4
     config.loss_function = 'mse'
-    config.checkpoint_every = 5
+    config.checkpoint_every = 1
 
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
     config.swin_encoder.patch_size = 2
-    config.swin_encoder.num_channels = 2
+    config.swin_encoder.num_channels = 3
     config.swin_encoder.embed_dim = 48
     config.swin_encoder.depths = [2, 6, 2]
     config.swin_encoder.num_heads = [3, 8, 12]
