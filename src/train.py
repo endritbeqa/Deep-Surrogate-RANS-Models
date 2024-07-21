@@ -24,6 +24,7 @@ class Trainer(object):
         self.loss_func = get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.model = self.model.to(self.device)
 
 
     def train_model(self, config):
@@ -40,7 +41,6 @@ class Trainer(object):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
-                print(outputs.shape)
                 loss = self.loss_func(outputs, targets)
 
                 loss.backward()

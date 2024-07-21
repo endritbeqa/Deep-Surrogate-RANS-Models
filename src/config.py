@@ -4,7 +4,7 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.data_dir = './data_res_32/data'
+    config.data_dir = '../data_res_32/data'
     config.num_epochs = 15
     config.batch_size = 20
     config.normalize = True
@@ -48,7 +48,7 @@ def get_config():
     config.CNN_decoder.strides = [2, 2, 2]
 
     config.data_preprocessing = config_dict.ConfigDict()
-    config.data_preprocessing.fixedAirfoilNormalization = True
+    config.data_preprocessing.fixedAirfoilNormalization = False
     config.data_preprocessing.makeDimLess = True
     config.data_preprocessing.removePOffset = True
 

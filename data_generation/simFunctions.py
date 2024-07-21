@@ -1,5 +1,4 @@
 import os, signal, math
-import stat
 import subprocess
 import threading
 import numpy as np
@@ -117,15 +116,16 @@ def outputProcessing(config: config_dict,basename:str, freestreamX:float, freest
             xf = (x / config.res - 0.5) * 2 + 0.5
             yf = (y / config.res - 0.5) * 2
             if abs(ar[curIndex][0] - xf)<1e-4 and abs(ar[curIndex][1] - yf)<1e-4:
+                #fill_pressure
                 npOutput[3][x][y] = ar[curIndex][3]
                 curIndex += 1
-                # fill input as well
+                # fill input freestream as well
                 npOutput[0][x][y] = freestreamX
                 npOutput[1][x][y] = freestreamY
-            else:
-                npOutput[3][x][y] = 0
                 # fill mask
                 npOutput[2][x][y] = 1.0
+            else:
+                npOutput[3][x][y] = 0
 
     ar = np.loadtxt(ufile)
     curIndex = 0
