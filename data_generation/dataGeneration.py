@@ -2,13 +2,11 @@ import os
 import multiprocessing
 import shutil
 from ml_collections import config_dict
-
-from utils import generate_uniform_random_parameters, write_point_coordinates, clean_res_dir, write_control_dict
-from simFunctions import generator
+from data_generation import simFunctions, utils
 from config import get_config
 
 def work(config: config_dict ,samples: list, directory: str ):
-    generator(config, samples, directory)
+    simFunctions.generator(config, samples, directory)
 
 
 
@@ -25,12 +23,12 @@ for res, res_params in (config.res_params):
     res_dir = "data_res_{}".format(config.res)
     os.mkdir(res_dir)
 
-    samples = generate_uniform_random_parameters(config.num_samples)
+    samples = utils.generate_uniform_random_parameters(config.num_samples)
     k, m = divmod(len(samples), config.num_workers)
     parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
 
-    write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
-    write_control_dict('./OpenFOAM/system/controlDict_template', config)
+    utils.write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
+    utils.write_control_dict('./OpenFOAM/system/controlDict_template', config)
 
     for idx in range(config.num_workers):
         os.mkdir("{}/worker_{}".format(res_dir, idx))
@@ -45,7 +43,7 @@ for res, res_params in (config.res_params):
         jobs=[]
 
     if config.clean_res_dir:
-        clean_res_dir(config, res_dir)
+        utils.clean_res_dir(config, res_dir)
 
 
 print("Done")

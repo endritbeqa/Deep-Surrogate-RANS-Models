@@ -189,7 +189,7 @@ def generator(config: config_dict, samples: list, working_directory: str):
     os.chdir(working_directory)
     utils.makeDirs(["./data_pictures", "./train", "./OpenFOAM/constant/polyMesh/sets", "./OpenFOAM/constant/polyMesh"])
     for params in samples:
-        create_sample( config, params)
+        create_sample(config, params)
 
 
 

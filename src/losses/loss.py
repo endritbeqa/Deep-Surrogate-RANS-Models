@@ -21,7 +21,7 @@ def get_loss_function(loss_name):
 
 def mean_relative_loss_function(input, target):
 
-    epsilon = 1e-8
+    epsilon = 1e-6
     absolute_difference = torch.abs(input - target)
     absolute_target = torch.abs(target)
 

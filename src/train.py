@@ -3,19 +3,20 @@ import os
 import json
 import torch.optim as optim
 
-from models.swin import Swin_CNN
-from data.data_loader import Airfoil_Dataset
+from models import swin
+from data import dataset
 from losses.loss import get_loss_function
 from torch.utils.data import DataLoader
-from utils import plot_losses, save_images
-from config import get_config
+import utils
+import config
 
 class Trainer(object):
     def __init__(self, config):
-        self.model = Swin_CNN(config)
+        self.config = config
+        self.model = swin.Swin_CNN(config)
         self.output_dir = config.output_dir
-        self.train_dataset = Airfoil_Dataset(config, mode='train')
-        self.val_dataset = Airfoil_Dataset(config, mode='validation')
+        self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
+        self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
         self.loss_func = get_loss_function(config.loss_function)
@@ -32,12 +33,12 @@ class Trainer(object):
 
 
 
-    def train_model(self, config):
+    def train_model(self):
 
         train_curve = []
         val_curve = []
 
-        for epoch in range(config.num_epochs):
+        for epoch in range(self.config.num_epochs):
             self.model.train()
             train_loss = 0.0
 
@@ -70,7 +71,7 @@ class Trainer(object):
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
                 file.write("{},{}\n".format(str(train_loss),str(val_loss)))
 
-            if epoch % config.checkpoint_every == 0:
+            if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
                     'epoch': epoch,
                     'state_dict': self.model.state_dict(),
@@ -80,16 +81,14 @@ class Trainer(object):
                 }
                 torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir,epoch))
 
-                save_images(outputs,self.output_dir ,epoch)
+                utils.save_images(outputs, self.output_dir, epoch)
 
 
-
-
-        loss_plot = plot_losses(train_curve,val_curve)
+        loss_plot = utils.plot_losses(train_curve,val_curve)
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
 
-        config_dict = config.to_dict()
+        config_dict = self.config.to_dict()
 
         # Save the dictionary as a JSON file
         with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
@@ -99,6 +98,6 @@ class Trainer(object):
 
 
 if __name__ == '__main__':
-    config = get_config()
-    trainer = Trainer(config)
-    trainer.train_model(config)
+    train_config = config.get_config()
+    trainer = Trainer(train_config)
+    trainer.train_model()

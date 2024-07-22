@@ -5,14 +5,14 @@ def get_config():
 
     config = config_dict.ConfigDict()
     config.data_dir = './data_res_32/data'
-    config.output_dir = './Output'
-    config.num_epochs = 3
-    config.batch_size = 20
+    config.output_dir = ''
+    config.num_epochs = 20
+    config.batch_size = 8
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4
-    config.loss_function = 'mse'
-    config.checkpoint_every = 1
+    config.loss_function = 'mae'
+    config.checkpoint_every = 10
 
 
     config.swin_encoder = config_dict.ConfigDict()
