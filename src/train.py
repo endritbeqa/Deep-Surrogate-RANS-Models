@@ -3,9 +3,9 @@ import os
 import json
 import torch.optim as optim
 
-from models import swin
-from data import dataset
-from losses.loss import get_loss_function
+from src.models.swinV2_CNN import swin
+from src.data import dataset
+from src.losses import loss
 from torch.utils.data import DataLoader
 import utils
 import config
@@ -19,7 +19,7 @@ class Trainer(object):
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
-        self.loss_func = get_loss_function(config.loss_function)
+        self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)

@@ -1,9 +1,6 @@
-from math import sqrt
-
-import torch
 import torch.nn as nn
-from transformers import AutoConfig, AutoModel
-from transformers import AutoImageProcessor, Swinv2Model
+from transformers import AutoConfig
+from transformers import Swinv2Model
 
 def load_swin_transformer(config_dict: dict ) -> nn.Module:
 
