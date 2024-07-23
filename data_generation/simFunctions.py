@@ -30,11 +30,11 @@ class Command(object):
         return self.process.returncode
 
 
-def genMesh(config: config_dict,airfoilFile):
+def genMesh(config: config_dict, airfoilFile):
     ar = np.loadtxt(airfoilFile, skiprows=1)
 
     # removing duplicate end point
-    if np.max(np.abs(ar[0] - ar[(ar.shape[0]-1)]))<1e-6:
+    if np.max(np.abs(ar[0] - ar[(ar.shape[0] - 1)])) < 1e-6:
         ar = ar[:-1]
 
     output = ""
@@ -47,9 +47,8 @@ def genMesh(config: config_dict,airfoilFile):
         with open("airfoil.geo", "wt") as outFile:
             for line in inFile:
                 line = line.replace("POINTS", "{}".format(output))
-                line = line.replace("LAST_POINT_INDEX", "{}".format(pointIndex-1))
+                line = line.replace("LAST_POINT_INDEX", "{}".format(pointIndex - 1))
                 outFile.write(line)
-
 
     command_gmsh = Command("gmsh -format msh2 airfoil.geo -3 -o airfoil.msh > /dev/null")
     if command_gmsh.run(config.gmsh_timeout) != 0:
@@ -57,7 +56,7 @@ def genMesh(config: config_dict,airfoilFile):
         return -1
 
     command_gmshToFoam = Command("gmshToFoam airfoil.msh > /dev/null")
-    if command_gmshToFoam.run(config.gmshToFoam_timeout) !=0:
+    if command_gmshToFoam.run(config.gmshToFoam_timeout) != 0:
         print("gmshToFoam timed out, moving on")
         return -1
 
@@ -77,11 +76,12 @@ def genMesh(config: config_dict,airfoilFile):
                     line = line.replace("patch", "wall")
                     inAerofoil = False
                 outFile.write(line)
-    os.rename("constant/polyMesh/boundaryTemp","constant/polyMesh/boundary")
+    os.rename("constant/polyMesh/boundaryTemp", "constant/polyMesh/boundary")
 
     return 0
 
-def runSim(config: config_dict,freestreamX: float, freestreamY: float):
+
+def runSim(config: config_dict, freestreamX: float, freestreamY: float):
     with open("U_template", "rt") as inFile:
         with open("0/U", "wt") as outFile:
             for line in inFile:
@@ -96,67 +96,54 @@ def runSim(config: config_dict,freestreamX: float, freestreamY: float):
     return 0
 
 
+# TODO save input(freestreamX, freestreamY, mask) only once and the outputs(pressure, velocityX, velocityY) during time steps
+def outputProcessing(config: config_dict, basename: str, freestreamX: float, freestreamY: float, imageIndex=0):
+    for timeStep in config.save_timestep:
+        pfile = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_p.xy'.format(timeStep)
+        ufile = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_U.xy'.format(timeStep)
 
-# TODO perform outputProcessing every timestep in config.save_timestep
-def outputProcessing(config: config_dict,basename:str, freestreamX:float, freestreamY:float, pfile='OpenFOAM/postProcessing/internalCloud/500/cloud_p.xy', ufile='OpenFOAM/postProcessing/internalCloud/500/cloud_U.xy', imageIndex=0):
-    # output layout channels:
-    # [0] freestream field X + boundary
-    # [1] freestream field Y + boundary
-    # [2] binary mask for boundary
-    # [3] pressure output
-    # [4] velocity X output
-    # [5] velocity Y output
-    npOutput = np.zeros((6, config.res, config.res))
+        # output layout channels:
+        # [0] freestream field X + boundary
+        # [1] freestream field Y + boundary
+        # [2] binary mask for boundary
+        # [3] pressure output
+        # [4] velocity X output
+        # [5] velocity Y output
+        npOutput = np.zeros((6, config.res, config.res))
+        ar_p = np.loadtxt(pfile)
+        ar_v = np.loadtxt(ufile)
+        curIndex = 0
 
-    ar = np.loadtxt(pfile)
-    curIndex = 0
+        for y in range(config.res):
+            for x in range(config.res):
+                xf = (x / config.res - 0.5) * 2 + 0.5
+                yf = (y / config.res - 0.5) * 2
+                if abs(ar_p[curIndex][0] - xf) < 1e-4 and abs(ar_p[curIndex][1] - yf) < 1e-4:
+                    npOutput[0][x][y] = freestreamX
+                    npOutput[1][x][y] = freestreamY
+                    npOutput[2][x][y] = 1.0
+                    npOutput[3][x][y] = ar_p[curIndex][3]
+                    npOutput[4][x][y] = ar_v[curIndex][3]
+                    npOutput[5][x][y] = ar_v[curIndex][4]
+                    curIndex += 1
 
-    for y in range(config.res):
-        for x in range(config.res):
-            xf = (x / config.res - 0.5) * 2 + 0.5
-            yf = (y / config.res - 0.5) * 2
-            if abs(ar[curIndex][0] - xf)<1e-4 and abs(ar[curIndex][1] - yf)<1e-4:
-                #fill_pressure
-                npOutput[3][x][y] = ar[curIndex][3]
-                curIndex += 1
-                # fill input freestream as well
-                npOutput[0][x][y] = freestreamX
-                npOutput[1][x][y] = freestreamY
-                # fill mask
-                npOutput[2][x][y] = 1.0
-            else:
-                npOutput[3][x][y] = 0
+        if config.save_images:
+            os.makedirs('data_pictures/%04d' % (imageIndex), exist_ok=True)
+            utils.saveAsImage(config.res, 'data_pictures/%04d/inputX_%d.png' % (imageIndex, timeStep), npOutput[0])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/inputY_%d.png' % (imageIndex, timeStep), npOutput[1])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/mask_%d.png' % (imageIndex, timeStep), npOutput[2])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/pressured_%d.png' % (imageIndex, timeStep), npOutput[3])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/velX_%d.png' % (imageIndex, timeStep), npOutput[4])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/velY_%d.png' % (imageIndex, timeStep), npOutput[5])
 
-    ar = np.loadtxt(ufile)
-    curIndex = 0
 
-    for y in range(config.res):
-        for x in range(config.res):
-            xf = (x / config.res - 0.5) * 2 + 0.5
-            yf = (y / config.res - 0.5) * 2
-            if abs(ar[curIndex][0] - xf)<1e-4 and abs(ar[curIndex][1] - yf)<1e-4:
-                npOutput[4][x][y] = ar[curIndex][3]
-                npOutput[5][x][y] = ar[curIndex][4]
-                curIndex += 1
-            else:
-                npOutput[4][x][y] = 0
-                npOutput[5][x][y] = 0
+        fileName = config.output_dir + "%s_%d_%d_%d" % (
+            basename, int(freestreamX * 100), int(freestreamY * 100), timeStep)
+        print("\tsaving in " + fileName + ".npz")
+        np.savez_compressed(fileName, a=npOutput)
 
-    if config.save_images:
-        os.makedirs('data_pictures/%04d'%(imageIndex), exist_ok=True)
-        utils.saveAsImage(config.res, 'data_pictures/%04d/pressured.png' % (imageIndex), npOutput[3])
-        utils.saveAsImage(config.res,'data_pictures/%04d/velXd.png' % (imageIndex), npOutput[4])
-        utils.saveAsImage(config.res,'data_pictures/%04d/velY.png' % (imageIndex), npOutput[5])
-        utils.saveAsImage(config.res, 'data_pictures/%04d/mask.png' % (imageIndex), npOutput[2])
-        utils.saveAsImage(config.res,'data_pictures/%04d/inputX.png' % (imageIndex), npOutput[0])
-        utils.saveAsImage(config.res,'data_pictures/%04d/inputY.png' % (imageIndex), npOutput[1])
 
-    fileName = config.output_dir + "%s_%d_%d" % (basename, int(freestreamX*100), int(freestreamY*100) )
-    print("\tsaving in " + fileName + ".npz")
-    np.savez_compressed(fileName, a=npOutput)
-
-def create_sample(config: config_dict, params:list):
-
+def create_sample(config: config_dict, params: list):
     idx, basename, length, angle = params
     print("Run {}:".format(idx))
     print("\tusing {}".format(basename))
@@ -167,35 +154,25 @@ def create_sample(config: config_dict, params:list):
     os.chdir("OpenFOAM/")
     os.system("./PrepareDirectory")
     utils.makeDirs(["./constant/polyMesh/sets", "./constant/polyMesh"])
-    if genMesh(config,"../" + config.airfoil_database + basename) != 0:
+    if genMesh(config, "../" + config.airfoil_database + basename) != 0:
         print("\tmesh generation failed, moving on")
         os.chdir("..")
         return
 
-    if runSim(config,fsX, fsY) != 0:
+    if runSim(config, fsX, fsY) != 0:
         print("\tSimulation failed , moving on")
         os.chdir("..")
         return
 
     os.chdir("..")
 
-    outputProcessing(config,basename, fsX, fsY, imageIndex=idx)
+    outputProcessing(config, basename, fsX, fsY, imageIndex=idx)
     print("\tdone")
     return
 
 
 def generator(config: config_dict, samples: list, working_directory: str):
-
     os.chdir(working_directory)
     utils.makeDirs(["./data_pictures", "./train", "./OpenFOAM/constant/polyMesh/sets", "./OpenFOAM/constant/polyMesh"])
     for params in samples:
         create_sample(config, params)
-
-
-
-
-
-
-
-
-

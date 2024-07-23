@@ -5,15 +5,15 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.patch_size = 16
-    config.embed_dim = 768
-    config.in_channels = 3
-    config.num_heads = 12
-    config.num_layers = 12
-    config.emb_dropout = 0.1
-    config.num_classes = 1000
-    config.image_size = 224
-    config.num_patches = (config.image_size // config.patch_size) ** 2
+    img_size = 224
+    patch_size = 16
+    in_channels = 3
+    embed_dim = 768
+    num_heads = 12
+    ff_hidden_dim = 3072
+    num_layers = 12
+    num_classes = 1000
+    dropout_rate = 0.1
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
