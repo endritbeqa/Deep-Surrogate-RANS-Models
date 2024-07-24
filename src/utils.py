@@ -8,8 +8,8 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 
 
-def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', title='Train/Val loss curves', label1='Training loss', label2='Validation loss'):
-
+def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', title='Train/Val loss curves',
+                label1='Training loss', label2='Validation loss'):
     if len(train_loss) != len(validation_loss):
         raise ValueError("The two arrays must have the same length.")
 

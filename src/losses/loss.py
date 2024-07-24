@@ -27,7 +27,6 @@ def con_of_mass(x_velocity, y_velocity):
     return loss
 
 
-
 def mean_relative_loss_function(input, target):
     epsilon = 1e-6
     absolute_difference = torch.abs(input - target)
@@ -38,6 +37,7 @@ def mean_relative_loss_function(input, target):
 
     loss = torch.mean(relative_difference)
     return loss
+
 
 def get_loss_function(loss_name: list):
     loss_functions = {
@@ -64,10 +64,7 @@ def get_loss_function(loss_name: list):
     def loss(input, target):
         total_loss = 0
         for loss in losses:
-            total_loss+=loss(input, target)
+            total_loss += loss(input, target)
         return total_loss
 
     return loss
-
-
-

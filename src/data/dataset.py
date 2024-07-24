@@ -14,13 +14,12 @@ class Airfoil_Dataset(Dataset):
         self.removePOffset = config.data_preprocessing.removePOffset
         self.file_names = [f for f in os.listdir(self.data_dir) if f.endswith('.npz')]
         data = np.load(os.path.join(self.data_dir, self.file_names[0]))['a']
-        c,h,w = data.shape
+        c, h, w = data.shape
         assert h == w, "Fields are not square"
         self.res = h
 
     def __len__(self):
         return len(self.file_names)
-
 
     def __getitem__(self, idx):
         file_path = os.path.join(self.data_dir, self.file_names[idx])
@@ -28,8 +27,8 @@ class Airfoil_Dataset(Dataset):
         data = data['a'].astype(np.float32)
         data = self.data_preprocessing(data)
 
-        input = data[0:3,:,:]
-        target = data[3:,:,:]
+        input = data[0:3, :, :]
+        target = data[3:, :, :]
 
         return (input, target)
 
@@ -41,7 +40,7 @@ class Airfoil_Dataset(Dataset):
         num_field_elements = np.sum(boundary)
         c, h, w = data.shape
 
-        data = data.reshape((c, h*w))
+        data = data.reshape((c, h * w))
         fields = data[np.tile(boundary, (6, 1))]
         fields = fields.reshape((6, num_field_elements))
         p_mean = np.mean(fields[3])
@@ -51,12 +50,11 @@ class Airfoil_Dataset(Dataset):
             data[3][boundary] -= p_mean
 
         if self.makeDimLess:
-            data[3][boundary] /= v_norm**2
+            data[3][boundary] /= v_norm ** 2
             data[4][boundary] /= v_norm
             data[5][boundary] /= v_norm
 
         return data.reshape((c, h, w))
-
 
     '''
         if self.fixedAirfoilNormalization:
@@ -96,8 +94,6 @@ class Airfoil_Dataset(Dataset):
         data[5, :, :] *= (1.0 / data.max_targets_2)
      '''
 
-
-
     def find_absmax(self, data, use_targets, x):
         maxval = 0
         for i in range(data.totalLength):
@@ -109,5 +105,3 @@ class Airfoil_Dataset(Dataset):
             if temp_max > maxval:
                 maxval = temp_max
         return maxval
-
-

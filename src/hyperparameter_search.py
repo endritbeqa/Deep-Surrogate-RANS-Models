@@ -6,9 +6,7 @@ from sqlalchemy import create_engine
 
 
 def objective(trial):
-
     trial_config = config.get_config().copy_and_resolve_references()
-
     batch_size = trial.suggest_int('batch_size', 2, 8, step=1)
     learning_rate = trial.suggest_float('learning_rate', 1e-6, 1e-2)
     directory_name = "Outputs/batch_{}_learningRate{}".format(batch_size, learning_rate)
@@ -22,7 +20,6 @@ def objective(trial):
     return final_val_loss
 
 
-
 if __name__ == '__main__':
     os.mkdir("Outputs")
 
@@ -30,11 +27,9 @@ if __name__ == '__main__':
     engine = create_engine(DATABASE_URL, echo=True)
 
     storage = optuna.storages.RDBStorage(
-        url= DATABASE_URL,
+        url=DATABASE_URL,
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},
     )
-    
+
     study = optuna.create_study(study_name="test", storage=storage)
     study.optimize(objective, n_trials=3)
-
-

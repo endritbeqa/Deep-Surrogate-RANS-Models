@@ -113,6 +113,24 @@ def clean_res_dir(config: config_dict,res_dir: str):
         shutil.rmtree("worker_{}".format(idx))
 
 
+def move_files_by_percentage(source_dir, destination_dir, percentage):
+    if not (0 <= percentage <= 100):
+        raise ValueError("Percentage must be between 0 and 100")
 
+    if not os.path.exists(destination_dir):
+        os.makedirs(destination_dir)
+
+    all_files = [f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))]
+    num_files_to_move = int(len(all_files) * (percentage / 100))
+
+    files_to_move = random.sample(all_files, num_files_to_move)
+
+    # Move the files
+    for file_name in files_to_move:
+        src_file = os.path.join(source_dir, file_name)
+        dest_file = os.path.join(destination_dir, file_name)
+        shutil.move(src_file, dest_file)
+
+    print(f"Moved {num_files_to_move} files from {source_dir} to {destination_dir}")
 
 

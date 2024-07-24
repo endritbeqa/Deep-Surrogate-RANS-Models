@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 import utils
 import config
 
+
 class Trainer(object):
     def __init__(self, config):
         self.config = config
@@ -26,12 +27,10 @@ class Trainer(object):
 
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
-                    os.path.join(self.output_dir,"logs"),
-                    os.path.join(self.output_dir,"config"),
-                    os.path.join(self.output_dir,"images")]:
+                    os.path.join(self.output_dir, "logs"),
+                    os.path.join(self.output_dir, "config"),
+                    os.path.join(self.output_dir, "images")]:
             os.mkdir(dir)
-
-
 
     def train_model(self):
 
@@ -43,7 +42,6 @@ class Trainer(object):
             train_loss = 0.0
 
             for inputs, targets in self.train_dataloader:
-
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
@@ -69,7 +67,7 @@ class Trainer(object):
             val_curve.append(val_loss)
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
-                file.write("{},{}\n".format(str(train_loss),str(val_loss)))
+                file.write("{},{}\n".format(str(train_loss), str(val_loss)))
 
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
@@ -79,12 +77,11 @@ class Trainer(object):
                     'loss': train_loss,
                     'val_loss': val_loss,
                 }
-                torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir,epoch))
+                torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
                 utils.save_images(outputs, self.output_dir, epoch)
 
-
-        loss_plot = utils.plot_losses(train_curve,val_curve)
+        loss_plot = utils.plot_losses(train_curve, val_curve)
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
 

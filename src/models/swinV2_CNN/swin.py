@@ -2,8 +2,8 @@ import torch.nn as nn
 from transformers import AutoConfig
 from transformers import Swinv2Model
 
-def load_swin_transformer(config_dict: dict ) -> nn.Module:
 
+def load_swin_transformer(config_dict: dict) -> nn.Module:
     custom_config = AutoConfig.for_model('swinv2', **config_dict)
     model = Swinv2Model(custom_config)
 
@@ -39,7 +39,7 @@ class CNNDecoder(nn.Module):
             layers.append(nn.BatchNorm2d(out_channels))
             layers.append(activation_fn)
 
-            #current_size = (current_size - 1) * stride + kernel_size - 2  # Calculate new spatial dimension of the tensor
+            # current_size = (current_size - 1) * stride + kernel_size - 2  # Calculate new spatial dimension of the tensor
             in_channels = out_channels
 
         # TODO make the kernel and stride calculation automatic
@@ -70,9 +70,7 @@ class Swin_CNN(nn.Module):
         self.encoder = load_swin_transformer(config.swin_encoder)
         self.decoder = CNNDecoder(config.CNN_decoder)
 
-
     def forward(self, x):
-
         x = self.encoder(x)
 
         # turn the output of transformer into a "image" by reshaping it
