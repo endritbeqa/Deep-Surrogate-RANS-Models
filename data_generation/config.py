@@ -8,8 +8,9 @@ def get_config():
     config.purge_write = 1  # number of simulation timepoints to save
     config.write_interval = 10  # interval to write simulation to disk
     config.save_timestep = [500]  # simulation timesteps to interpolate into arrays
-    config.res_params = [(32, [8, 300])]  # res: [num_samples, simulation_timeout]
-    config.num_workers = 4
+    config.res_params = [(32, [5, 300])]# res: [num_samples, simulation_timeout]
+    config.validation_split = 0.2
+    config.num_workers = 5
     config.num_samples = 0  ## this will be set by the program from the num_samples_per_res dict
     config.res = 0  # this will be set by the program from the num_samples_per_res dict
     config.freestream_angle = math.pi / 8.  # -angle ... angle

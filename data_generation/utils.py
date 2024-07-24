@@ -105,32 +105,39 @@ def clean_res_dir(config: config_dict,res_dir: str):
     os.chdir(res_dir)
     os.mkdir("./pictures")
     os.mkdir("./data")
+    os.mkdir("./data/train")
+    os.mkdir("./data/validation")
     for idx in range(config.num_workers):
         for item in os.listdir("worker_{}/data_pictures".format(idx)):
             (shutil.move("worker_{}/data_pictures/{}".format(idx, item), "./pictures"))
         for item in os.listdir("worker_{}/train".format(idx)):
-            shutil.move("worker_{}/train/{}".format(idx, item), "./data")
+            shutil.move("worker_{}/train/{}".format(idx, item), "./data/train")
         shutil.rmtree("worker_{}".format(idx))
 
+    files = os.listdir("./data/train")
+    num_files_to_move = int(len(files) * config.validation_split)
+    files_to_move = random.sample(files, num_files_to_move)
 
-def move_files_by_percentage(source_dir, destination_dir, percentage):
-    if not (0 <= percentage <= 100):
-        raise ValueError("Percentage must be between 0 and 100")
-
-    if not os.path.exists(destination_dir):
-        os.makedirs(destination_dir)
-
-    all_files = [f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))]
-    num_files_to_move = int(len(all_files) * (percentage / 100))
-
-    files_to_move = random.sample(all_files, num_files_to_move)
-
-    # Move the files
     for file_name in files_to_move:
-        src_file = os.path.join(source_dir, file_name)
-        dest_file = os.path.join(destination_dir, file_name)
+        src_file = os.path.join("./data/train", file_name)
+        dest_file = os.path.join("./data/validation", file_name)
         shutil.move(src_file, dest_file)
 
-    print(f"Moved {num_files_to_move} files from {source_dir} to {destination_dir}")
 
+def split_files_train_val(source_dir, validation_split):
+    all_files = os.listdir(source_dir)
+    random.shuffle(all_files)
+    num_validation_files = int(len(all_files) * validation_split)
+    train_files = all_files[num_validation_files:]
+    validation_files = all_files[:num_validation_files]
 
+    train_dir = os.path.join(source_dir, "train")
+    validation_dir = os.path.join(source_dir, "validation")
+    os.mkdir(train_dir)
+    os.mkdir(validation_dir)
+
+    for file_name in train_files:
+        shutil.move(os.path.join(source_dir,file_name), os.path.join(train_dir,file_name))
+
+    for file_name in validation_files:
+        shutil.move(os.path.join(source_dir,file_name), os.path.join(validation_dir,file_name))
