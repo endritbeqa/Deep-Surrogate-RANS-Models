@@ -1,3 +1,4 @@
+import math
 import torch
 import os
 import json
@@ -41,12 +42,13 @@ class Trainer(object):
             self.model.train()
             train_loss = 0.0
 
-            for inputs, targets in self.train_dataloader:
+            for inputs, targets, label in self.train_dataloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.loss_func(outputs, targets)
-
+                if math.isinf(loss):
+                    print(label)
                 loss.backward()
                 self.optimizer.step()
                 train_loss += loss.item()
@@ -58,7 +60,7 @@ class Trainer(object):
             val_loss = 0.0
 
             with torch.no_grad():
-                for inputs, targets in self.val_dataloader:
+                for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs)
                     loss = self.loss_func(outputs, targets)

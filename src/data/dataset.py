@@ -30,7 +30,7 @@ class Airfoil_Dataset(Dataset):
         input = data[0:3, :, :]
         target = data[3:, :, :]
 
-        return (input, target)
+        return (input, target, self.file_names[idx])
 
     def data_preprocessing(self, data: np.ndarray) -> np.ndarray:
         if any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):

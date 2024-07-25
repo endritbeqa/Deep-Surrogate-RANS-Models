@@ -32,7 +32,7 @@ def save_images(outputs, output_dir, epoch):
 
     b, c, h, w = outputs.shape
     labels = ['pressure', "vel_x", "vel_y"]
-    for i in range(b):
+    for i in range(min(20,b)):
         for j in range(c):
             field = np.copy(outputs[i, j])
             field = np.flipud(field.transpose())
