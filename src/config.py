@@ -7,7 +7,7 @@ def get_config():
     config.data_dir = './data_res_32/data'
     config.output_dir = 'Outputs'
     config.num_epochs = 100
-    config.batch_size = 1500
+    config.batch_size = 2
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4
