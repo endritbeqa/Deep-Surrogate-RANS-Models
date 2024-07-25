@@ -54,9 +54,6 @@ class Airfoil_Dataset(Dataset):
             data[4][boundary] /= v_norm
             data[5][boundary] /= v_norm
 
-        return data.reshape((c, h, w))
-
-    '''
         if self.fixedAirfoilNormalization:
             # hard coded maxima , inputs dont change
             data.max_inputs_0 = 100.
@@ -75,33 +72,23 @@ class Airfoil_Dataset(Dataset):
                 data.max_targets_2 = 216.
                 print("Using fixed maxima " + format([data.max_targets_0, data.max_targets_1, data.max_targets_2]))
 
-        else:  # use current max values from loaded data_generation
-            data.max_inputs_0 = self.find_absmax(data, 0, 0)
-            data.max_inputs_1 = self.find_absmax(data, 0, 1)
-            data.max_inputs_2 = self.find_absmax(data, 0, 2)  # mask, not really necessary
+        else:  # use current max values from loaded data
+            data.max_inputs_0 = np.max(fields[0])
+            data.max_inputs_1 = np.max(fields[1])
             print("Maxima inputs " + format([data.max_inputs_0, data.max_inputs_1, data.max_inputs_2]))
 
-            data.max_targets_0 = self.find_absmax(data, 1, 0)
-            data.max_targets_1 = self.find_absmax(data, 1, 1)
-            data.max_targets_2 = self.find_absmax(data, 1, 2)
+            data.max_targets_0 = np.max(fields[1])
+            data.max_targets_1 = np.max(fields[1])
+            data.max_targets_2 = np.max(fields[1])
             print("Maxima targets " + format([data.max_targets_0, data.max_targets_1, data.max_targets_2]))
 
-        data[0, :, :] *= (1.0 / data.max_inputs_0)
-        data[1, :, :] *= (1.0 / data.max_inputs_1)
+        data[0][boundary] *= (1.0 / data.max_inputs_0)
+        data[1][boundary] *= (1.0 / data.max_inputs_1)
 
-        data[3, :, :] *= (1.0 / data.max_targets_0)
-        data[4, :, :] *= (1.0 / data.max_targets_1)
-        data[5, :, :] *= (1.0 / data.max_targets_2)
-     '''
+        data[0][boundary] *= (1.0 / data.max_targets_0)
+        data[1][boundary] *= (1.0 / data.max_targets_1)
+        data[2][boundary] *= (1.0 / data.max_targets_2)
 
-    def find_absmax(self, data, use_targets, x):
-        maxval = 0
-        for i in range(data.totalLength):
-            if use_targets == 0:
-                temp_tensor = data.inputs[i]
-            else:
-                temp_tensor = data.targets[i]
-            temp_max = np.max(np.abs(temp_tensor[x]))
-            if temp_max > maxval:
-                maxval = temp_max
-        return maxval
+        return data.reshape((c, h, w))
+
+
