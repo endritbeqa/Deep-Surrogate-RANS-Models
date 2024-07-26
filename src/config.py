@@ -6,11 +6,11 @@ def get_config():
     config = config_dict.ConfigDict()
     config.data_dir = './data_res_32/data'
     config.output_dir = 'Outputs'
-    config.num_epochs = 100
-    config.batch_size = 2
+    config.num_epochs = 21
+    config.batch_size = 600
     config.normalize = True
     config.optimizer = 'adam'
-    config.lr = 1e-4
+    config.lr = 1e-3
     config.loss_function = ['mae']
     config.checkpoint_every = 10
 
@@ -49,7 +49,7 @@ def get_config():
     config.CNN_decoder.strides = [2, 2, 2]
 
     config.data_preprocessing = config_dict.ConfigDict()
-    config.data_preprocessing.fixedAirfoilNormalization = False
+    config.data_preprocessing.fixedAirfoilNormalization = True
     config.data_preprocessing.makeDimLess = True
     config.data_preprocessing.removePOffset = True
 

@@ -47,11 +47,12 @@ class Trainer(object):
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.loss_func(outputs, targets)
-                if math.isinf(loss):
-                    print(label)
-                loss.backward()
-                self.optimizer.step()
+                if math.isinf(loss) | math.isnan(loss):
+                    print("{}, {}".format(label, loss))
                 train_loss += loss.item()
+
+            loss.backward()
+            self.optimizer.step()
 
             train_loss = train_loss / len(self.train_dataloader.dataset)
             train_curve.append(train_loss)

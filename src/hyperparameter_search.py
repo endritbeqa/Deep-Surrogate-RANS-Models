@@ -9,7 +9,7 @@ def objective(trial):
     trial_config = config.get_config().copy_and_resolve_references()
     batch_size = trial.suggest_int('batch_size', 300, 1000, step=40)
     learning_rate = trial.suggest_float('learning_rate', 1e-8, 1e-4)
-    loss = trial.suggest_categorical(name="loss", choices=["mae", "mse", "huber_loss"])
+    loss = trial.suggest_categorical(name="loss", choices=["mae"])
     directory_name = "Outputs/batch_{}_learningRate{}_loss{}".format(batch_size, learning_rate, loss)
     trial_config.output_dir = directory_name
     trial_config.batch_size = batch_size
@@ -34,4 +34,4 @@ if __name__ == '__main__':
     )
 
     study = optuna.create_study(study_name="test", storage=storage)
-    study.optimize(objective, n_trials=20)
+    study.optimize(objective, n_trials=10)
