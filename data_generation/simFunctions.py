@@ -98,18 +98,32 @@ def runSim(config: config_dict, freestreamX: float, freestreamY: float):
 
 # TODO save input(freestreamX, freestreamY, mask) only once and the outputs(pressure, velocityX, velocityY) during time steps
 def outputProcessing(config: config_dict, basename: str, freestreamX: float, freestreamY: float, imageIndex=0):
+
+    data = np.zeros((len(config.save_timestep)+1, 3, config.res, config.res))
+
+    file = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_p.xy'.format(config.save_timestep[0])
+    ar = np.loadtxt(file)
+    curIndex = 0
+
+    for y in range(config.res):
+        for x in range(config.res):
+            xf = (x / config.res - 0.5) * 2 + 0.5
+            yf = (y / config.res - 0.5) * 2
+            if abs(ar[curIndex][0] - xf) < 1e-4 and abs(ar[curIndex][1] - yf) < 1e-4:
+                data[0][0][x][y] = freestreamX
+                data[0][1][x][y] = freestreamY
+                data[0][2][x][y] = 1.0
+
+    if config.save_images:
+        os.makedirs('data_pictures/%04d' % (imageIndex), exist_ok=True)
+        utils.saveAsImage(config.res, 'data_pictures/%04d/inputX.png' % (imageIndex), data[0][0])
+        utils.saveAsImage(config.res, 'data_pictures/%04d/inputY.png' % (imageIndex), data[1][0])
+        utils.saveAsImage(config.res, 'data_pictures/%04d/mask.png' % (imageIndex), data[2][0])
+
     for timeStep in config.save_timestep:
         pfile = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_p.xy'.format(timeStep)
         ufile = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_U.xy'.format(timeStep)
 
-        # output layout channels:
-        # [0] freestream field X + boundary
-        # [1] freestream field Y + boundary
-        # [2] binary mask for boundary
-        # [3] pressure output
-        # [4] velocity X output
-        # [5] velocity Y output
-        npOutput = np.zeros((6, config.res, config.res))
         ar_p = np.loadtxt(pfile)
         ar_v = np.loadtxt(ufile)
         curIndex = 0
@@ -119,28 +133,21 @@ def outputProcessing(config: config_dict, basename: str, freestreamX: float, fre
                 xf = (x / config.res - 0.5) * 2 + 0.5
                 yf = (y / config.res - 0.5) * 2
                 if abs(ar_p[curIndex][0] - xf) < 1e-4 and abs(ar_p[curIndex][1] - yf) < 1e-4:
-                    npOutput[0][x][y] = freestreamX
-                    npOutput[1][x][y] = freestreamY
-                    npOutput[2][x][y] = 1.0
-                    npOutput[3][x][y] = ar_p[curIndex][3]
-                    npOutput[4][x][y] = ar_v[curIndex][3]
-                    npOutput[5][x][y] = ar_v[curIndex][4]
+                    data[timeStep][3][x][y] = ar_p[curIndex][3]
+                    data[timeStep][4][x][y] = ar_v[curIndex][3]
+                    data[timeStep][5][x][y] = ar_v[curIndex][4]
                     curIndex += 1
 
         if config.save_images:
-            os.makedirs('data_pictures/%04d' % (imageIndex), exist_ok=True)
-            utils.saveAsImage(config.res, 'data_pictures/%04d/inputX_%d.png' % (imageIndex, timeStep), npOutput[0])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/inputY_%d.png' % (imageIndex, timeStep), npOutput[1])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/mask_%d.png' % (imageIndex, timeStep), npOutput[2])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/pressured_%d.png' % (imageIndex, timeStep), npOutput[3])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/velX_%d.png' % (imageIndex, timeStep), npOutput[4])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/velY_%d.png' % (imageIndex, timeStep), npOutput[5])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/pressured_%d.png' % (imageIndex, timeStep), data[timeStep][3])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/velX_%d.png' % (imageIndex, timeStep), data[timeStep][4])
+            utils.saveAsImage(config.res, 'data_pictures/%04d/velY_%d.png' % (imageIndex, timeStep), data[timeStep][5])
 
 
-        fileName = config.output_dir + "%s_%d_%d_%d" % (
-            basename, int(freestreamX * 100), int(freestreamY * 100), timeStep)
+        fileName = config.output_dir + "%s_%d_%d" % (
+            basename, int(freestreamX * 100), int(freestreamY * 100))
         print("\tsaving in " + fileName + ".npz")
-        np.savez_compressed(fileName, a=npOutput)
+        np.savez_compressed(fileName, a=data)
 
 
 def create_sample(config: config_dict, params: list):

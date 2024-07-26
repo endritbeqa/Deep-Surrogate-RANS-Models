@@ -17,16 +17,20 @@ def work(config: config_dict, samples: list, directory: str):
     simFunctions.generator(config, samples, directory)
 
 
-for res, res_params in (config.res_params):
+samples = utils.generate_uniform_random_parameters(config.num_samples)
+k, m = divmod(len(samples), config.num_workers)
+parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
+
+for (res, timeout) in config.res_timeout:
     os.chdir(work_dir)
     jobs = []
 
     config.res = res
-    config.num_samples, config.simulation_timeout = res_params
+    config.simulation_timeout = timeout
     res_dir = "data_res_{}".format(config.res)
     os.mkdir(res_dir)
 
-    samples = utils.generate_uniform_random_parameters(config.num_samples,config)
+    samples = utils.generate_uniform_random_parameters(config.num_samples)
     k, m = divmod(len(samples), config.num_workers)
     parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
 

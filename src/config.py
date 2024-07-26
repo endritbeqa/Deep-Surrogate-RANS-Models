@@ -17,6 +17,7 @@ def get_config():
     config.checkpoint_every = 10
 
     config.data_preprocessing = config_dict.ConfigDict()
+    config.data_preprocessing.preprocess_once = False
     config.data_preprocessing.fixedAirfoilNormalization = False
     config.data_preprocessing.makeDimLess = True
     config.data_preprocessing.removePOffset = True

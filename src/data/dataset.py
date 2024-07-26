@@ -3,7 +3,7 @@ import numpy as np
 from ml_collections import config_dict
 from torch.utils.data import Dataset
 
-
+#TODO test this file for bugs
 class Airfoil_Dataset(Dataset):
 
     def __init__(self, config: config_dict, mode: str):
