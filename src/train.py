@@ -86,8 +86,8 @@ class Trainer(object):
                 }
                 torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
-                utils.save_images(outputs, self.output_dir, "predictions" ,epoch)
-                utils.save_images(targets, self.output_dir, "targets",epoch)
+                utils.save_images(outputs, self.output_dir, "predictions", epoch)
+                utils.save_images(targets, self.output_dir, "targets", epoch)
 
         loss_plot = utils.plot_losses(train_curve, val_curve)
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))

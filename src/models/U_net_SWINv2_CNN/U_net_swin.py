@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 from transformers import AutoConfig
 from transformers import Swinv2Model
 
@@ -16,35 +17,54 @@ class CNNDecoder(nn.Module):
         self.num_layers = config.num_layers
         self.embedding_dim = config.embedding_dim
         self.output_size = config.output_size
-        self.num_channels = config.num_channels
-        self.activation_fns = config.activation_fns
-        self.kernel_sizes = config.kernel_sizes
-        self.strides = config.strides
         self.output_channels = config.output_channels
+        self.decoder_channels = config.decoder_channels
+        self.encoder_channels = config.encoder_channels
+        self.input_channels = config.input_channels
+        self.scale_factor = config.upsample_ratios
+        self.decoder_stages = nn.ModuleList()
 
-        # Initialize the decoder layers
-        layers = []
-        in_channels = self.embedding_dim
-        current_size = 1  # Initial spatial dimension of the embedding
+        for i in range (self.num_layers):
+            self.decoder_stages.append(self.expanding_block(in_channels=self.input_channels[i], out_channels=self.decoder_channels[i+1],scale_factor=self.scale_factor[i]))
 
-        # Adding intermediate layers
-        for i in range(self.num_layers):
-            out_channels = self.num_channels[i]
-            kernel_size = self.kernel_sizes[i]
-            stride = self.strides[i]
-            activation_fn = self._get_activation_function(self.activation_fns[i])
+        self.decoder_stages.append(nn.Sequential(
 
-            layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride))
-            layers.append(nn.BatchNorm2d(out_channels))
-            layers.append(activation_fn)
+                nn.Conv2d(self.decoder_channels[-1], self.output_channels, kernel_size=3, padding=1),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(self.output_channels, self.output_channels, kernel_size=3, padding=1),
 
-            # current_size = (current_size - 1) * stride + kernel_size - 2  # Calculate new spatial dimension of the tensor
-            in_channels = out_channels
+        ))
 
-        # TODO make the kernel and stride calculation automatic
-        layers.append(nn.ConvTranspose2d(in_channels, self.output_channels, 1, 1))
 
-        self.decoder = nn.Sequential(*layers)
+    def expanding_block(self, in_channels, out_channels, scale_factor):
+        block = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.ReLU(inplace=True),
+            nn.Upsample(scale_factor=scale_factor, mode='bilinear', align_corners=True)
+        )
+        return block
+
+    def forward(self, features):
+        features_reshaped = []
+
+        for i in range(len(features)):
+            feature = features.hidden_states[-(i+1)].permute(0, 2, 1)
+            b, c, h_w = feature.shape
+            l = int(h_w ** 0.5)
+            assert l ** 2 == h_w
+            feature = feature.view(b, c, l, l)
+            features_reshaped.append(feature)
+
+        x = features_reshaped[0]
+        x = self.decoder_stages[0](x)
+        for i in range(1,len(features_reshaped)):
+            x = torch.cat((x, features_reshaped[i]), dim=1)
+            x = self.decoder_stages[i](x)
+        x = self.decoder_stages[-1](x)
+
+        return x
 
     def _get_activation_function(self, activation_name):
         if activation_name == 'relu':
@@ -58,10 +78,6 @@ class CNNDecoder(nn.Module):
         else:
             raise ValueError(f"Unsupported activation function: {activation_name}")
 
-    def forward(self, x):
-        x = self.decoder(x)
-        return x
-
 
 class U_NET_Swin_CNN(nn.Module):
     def __init__(self, config, *args, **kwargs):
@@ -72,13 +88,6 @@ class U_NET_Swin_CNN(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x, output_hidden_states = self.output_hidden_states)
-
-        # turn the output of transformer into a "image" by reshaping it
-        x = x.last_hidden_state.permute(0, 2, 1)
-        b, c, h_w = x.shape
-        l = int(h_w ** 0.5)
-        assert l ** 2 == h_w
-        x = x.view(b, c, l, l)
-
         y = self.decoder(x)
         return y
+

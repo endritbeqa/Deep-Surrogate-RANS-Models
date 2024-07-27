@@ -40,25 +40,14 @@ def get_config():
 
 
     config.CNN_decoder = config_dict.ConfigDict()
-    config.CNN_decoder.num_layers = 3
+    config.CNN_decoder.num_layers = 4
     config.CNN_decoder.embedding_dim = config.swin_encoder.embed_dim * 2**(len(config.swin_encoder.depths)-1)
     config.CNN_decoder.output_size = 32
     config.CNN_decoder.output_channels = 3
-    config.CNN_decoder.num_channels = [32, 16, 8]
-    config.CNN_decoder.activation_fns = ['relu', 'relu', 'relu']
-    config.CNN_decoder.kernel_sizes = [4, 4, 2]
-    config.CNN_decoder.strides = [1, 2, 2]
-
-    config.Interpolation_decoder = config_dict.ConfigDict()
-    config.Interpolation_decoder.num_layers = 3
-    config.Interpolation_decoder.embedding_dim = config.swin_encoder.embed_dim * 2 ** (len(config.swin_encoder.depths) - 1)
-    config.Interpolation_decoder.interpolation_dims = [(8,8),(16,16),(33,33)]
-    config.Interpolation_decoder.output_size = 32
-    config.Interpolation_decoder.output_channels = 3
-    config.Interpolation_decoder.num_channels = [128, 64, 32]
-    config.Interpolation_decoder.activation_fns = ['relu', 'relu', 'relu']
-    config.Interpolation_decoder.kernel_sizes = [4, 4, 2]
-    config.Interpolation_decoder.strides = [1, 1, 1]
+    config.CNN_decoder.decoder_channels = [0, 48, 32, 16, 8]
+    config.CNN_decoder.encoder_channels = [64, 64, 32, 16]
+    config.CNN_decoder.input_channels = [config.CNN_decoder.encoder_channels[i]+config.CNN_decoder.decoder_channels[i] for i in range(config.CNN_decoder.num_layers)]
+    config.CNN_decoder.upsample_ratios = [1, 2, 2, 2]
 
 
     config.data_preprocessing = config_dict.ConfigDict()
