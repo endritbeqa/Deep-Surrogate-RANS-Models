@@ -5,6 +5,7 @@ import json
 import torch.optim as optim
 
 from src.models.swinV2_CNN import swin
+from src.models.U_net_SWINv2_CNN import U_net_swin
 from src.data import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader
@@ -15,7 +16,7 @@ import config
 class Trainer(object):
     def __init__(self, config):
         self.config = config
-        self.model = swin.Swin_CNN(config)
+        self.model = U_net_swin.U_NET_Swin_CNN(config)
         self.output_dir = config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
@@ -30,7 +31,9 @@ class Trainer(object):
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
                     os.path.join(self.output_dir, "config"),
-                    os.path.join(self.output_dir, "images")]:
+                    os.path.join(self.output_dir, "images"),
+                    os.path.join(self.output_dir, "images/predictions"),
+                    os.path.join(self.output_dir, "images/targets")]:
             os.mkdir(dir)
 
     def train_model(self):
@@ -39,6 +42,7 @@ class Trainer(object):
         val_curve = []
 
         for epoch in range(self.config.num_epochs):
+            print(epoch)
             self.model.train()
             train_loss = 0.0
 
@@ -82,7 +86,8 @@ class Trainer(object):
                 }
                 torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
-                utils.save_images(outputs, self.output_dir, epoch)
+                utils.save_images(outputs, self.output_dir, "predictions" ,epoch)
+                utils.save_images(targets, self.output_dir, "targets",epoch)
 
         loss_plot = utils.plot_losses(train_curve, val_curve)
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))

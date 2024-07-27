@@ -1,7 +1,6 @@
 import torch.nn as nn
 from transformers import AutoConfig
 from transformers import Swinv2Model
-import torch.nn.functional as F
 
 
 def load_swin_transformer(config_dict: dict) -> nn.Module:
@@ -9,70 +8,6 @@ def load_swin_transformer(config_dict: dict) -> nn.Module:
     model = Swinv2Model(custom_config)
 
     return model
-
-class Interpolate(nn.Module):
-    def __init__(self, size=None, mode='bicubic', align_corners=False):
-        super(Interpolate, self).__init__()
-        self.size = size
-        self.mode = mode
-        self.align_corners = align_corners
-
-    def forward(self, x):
-        return F.interpolate(x, size=self.size,  mode=self.mode, align_corners=self.align_corners)
-
-
-
-class Interpolation_Decoder(nn.Module):
-    def __init__(self, config):
-        super(Interpolation_Decoder, self).__init__()
-
-        self.num_layers = config.num_layers
-        self.embedding_dim = config.embedding_dim
-        self.output_size = config.output_size
-        self.num_channels = config.num_channels
-        self.activation_fns = config.activation_fns
-        self.kernel_sizes = config.kernel_sizes
-        self.strides = config.strides
-        self.interpolated_dimensions = config.interpolation_dims
-        self.output_channels = config.output_channels
-        layers = []
-
-        in_channels = self.embedding_dim
-        for i in range(self.num_layers):
-            out_channels = self.num_channels[i]
-            kernel_size = self.kernel_sizes[i]
-            stride = self.strides[i]
-
-            layers.append(Interpolate(size=self.interpolated_dimensions[i], mode='bicubic', align_corners=False))
-            layers.append(nn.Conv2d(in_channels, out_channels, kernel_size, stride))
-            layers.append(nn.BatchNorm2d(out_channels))
-            layers.append(self._get_activation_function(self.activation_fns[i]))
-            in_channels = out_channels
-
-        layers.append(nn.ConvTranspose2d(in_channels, self.output_channels, 1, 1))
-
-        self.decoder = nn.Sequential(*layers)
-
-
-    def _get_activation_function(self, activation_name):
-        if activation_name == 'relu':
-            return nn.ReLU()
-        elif activation_name == 'leaky_relu':
-            return nn.LeakyReLU(0.2)
-        elif activation_name == 'sigmoid':
-            return nn.Sigmoid()
-        elif activation_name == 'tanh':
-            return nn.Tanh()
-        else:
-            raise ValueError(f"Unsupported activation function: {activation_name}")
-
-    def forward(self, x):
-        x = self.decoder(x)
-        return x
-
-
-
-
 
 class CNNDecoder(nn.Module):
     def __init__(self, config):
@@ -128,14 +63,15 @@ class CNNDecoder(nn.Module):
         return x
 
 
-class Swin_CNN(nn.Module):
+class U_NET_Swin_CNN(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.output_hidden_states = config.swin_encoder.output_hidden_states
         self.encoder = load_swin_transformer(config.swin_encoder)
-        self.decoder = Interpolation_Decoder(config.Interpolation_decoder)
+        self.decoder = CNNDecoder(config.CNN_decoder)
 
     def forward(self, x):
-        x = self.encoder(x)
+        x = self.encoder(x, output_hidden_states = self.output_hidden_states)
 
         # turn the output of transformer into a "image" by reshaping it
         x = x.last_hidden_state.permute(0, 2, 1)

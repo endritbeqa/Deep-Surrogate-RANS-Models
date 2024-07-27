@@ -23,12 +23,12 @@ def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', titl
     return plt
 
 
-def save_images(outputs, output_dir, epoch):
+def save_images(outputs, output_dir,mode , epoch):
     if outputs.is_cuda:
         outputs = outputs.cpu()
     outputs = outputs.numpy()
 
-    os.makedirs("{}/images/{}".format(output_dir, epoch))
+    os.makedirs("{}/images/{}/{}".format(output_dir,mode , epoch))
 
     b, c, h, w = outputs.shape
     labels = ['pressure', "vel_x", "vel_y"]
