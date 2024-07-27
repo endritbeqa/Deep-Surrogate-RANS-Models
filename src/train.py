@@ -23,7 +23,7 @@ class Trainer(object):
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
         self.loss_func = loss.get_loss_function(config.loss_function)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
 
@@ -54,9 +54,10 @@ class Trainer(object):
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
+                loss.backward()
+                self.optimizer.step()
 
-            loss.backward()
-            self.optimizer.step()
+
 
             train_loss = train_loss / len(self.train_dataloader.dataset)
             train_curve.append(train_loss)

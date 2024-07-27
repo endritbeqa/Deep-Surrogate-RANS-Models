@@ -10,7 +10,8 @@ def get_config():
     config.batch_size = 600
     config.normalize = True
     config.optimizer = 'adam'
-    config.lr = 1e-3
+    config.lr = 1e-4
+    config.weight_decay = 0.01
     config.loss_function = ['mae']
     config.checkpoint_every = 10
 

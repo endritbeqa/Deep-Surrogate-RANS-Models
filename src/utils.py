@@ -45,5 +45,5 @@ def save_images(outputs, output_dir,mode , epoch):
 
             im = Image.fromarray(cm.magma(field, bytes=True))
             im = im.resize((h, w))
-            file_path = "{}/images/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
+            file_path = "{}/images/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
             im.save(file_path)
