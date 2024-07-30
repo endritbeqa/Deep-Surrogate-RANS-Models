@@ -18,13 +18,13 @@ def get_config():
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
-    config.swin_encoder.patch_size = 2
     config.swin_encoder.num_channels = 3
-    config.swin_encoder.embed_dim = 16
+    config.swin_encoder.patch_size = 2
+    config.swin_encoder.embed_dim = 8
     config.swin_encoder.depths = [2, 2, 2]
     config.swin_encoder.num_heads = [2, 2, 4]
-    config.swin_encoder.window_size = 4
-    config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
+    config.swin_encoder.window_size = 4 #TODO look if we need to assert that the image size needs to be divisible or automatic padding is used
+    config.swin_encoder.pretrained_window_sizes = [0, 0, 0 ]
     config.swin_encoder.mlp_ratio = 4.0
     config.swin_encoder.qkv_bias = True
     config.swin_encoder.hidden_dropout_prob = 0.0
@@ -39,17 +39,19 @@ def get_config():
     config.swin_encoder.out_features = None
     config.swin_encoder.out_indices = None
 
-
     config.CNN_decoder = config_dict.ConfigDict()
-    config.CNN_decoder.num_layers = 4
-    config.CNN_decoder.embedding_dim = config.swin_encoder.embed_dim * 2**(len(config.swin_encoder.depths)-1)
-    config.CNN_decoder.output_size = 32
-    config.CNN_decoder.output_channels = 3
-    config.CNN_decoder.decoder_channels = [0, 48, 32, 16, 8]
-    config.CNN_decoder.encoder_channels = [64, 64, 32, 16]
-    config.CNN_decoder.input_channels = [config.CNN_decoder.encoder_channels[i]+config.CNN_decoder.decoder_channels[i] for i in range(config.CNN_decoder.num_layers)]
-    config.CNN_decoder.upsample_ratios = [1, 2, 2, 2]
+    config.CNN_decoder.output_image_size = 32
+    config.CNN_decoder.output_image_channels = 3
+    config.CNN_decoder.embed_dim = config.swin_encoder.embed_dim
+    config.CNN_decoder.decoder_channels = [0, 48, 32, 16]
+    config.CNN_decoder.encoder_channels = [2**(i)*config.CNN_decoder.embed_dim for i in range(len(config.swin_encoder.depths))]
+                                          #[192,96,48,24]
+    config.CNN_decoder.encoder_channels.reverse()
+    config.CNN_decoder.encoder_channels.append(0)
 
+    config.CNN_decoder.input_channels = [E+D for E,D in zip(config.CNN_decoder.encoder_channels, config.CNN_decoder.decoder_channels)]
+    config.CNN_decoder.output_channels = config.CNN_decoder.encoder_channels[1:]
+    config.CNN_decoder.output_channels.append(config.CNN_decoder.output_image_channels)
 
     config.data_preprocessing = config_dict.ConfigDict()
     config.data_preprocessing.fixedAirfoilNormalization = False

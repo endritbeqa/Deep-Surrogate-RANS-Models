@@ -167,3 +167,5 @@ cython_debug/
 /data_generation/train/
 /src/data_res_32/
 /src/scrap_outputs/
+/src/Outputs/
+/data_generation/data_res_32/

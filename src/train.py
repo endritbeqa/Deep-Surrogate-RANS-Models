@@ -57,8 +57,6 @@ class Trainer(object):
                 loss.backward()
                 self.optimizer.step()
 
-
-
             train_loss = train_loss / len(self.train_dataloader.dataset)
             train_curve.append(train_loss)
 
