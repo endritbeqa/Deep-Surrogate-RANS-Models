@@ -39,7 +39,9 @@ def get_config():
     config.swin_encoder.out_features = None
     config.swin_encoder.out_indices = None
 
+
     config.CNN_decoder = config_dict.ConfigDict()
+    config.CNN_decoder.skip_connections = False
     config.CNN_decoder.output_image_size = 32
     config.CNN_decoder.output_image_channels = 3
     config.CNN_decoder.embed_dim = config.swin_encoder.embed_dim

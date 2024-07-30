@@ -4,8 +4,7 @@ import os
 import json
 import torch.optim as optim
 
-from src.models.swinV2_CNN import swin
-from src.models.U_net_SWINv2_CNN import U_net_swin
+from src.models.U_Nets import U_net_SwinV2_CNN
 from src.data import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader

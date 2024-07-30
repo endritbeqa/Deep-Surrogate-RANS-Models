@@ -13,6 +13,7 @@ def load_swin_transformer(config_dict: dict) -> nn.Module:
 class CNNDecoder(nn.Module):
     def __init__(self, config):
         super(CNNDecoder, self).__init__()
+        self.config = config
         self.output_image_size = config.output_image_size
         self.output_image_channels = config.output_image_channels
         self.decoder_channels = config.decoder_channels
@@ -20,8 +21,13 @@ class CNNDecoder(nn.Module):
         self.input_channels = config.input_channels
         self.output_channels = config.output_channels
         self.decoder_stages = nn.ModuleList()
-        self.input_channels = config.input_channels
-        self.output_channels = config.output_channels
+        if config.skip_connections:
+            self.input_channels = config.input_channels
+            self.output_channels = config.output_channels
+        else:
+            self.input_channels = [self.encoder_channels[0]]+self.decoder_channels[1:]
+            self.output_channels = self.decoder_channels[1:]
+            self.output_channels.append(self.output_image_channels)
 
         for i in range(len(self.encoder_channels)-1):
             self.decoder_stages.append(self.expanding_block(in_channels=self.input_channels[i], out_channels=self.decoder_channels[i+1]))
@@ -60,7 +66,8 @@ class CNNDecoder(nn.Module):
         x = self.decoder_stages[0](output)
 
         for i, reshaped_hidden_states in enumerate(reshaped_hidden_states):
-            x = torch.cat((x,reshaped_hidden_states), dim=1)
+            if self.config.skip_connections:
+                x = torch.cat((x,reshaped_hidden_states), dim=1)
             x = self.decoder_stages[i+1](x)
         x = self.decoder_stages[-1](x)
 
