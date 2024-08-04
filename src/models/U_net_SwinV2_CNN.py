@@ -4,6 +4,7 @@ from transformers import AutoConfig
 from transformers import Swinv2Model
 
 
+
 def load_swin_transformer(config_dict: dict) -> nn.Module:
     custom_config = AutoConfig.for_model('swinv2', **config_dict)
     model = Swinv2Model(custom_config)
@@ -98,4 +99,6 @@ class U_NET_Swin_CNN(nn.Module):
         output, hidden_states = x.last_hidden_state, x.reshaped_hidden_states
         y = self.decoder(output, hidden_states)
         return y
+
+
 
