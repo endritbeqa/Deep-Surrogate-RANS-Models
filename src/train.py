@@ -4,7 +4,7 @@ import os
 import json
 import torch.optim as optim
 
-from src.models import  U_net_SwinV2, U_net_SwinV2_CNN, Config_UNet_Swin, Config_UNet_Swin_CNN
+from src.models import  U_net_SwinV2, Config_UNet_Swin
 from src.data import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader
@@ -12,28 +12,19 @@ import utils
 import config
 
 
-def get_model(name: str):
-    if name == 'swin_cnn':
-        config = Config_UNet_Swin_CNN.get_config()
-        return U_net_SwinV2_CNN.U_NET_Swin_CNN(config)
-    elif name == "swin":
-        config = Config_UNet_Swin.get_config()
-        return U_net_SwinV2.U_NET_Swin(config)
-
-    raise ValueError("Model selected is not available")
 
 
 
 class Trainer(object):
     def __init__(self, config):
         self.config = config
-        self.model = get_model(config.model)
+        self.model = U_net_SwinV2.U_NET_Swin(Config_UNet_Swin.get_config())
         self.output_dir = config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
-        self.loss_func = loss.get_loss_function(config.loss_function)
+        self.loss_func = loss.KLD #loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
@@ -60,8 +51,8 @@ class Trainer(object):
             for inputs, targets, label in self.train_dataloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
-                outputs = self.model(inputs)
-                loss = self.loss_func(outputs, targets)
+                outputs, mu, logvar = self.model(inputs, targets)
+                loss = self.loss_func(outputs, targets, mu, logvar)
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
@@ -77,8 +68,8 @@ class Trainer(object):
             with torch.no_grad():
                 for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
-                    outputs = self.model(inputs)
-                    loss = self.loss_func(outputs, targets)
+                    outputs, mu, logvar = self.model(inputs,targets)
+                    loss = self.loss_func(outputs, targets, mu, logvar)
                     val_loss += loss.item()
             val_loss = val_loss / len(self.val_dataloader.dataset)
             val_curve.append(val_loss)

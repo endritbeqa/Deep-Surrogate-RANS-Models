@@ -120,9 +120,10 @@ class Swinv2DecoderStage(nn.Module):
 
 
 class Swinv2Decoder(nn.Module):
-    def __init__(self, config, pretrained_window_sizes=(0, 0, 0, 0)):
+    def __init__(self, config, enable_skip_connections ,pretrained_window_sizes=(0, 0, 0, 0)):
         super().__init__()
         self.num_layers = len(config.depths)
+        self.enable_skip_connections = enable_skip_connections
         self.config = config
         self.grid_size = config.input_grid_size
         self.final_layer = SwinV2Final_DecoderBlock(config.input_channels[-1])
@@ -181,7 +182,8 @@ class Swinv2Decoder(nn.Module):
                 )
             else:
                 if i !=0:
-                    hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
+                    if self.enable_skip_connections:
+                        hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
                 layer_outputs = layer_module(
                     hidden_states,
                     input_dimensions,
@@ -232,17 +234,39 @@ class U_NET_Swin(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.encoder = load_swin_transformer(config.swin_encoder)
-        self.decoder = Swinv2Decoder(config.swin_decoder)
+        self.condition_encoder = load_swin_transformer(config.swin_encoder)
+        self.fc_condition = nn.Linear(config.hidden_dim, config.latent_dim)
+        self.fc_mu = nn.Linear(config.hidden_dim, config.latent_dim)
+        self.fc_logvar = nn.Linear(config.hidden_dim, config.latent_dim)
+        self.fc_z = nn.Linear(config.latent_dim*2, config.hidden_dim)
 
-    def forward(self, x):
-        x = self.encoder(x, output_hidden_states = True)
-        output, hidden_states = x.last_hidden_state, x.hidden_states
+        self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
+
+    def forward(self, condition, target):
+        target = self.encoder(target, output_hidden_states = True)
+        condition_latent = self.condition_encoder(condition, output_hidden_states = True)
+        condition_latent, hidden_states_condition = target.last_hidden_state, target.hidden_states
+
+        output, hidden_states = target.last_hidden_state, target.hidden_states
         b, w_h, c = output.shape
-        l=int(math.sqrt(w_h))
+        l = int(math.sqrt(w_h))
         hidden_states = list(hidden_states)[:-2]
         hidden_states.reverse()
-        y = self.decoder(output, hidden_states,  (l,l))
-        return y
+        output_flattened = torch.flatten(output, start_dim=1, end_dim=2)
+        condition_latent_flattened = torch.flatten(condition_latent, start_dim=1, end_dim=2)
+        condition_latent_flattened = self.fc_condition(condition_latent_flattened)
+
+        mu = self.fc_mu(output_flattened)
+        logvar = self.fc_logvar(output_flattened)
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        z = mu + eps * std
+
+        z = self.fc_z(torch.cat([z,condition_latent_flattened], dim=-1))
+
+        z = z.view((b, w_h, c))
+        y = self.decoder(z, hidden_states,  (l,l))
+        return y, mu, logvar
 
 
 
