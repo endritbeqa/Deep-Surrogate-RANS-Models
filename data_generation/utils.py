@@ -26,22 +26,18 @@ def saveAsImage(res, filename, field_param):
     im = im.resize((res, res))
     im.save(filename)
 
-def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfoil_database  = "./airfoil_database/",min_velocity=10,max_velocity=100,min_AoA=-22.5,max_AoA=22.5):
-    seed = random.randint(0, 2**32 - 1)
+def generate_uniform_random_parameters(num_samples, config):
+    seed = 1237464
     np.random.seed(seed)
-    if name_airfoil is None:
-        files = os.listdir(path_airfoil_database)
-        if len(files)==0:
-            print("error - no airfoils found in {}".format(path_airfoil_database))
-            exit(1)
+    files = os.listdir(config.airfoil_database)
+    if len(files)==0:
+        print("error - no airfoils found in {}".format(config.airfoil_database))
+        exit(1)
     results = []
-    for i in range(sample_times):
-        if name_airfoil is None:
-            name = os.path.splitext(os.path.basename(files[np.random.randint(0, len(files))]))[0]
-            name = name + ".dat"
-        else:
-            name = name_airfoil+'.dat'
-        results.append([i,name,np.random.uniform(min_velocity, max_velocity),np.random.uniform(min_AoA, max_AoA) ])
+    for i in range(num_samples):
+        name = os.path.splitext(os.path.basename(files[np.random.randint(0, len(files))]))[0]
+        name = name + ".dat"
+        results.append([i,name,np.random.uniform(config.min_velocity, config.max_velocity),np.random.uniform(config.min_AoA, config.max_AoA)])
     return results
 
 
