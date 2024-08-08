@@ -5,10 +5,10 @@ def get_config():
 
     config = config_dict.ConfigDict()
     config.model = "swin" # swin or swin_cnn
-    config.data_dir = './data_res_32/data'
+    config.data_dir = './data_res_32_uncertainty/data'
     config.output_dir = 'Outputs'
-    config.num_epochs = 100
-    config.batch_size = 600
+    config.num_epochs = 51
+    config.batch_size = 6000
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4

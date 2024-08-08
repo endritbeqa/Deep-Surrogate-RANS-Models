@@ -169,3 +169,5 @@ cython_debug/
 /src/scrap_outputs/
 /src/Outputs/
 /data_res_32/
+/src/data_res_32_uncertainty/
+/src/Uncertainty/

@@ -35,7 +35,7 @@ class Airfoil_Dataset(Dataset):
         if not any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):
             return data
 
-        boundary = data[2].flatten().astype(bool)
+        boundary = ~ data[2].flatten().astype(bool)
         num_field_elements = np.sum(boundary)
         c, h, w = data.shape
 
