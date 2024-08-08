@@ -27,7 +27,7 @@ def saveAsImage(res, filename, field_param):
     im.save(filename)
 
 def generate_uniform_random_parameters(num_samples, config):
-    seed = 1237464
+    seed = 12345678
     np.random.seed(seed)
     files = os.listdir(config.airfoil_database)
     if len(files)==0:

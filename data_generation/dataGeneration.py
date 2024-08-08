@@ -26,7 +26,7 @@ for res, res_params in (config.res_params):
     res_dir = "data_res_{}".format(config.res)
     os.mkdir(res_dir)
 
-    samples = utils.generate_uniform_random_parameters(config.num_samples)
+    samples = utils.generate_uniform_random_parameters(config.num_samples,config)
     k, m = divmod(len(samples), config.num_workers)
     parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
 
@@ -35,7 +35,7 @@ for res, res_params in (config.res_params):
 
     for idx in range(config.num_workers):
         os.mkdir("{}/worker_{}".format(res_dir, idx))
-        shutil.copytree(config.airfoil_database, "{}/worker_{}/airfoil_database".format(res_dir, idx))
+        shutil.copytree(config.airfoil_database, "{}/worker_{}/airfoil_database_{}".format(res_dir, idx, config.mode))
         shutil.copytree("./OpenFOAM", "{}/worker_{}/OpenFOAM".format(res_dir, idx))
         p = multiprocessing.Process(target=work,
                                     args=(config, parts[idx], "{}/{}/worker_{}".format(work_dir, res_dir, idx)))

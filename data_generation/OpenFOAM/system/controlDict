@@ -23,12 +23,12 @@ startTime       0;
 
 stopAt          endTime;
 
-endTime         500;
+endTime         30;
 deltaT          1;
 
 writeControl    timeStep;
 
-writeInterval   500;
+writeInterval   30;
 purgeWrite      1;
 writeFormat     binary;
 
