@@ -8,7 +8,7 @@ def get_config():
     config.data_dir = './data_res_32_uncertainty/data'
     config.output_dir = 'Outputs'
     config.num_epochs = 51
-    config.batch_size = 6000
+    config.batch_size =2000
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4

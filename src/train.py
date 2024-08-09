@@ -11,14 +11,14 @@ from torch.utils.data import DataLoader
 import utils
 import config
 
-
-
-
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
 
 class Trainer(object):
     def __init__(self, config):
         self.config = config
-        self.model = U_net_SwinV2.U_NET_Swin(Config_UNet_Swin.get_config())
+        self.model_config = Config_UNet_Swin.get_config()
+        self.model = U_net_SwinV2.U_NET_Swin(self.model_config)
         self.output_dir = config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
@@ -28,7 +28,7 @@ class Trainer(object):
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-
+        print("Num parameters: {}".format(count_parameters(self.model)))
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
@@ -44,7 +44,7 @@ class Trainer(object):
         val_curve = []
 
         for epoch in range(self.config.num_epochs):
-            print(epoch)
+            print("Epoch:{}".format(epoch))
             self.model.train()
             train_loss = 0.0
 
@@ -94,13 +94,18 @@ class Trainer(object):
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
 
-        config_dict = self.config.to_dict()
 
-        # Save the dictionary as a JSON file
         with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
-            json.dump(config_dict, json_file, indent=4)
+            json.dump(self.config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.model_config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
+            file.write("Number of model parameters: {}".format(count_parameters(self.model)))
 
         return val_curve[-1]
+
 
 
 if __name__ == '__main__':

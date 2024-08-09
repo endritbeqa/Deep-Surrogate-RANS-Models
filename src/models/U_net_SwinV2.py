@@ -6,6 +6,8 @@ from transformers import AutoConfig
 from transformers import Swinv2Model
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2EncoderOutput
 
+from src.models import Config_UNet_Swin
+
 
 def load_swin_transformer(config_dict: dict) -> nn.Module:
     custom_config = AutoConfig.for_model('swinv2', **config_dict)
@@ -245,7 +247,7 @@ class U_NET_Swin(nn.Module):
     def forward(self, condition, target):
         target = self.encoder(target, output_hidden_states = True)
         condition_latent = self.condition_encoder(condition, output_hidden_states = True)
-        condition_latent, hidden_states_condition = target.last_hidden_state, target.hidden_states
+        condition_latent, condition_hidden_states = condition_latent.last_hidden_state, condition_latent.hidden_states
 
         output, hidden_states = target.last_hidden_state, target.hidden_states
         b, w_h, c = output.shape
@@ -269,10 +271,25 @@ class U_NET_Swin(nn.Module):
         return y, mu, logvar
 
 
+def sample_from_vae():
+    model = U_NET_Swin(Config_UNet_Swin.get_config())
+
+    checkpoint = torch.load('/home/blin/PycharmProjects/Thesis/src/Outputs/checkpoints/50.pth', map_location='cpu')
+    model.load_state_dict(checkpoint['model_state_dict'])
+    model.eval()
+
+    with torch.no_grad():
+        # Sample from the latent space
+        latent_dim = model.fc_z.out_features  # Assuming 'fc_z' is the final layer in the encoder
+        z = torch.randn(1, latent_dim).to(device='cpu')  # Sample from a standard normal distribution
+
+        # Decode the latent variables to generate samples
+        generated_samples = model.decoder(z)  # Pass the latent variables through the decoder
+
+    return generated_samples
 
 
 
 
-
-
-
+if __name__ == '__main__':
+    sample_from_vae()

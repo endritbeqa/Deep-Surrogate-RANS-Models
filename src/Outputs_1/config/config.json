@@ -1,0 +1,20 @@
+{
+    "batch_size": 6000,
+    "checkpoint_every": 10,
+    "data_dir": "./data_res_32_uncertainty/data",
+    "data_preprocessing": {
+        "fixedAirfoilNormalization": false,
+        "makeDimLess": true,
+        "removePOffset": true
+    },
+    "loss_function": [
+        "mae"
+    ],
+    "lr": 0.0001,
+    "model": "swin",
+    "normalize": true,
+    "num_epochs": 51,
+    "optimizer": "adam",
+    "output_dir": "Outputs",
+    "weight_decay": 0.01
+}
