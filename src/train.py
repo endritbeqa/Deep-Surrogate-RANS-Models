@@ -24,7 +24,7 @@ class Trainer(object):
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
-        self.loss_func = loss.KLD #loss.get_loss_function(config.loss_function)
+        self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
@@ -52,7 +52,7 @@ class Trainer(object):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs, mu, logvar = self.model(inputs, targets)
-                loss = self.loss_func(outputs, targets, mu, logvar)
+                loss = self.loss_func(outputs, targets)#, mu, logvar)
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
@@ -69,7 +69,7 @@ class Trainer(object):
                 for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs, mu, logvar = self.model(inputs,targets)
-                    loss = self.loss_func(outputs, targets, mu, logvar)
+                    loss = self.loss_func(outputs, targets)#, mu, logvar)
                     val_loss += loss.item()
             val_loss = val_loss / len(self.val_dataloader.dataset)
             val_curve.append(val_loss)
@@ -80,12 +80,10 @@ class Trainer(object):
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
                     'epoch': epoch,
-                    'state_dict': self.model.state_dict(),
+                    'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
-                    'loss': train_loss,
-                    'val_loss': val_loss,
                 }
-                torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
+                torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
                 utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
@@ -112,3 +110,4 @@ if __name__ == '__main__':
     train_config = config.get_config()
     trainer = Trainer(train_config)
     trainer.train_model()
+
