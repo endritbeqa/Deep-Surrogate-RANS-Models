@@ -3,31 +3,22 @@ import torch
 import os
 import json
 import torch.optim as optim
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from src.models import  U_net_SwinV2, U_net_SwinV2_CNN, Config_UNet_Swin, Config_UNet_Swin_CNN
+from src.models.swin import  U_net_SwinV2, Config_UNet_Swin
 from src.data import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader
 import utils
 import config
-
-
-def get_model(name: str):
-    if name == 'swin_cnn':
-        config = Config_UNet_Swin_CNN.get_config()
-        return U_net_SwinV2_CNN.U_NET_Swin_CNN(config)
-    elif name == "swin":
-        config = Config_UNet_Swin.get_config()
-        return U_net_SwinV2.U_NET_Swin(config)
-
-    raise ValueError("Model selected is not available")
-
-
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
 
 class Trainer(object):
     def __init__(self, config):
         self.config = config
-        self.model = get_model(config.model)
+        self.model_config = Config_UNet_Swin.get_config()
+        self.model = U_net_SwinV2.U_NET_Swin(self.model_config)
         self.output_dir = config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
@@ -35,9 +26,10 @@ class Trainer(object):
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
         self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=300, eta_min=0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-
+        print("Num parameters: {}".format(count_parameters(self.model)))
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
@@ -53,20 +45,22 @@ class Trainer(object):
         val_curve = []
 
         for epoch in range(self.config.num_epochs):
-            print(epoch)
+            print("Epoch:{}".format(epoch))
             self.model.train()
             train_loss = 0.0
 
             for inputs, targets, label in self.train_dataloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
-                outputs = self.model(inputs)
-                loss = self.loss_func(outputs, targets)
+                outputs= self.model(inputs)
+                loss = self.loss_func(outputs, targets)#, mu, logvar)
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
                 loss.backward()
                 self.optimizer.step()
+
+            self.scheduler.step()
 
             train_loss = train_loss / len(self.train_dataloader.dataset)
             train_curve.append(train_loss)
@@ -78,7 +72,7 @@ class Trainer(object):
                 for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs)
-                    loss = self.loss_func(outputs, targets)
+                    loss = self.loss_func(outputs, targets)#, mu, logvar)
                     val_loss += loss.item()
             val_loss = val_loss / len(self.val_dataloader.dataset)
             val_curve.append(val_loss)
@@ -89,12 +83,10 @@ class Trainer(object):
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
                     'epoch': epoch,
-                    'state_dict': self.model.state_dict(),
+                    'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
-                    'loss': train_loss,
-                    'val_loss': val_loss,
                 }
-                torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
+                torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
                 utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
@@ -103,13 +95,18 @@ class Trainer(object):
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
 
-        config_dict = self.config.to_dict()
 
-        # Save the dictionary as a JSON file
         with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
-            json.dump(config_dict, json_file, indent=4)
+            json.dump(self.config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.model_config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
+            file.write("Number of model parameters: {}".format(count_parameters(self.model)))
 
         return val_curve[-1]
+
 
 
 if __name__ == '__main__':

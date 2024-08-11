@@ -34,8 +34,8 @@ class Airfoil_Dataset(Dataset):
 
         if not any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):
             return data
-
-        boundary = data[2].flatten().astype(bool)
+        #TODO always double check this because datasets encode the mask differently
+        boundary = ~data[2].flatten().astype(bool)
         num_field_elements = np.sum(boundary)
         c, h, w = data.shape
 
@@ -82,9 +82,9 @@ class Airfoil_Dataset(Dataset):
         data[0][boundary] *= (1.0 / max_inputs_0)
         data[1][boundary] *= (1.0 / max_inputs_1)
 
-        data[0][boundary] *= (1.0 / max_targets_0)
-        data[1][boundary] *= (1.0 / max_targets_1)
-        data[2][boundary] *= (1.0 / max_targets_2)
+        data[3][boundary] *= (1.0 / max_targets_0)
+        data[4][boundary] *= (1.0 / max_targets_1)
+        data[5][boundary] *= (1.0 / max_targets_2)
 
         data = data.reshape((c, h, w))
 

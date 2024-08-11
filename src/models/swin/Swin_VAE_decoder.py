@@ -2,22 +2,15 @@ import math
 from typing import Tuple, Optional, Union
 import torch.nn as nn
 import torch
-from transformers import AutoConfig
-from transformers import Swinv2Model
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2EncoderOutput
 
-
-def load_swin_transformer(config_dict: dict) -> nn.Module:
-    custom_config = AutoConfig.for_model('swinv2', **config_dict)
-    model = Swinv2Model(custom_config)
-
-    return model
+from src.models.swin import Config_UNet_Swin
 
 
 class SwinV2Final_DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels=3, kernel_size=3, padding=1):
+    def __init__(self, in_channels, out_channels=3, kernel_size=1, padding=0):
         super(SwinV2Final_DecoderBlock, self).__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(size=(32,32), mode='bilinear', align_corners=True)
         # Define the convolutional layer
         self.conv = nn.Conv2d(in_channels=in_channels,
                               out_channels=out_channels,
@@ -120,9 +113,10 @@ class Swinv2DecoderStage(nn.Module):
 
 
 class Swinv2Decoder(nn.Module):
-    def __init__(self, config, pretrained_window_sizes=(0, 0, 0, 0)):
+    def __init__(self, config, enable_skip_connections ,pretrained_window_sizes=(0, 0, 0, 0)):
         super().__init__()
         self.num_layers = len(config.depths)
+        self.enable_skip_connections = enable_skip_connections
         self.config = config
         self.grid_size = config.input_grid_size
         self.final_layer = SwinV2Final_DecoderBlock(config.input_channels[-1])
@@ -152,7 +146,7 @@ class Swinv2Decoder(nn.Module):
     def forward(
         self,
         hidden_states: torch.Tensor,
-        skip_connections: torch.Tensor,
+        skip_connections: Optional[torch.Tensor],
         input_dimensions: Tuple[int, int],
         head_mask: Optional[torch.FloatTensor] = None,
         output_attentions: Optional[bool] = False,
@@ -181,7 +175,8 @@ class Swinv2Decoder(nn.Module):
                 )
             else:
                 if i !=0:
-                    hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
+                    if self.enable_skip_connections:
+                        hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
                 layer_outputs = layer_module(
                     hidden_states,
                     input_dimensions,
@@ -228,27 +223,18 @@ class Swinv2Decoder(nn.Module):
         return output
 
 
-class U_NET_Swin(nn.Module):
+class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.encoder = load_swin_transformer(config.swin_encoder)
-        self.decoder = Swinv2Decoder(config.swin_decoder)
+        self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
 
-    def forward(self, x):
-        x = self.encoder(x, output_hidden_states = True)
-        output, hidden_states = x.last_hidden_state, x.hidden_states
-        b, w_h, c = output.shape
-        l=int(math.sqrt(w_h))
-        hidden_states = list(hidden_states)[:-2]
-        hidden_states.reverse()
-        y = self.decoder(output, hidden_states,  (l,l))
+    def forward(self, z, skip_connections, shape):
+        batch_size, h_w, hidden_size = shape
+        l = int(math.sqrt(h_w))
+        if skip_connections is not None:
+            skip_connections = list(skip_connections)[:-2]
+            skip_connections.reverse()
+
+        y = self.decoder(z, skip_connections, (l, l))
         return y
-
-
-
-
-
-
-
-
 
