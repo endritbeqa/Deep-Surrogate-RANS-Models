@@ -7,11 +7,11 @@ def get_config():
     config.model = "swin" # swin or swin_cnn
     config.data_dir = './data_res_32_uncertainty/data'
     config.output_dir = 'Outputs'
-    config.num_epochs = 51
+    config.num_epochs = 300
     config.batch_size = 500
     config.normalize = True
     config.optimizer = 'adam'
-    config.lr = 1e-5
+    config.lr = 1e-4
     config.weight_decay = 0.01
     config.loss_function = ['mae']
     config.checkpoint_every = 5

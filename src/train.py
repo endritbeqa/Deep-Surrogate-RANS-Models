@@ -3,6 +3,7 @@ import torch
 import os
 import json
 import torch.optim as optim
+from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from src.models import  U_net_SwinV2, Config_UNet_Swin
 from src.data import dataset
@@ -26,6 +27,7 @@ class Trainer(object):
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
         self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=300, eta_min=0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         print("Num parameters: {}".format(count_parameters(self.model)))
@@ -58,6 +60,8 @@ class Trainer(object):
                 train_loss += loss.item()
                 loss.backward()
                 self.optimizer.step()
+
+            self.scheduler.step()
 
             train_loss = train_loss / len(self.train_dataloader.dataset)
             train_curve.append(train_loss)
