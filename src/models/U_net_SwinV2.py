@@ -11,14 +11,9 @@ class U_NET_Swin(nn.Module):
 
 
     def forward(self, condition, target):
-        #Swin_encoder_output, z, mu, log_var, shape = self.encoder(condition, target)
-        Swin_encoder_output, shape = self.encoder(condition, target)
+        z, mu, log_var = self.encoder(condition, target)
+        prediction = self.decoder(z)
 
-        skip_connections = Swin_encoder_output.hidden_states
-
-        prediction = self.decoder(Swin_encoder_output.last_hidden_state, skip_connections, shape)
-
-        return prediction, 1, 1
-        #return prediction , mu, log_var
+        return prediction , mu, log_var
 
 

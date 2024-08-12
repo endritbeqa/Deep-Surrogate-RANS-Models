@@ -2,18 +2,13 @@ import math
 from typing import Tuple, Optional, Union
 import torch.nn as nn
 import torch
-from transformers import AutoConfig
-from transformers import Swinv2Model
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2EncoderOutput
-
-from src.models import Config_UNet_Swin
 
 
 class SwinV2Final_DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels=3, kernel_size=1, padding=0):
         super(SwinV2Final_DecoderBlock, self).__init__()
         self.upsample = nn.Upsample(size=(32,32), mode='bilinear', align_corners=True)
-        # Define the convolutional layer
         self.conv = nn.Conv2d(in_channels=in_channels,
                               out_channels=out_channels,
                               kernel_size=kernel_size,
@@ -228,18 +223,22 @@ class Swinv2Decoder(nn.Module):
 class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        #self.fc_z = nn.Linear(config.latent_dim*2, config.hidden_dim)
+        self.config = config
         self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
+        self.fc_z = []
+        for i in range(len(config.image_sizes)):
+            self.fc_z.append(nn.Linear(config.latent_dim, config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
+                                        config.swin_encoder.skip_channels[i]))
 
-    def forward(self, z, skip_connections, shape):
-        batch_size, h_w, hidden_size = shape
-        l = int(math.sqrt(h_w))
-        if skip_connections is not None:
-            skip_connections = list(skip_connections)[:-2]
-            skip_connections.reverse()
+    def forward(self, z):
+        batch_size, _ = z[0].shape
 
-        #z = self.fc_z(z)
-        #z = z.view((batch_size, h_w, hidden_size))
-        y = self.decoder(z, skip_connections, (l, l))
+        skip_connections = []
+        for i, z_i in enumerate(z):
+            z_i = self.fc_z[i](z_i)
+            z_i.view(batch_size, self.config.swin_encoder.image_sizes[i][0] * self.config.swin_encoder.image_sizes[i][1], self.config.swin_encoder.skip_channels[i])
+
+
+        y = self.decoder(skip_connections[0], skip_connections[1:],  self.config.swin_encoder.image_sizes[-1])
         return y
 
