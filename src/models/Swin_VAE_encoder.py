@@ -11,34 +11,51 @@ def load_swin_transformer(config_dict: dict) -> nn.Module:
 
     return model
 
+
 class Swin_VAE_encoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.encoder = load_swin_transformer(config.swin_encoder)
-        #self.condition_encoder = load_swin_transformer(config.swin_encoder)
-        #self.fc_condition = nn.Linear(config.hidden_dim, config.latent_dim)
-        #self.fc_mu = nn.Linear(config.hidden_dim, config.latent_dim)
-        #self.fc_logvar = nn.Linear(config.hidden_dim, config.latent_dim)
+        self.condition_encoder = load_swin_transformer(config.swin_encoder)
+        self.fc_condition = nn.Linear(config.hidden_dim, config.latent_dim)
+        self.fc_mu = []
+        self.fc_logvar = []
 
+        for i in range(len(config.image_sizes)):
+            self.fc_mu.append(nn.Linear(config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
+                                        config.swin_encoder.skip_channels[i], config.latent_dim))
+            self.fc_logvar.append(
+                nn.Linear(config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
+                          config.swin_encoder.skip_channels[i], config.latent_dim))
 
     def forward(self, condition, target):
-        Swin_encoder_output = self.encoder(target, output_hidden_states = True)
-        #condition_latent = self.condition_encoder(condition, output_hidden_states = False)
-        #condition_latent = condition_latent.last_hidden_state
+        Swin_encoder_output = self.encoder(target, output_hidden_states=True)
+        last_hidden_state, pooler_output, hidden_states, attentions, reshaped_hidden_states = Swin_encoder_output
+        skip_connections = list(hidden_states)[:-2]
+        skip_connections.append(last_hidden_state)
+        skip_connections.reverse()
+
+        # condition is the freestream velocities and binary mask of the case
+        condition = self.condition_encoder(condition, output_hidden_states=False)
+        condition = condition.last_hidden_state
+        condition = torch.flatten(condition, start_dim=1, end_dim=2)
+        condition_latent = self.fc_condition(condition)
+
+        z = []
+        mu = []
+        logvar = []
+
+        for i, skip in enumerate(skip_connections):
+            skip = torch.flatten(skip, start_dim=1, end_dim=2)
+            mu_i = self.fc_mu[i](skip)
+            logvar_i = self.fc_logvar[i](skip)
+            std = torch.exp(0.5 * logvar_i)
+            eps = torch.randn_like(std)
+            z_i = mu + eps * std
+            z_i = torch.cat([z_i,condition_latent], dim=1)
+            z.append(z_i)
+            mu.append(mu_i)
+            logvar.append(logvar_i)
 
 
-        #Swin_encoder_last_hidden_state_flattened = torch.flatten(Swin_encoder_output.last_hidden_state, start_dim=1, end_dim=2)
-        #condition_latent_flattened = torch.flatten(condition_latent, start_dim=1, end_dim=2)
-
-        #condition_latent_flattened = self.fc_condition(condition_latent_flattened)
-        #mu = self.fc_mu(Swin_encoder_last_hidden_state_flattened)
-        #logvar = self.fc_logvar(Swin_encoder_last_hidden_state_flattened)
-
-        #std = torch.exp(0.5 * logvar)
-        #eps = torch.randn_like(std)
-        #z = mu + eps * std
-        #z = torch.cat([z,condition_latent_flattened], dim=1)
-
-        return Swin_encoder_output,Swin_encoder_output.last_hidden_state.shape
-        #return Swin_encoder_output, z, mu, logvar, Swin_encoder_output.last_hidden_state.shape
-
+        return z, mu, logvar
