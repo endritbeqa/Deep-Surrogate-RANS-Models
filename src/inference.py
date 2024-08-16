@@ -5,12 +5,19 @@ from torch.utils.data import DataLoader
 
 import numpy as np
 
+from src import utils
 from src.data import dataset
 from src.models.U_net_SwinV2 import U_NET_Swin
-from src.models.Config_UNet_Swin import get_config
+from src.models import Config_UNet_Swin
+from src import config
 
 
+def all_arrays_equal(arrays):
+    if len(arrays) < 2:
+        return True  # List with 0 or 1 array is trivially equal
 
+    first_array = arrays[0]
+    return all(np.array_equal(first_array, arr) for arr in arrays[1:])
 
 
 
@@ -21,38 +28,30 @@ def sample_from_vae(model_config, checkpoint, condition):
     model.load_state_dict(checkpoint['model'])
     model.eval()
 
-    condition_encoder = model.encoder.condition_encoder
-    decoder = model.decoder
+    torch.manual_seed(42)
 
-    with torch.no_grad():
-        z = torch.randn(1, model_config.latent_dim)
-        condition = torch.unsqueeze(torch.from_numpy(condition), 0)
+    condition = torch.unsqueeze(torch.from_numpy(condition), 0)
+    condition = condition.to(device='cpu')
 
-        
-        z = z.to(device='cpu')
-        condition = condition.to(device='cpu')
+    predictions = []
 
+    for i in range(5):
+        with torch.no_grad():
+            random_tensors = [torch.unsqueeze(torch.rand(128), dim=0) for _ in range(3)]
+            prediction = model.inference(condition, random_tensors)
+            predictions.append(prediction)
+            utils.save_images(prediction, '/home/blin/PycharmProjects/Thesis/src/results', "predictions", i)
 
-        condition = (condition_encoder(condition)).last_hidden_state
-        shape = condition.shape
-        condition = torch.flatten(condition, start_dim=1, end_dim=2)
-        condition = model.fc_condition(condition)
-        z = torch.cat((z, condition), dim =1)
-        generated_samples = model.decoder(z, None, shape)
-        print(generated_samples)
-
-    return generated_samples
+    print(all_arrays_equal(predictions))
 
 
 if __name__ == '__main__':
-    config = get_config()
-    checkpoint = "/home/blin/PycharmProjects/Thesis/src/Outputs/checkpoints/1.pth"
-    condition_dir = "/home/blin/PycharmProjects/Thesis/src/data_res_32_uncertainty/data/test"
-    conditions = []
-    for data in os.listdir(condition_dir):
-        data = np.load(os.path.join(condition_dir, data))
-        data = data['a']
-        conditions.append(data[0:3])
+    config = config.get_config()
+    model_config = Config_UNet_Swin.get_config()
+    test_dataset = dataset.Airfoil_Dataset(config, mode='test')
 
+    checkpoint = "/home/blin/PycharmProjects/Thesis/src/Outputs/checkpoints/100.pth"
 
-    sample_from_vae(config, checkpoint, conditions[0])
+    for inputs, targets, label in test_dataset:
+        for i in range(4):
+            sample_from_vae(model_config, checkpoint, inputs)

@@ -5,15 +5,17 @@ import json
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from src.models import  U_net_SwinV2, Config_UNet_Swin
+from src.models import U_net_SwinV2, Config_UNet_Swin
 from src.data import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader
 import utils
 import config
 
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
+
 
 class Trainer(object):
     def __init__(self, config):
@@ -25,9 +27,9 @@ class Trainer(object):
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
-        self.loss_func = loss.get_loss_function(config.loss_function)
+        self.loss_func = loss.KLD #loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=300, eta_min=0)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.num_epochs, eta_min=0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         print("Num parameters: {}".format(count_parameters(self.model)))
@@ -54,7 +56,7 @@ class Trainer(object):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs, mu, logvar = self.model(inputs, targets)
-                loss = self.loss_func(outputs, targets)#, mu, logvar)
+                loss = self.loss_func(outputs, targets , mu, logvar)
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
@@ -72,8 +74,8 @@ class Trainer(object):
             with torch.no_grad():
                 for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
-                    outputs, mu, logvar = self.model(inputs,targets)
-                    loss = self.loss_func(outputs, targets)#, mu, logvar)
+                    outputs, mu, logvar = self.model(inputs, targets)
+                    loss = self.loss_func(outputs, targets , mu, logvar)
                     val_loss += loss.item()
             val_loss = val_loss / len(self.val_dataloader.dataset)
             val_curve.append(val_loss)
@@ -96,7 +98,6 @@ class Trainer(object):
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
 
-
         with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
             json.dump(self.config.to_dict(), json_file, indent=4)
 
@@ -109,9 +110,7 @@ class Trainer(object):
         return val_curve[-1]
 
 
-
 if __name__ == '__main__':
     train_config = config.get_config()
     trainer = Trainer(train_config)
     trainer.train_model()
-

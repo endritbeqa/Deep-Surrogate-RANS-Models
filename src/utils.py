@@ -16,6 +16,7 @@ def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', titl
     x_values = np.arange(len(train_loss))
     plt.plot(x_values, train_loss, label=label1, color='blue')
     plt.plot(x_values, validation_loss, label=label2, color='orange')
+    plt.yscale('log')
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
     plt.title(title)

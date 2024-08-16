@@ -4,14 +4,6 @@ from ml_collections import config_dict
 from torch.utils.data import Dataset
 
 
-def scale_array_to_range(arr):
-    arr_min = np.min(arr)
-    arr_max = np.max(arr)
-    scaled_arr = (arr - arr_min) / (arr_max - arr_min)
-    scaled_arr = scaled_arr * 2 - 1
-
-    return scaled_arr
-
 class Airfoil_Dataset(Dataset):
 
     def __init__(self, config: config_dict, mode: str):
@@ -36,9 +28,10 @@ class Airfoil_Dataset(Dataset):
         input = data[0:3, :, :]
         target = data[3:, :, :]
 
+        #return data, self.file_names[idx]
         return (input, target, self.file_names[idx])
 
-    def preprocess_data(self, data) -> list[np.ndarray]:
+    def preprocess_data(self, data) -> np.ndarray:
 
         if not any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):
             return data
@@ -93,9 +86,6 @@ class Airfoil_Dataset(Dataset):
         data[3][boundary] *= (1.0 / max_targets_0)
         data[4][boundary] *= (1.0 / max_targets_1)
         data[5][boundary] *= (1.0 / max_targets_2)
-
-        #for i in [3,4,5]:
-        #    data[i][boundary] = scale_array_to_range(data[i][boundary])
 
         data = data.reshape((c, h, w))
 

@@ -225,19 +225,18 @@ class Swin_VAE_decoder(nn.Module):
         super().__init__(*args, **kwargs)
         self.config = config
         self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
-        self.fc_z = []
-        for i in range(len(config.image_sizes)):
-            self.fc_z.append(nn.Linear(config.latent_dim, config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
-                                        config.swin_encoder.skip_channels[i]))
+        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim*2, config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
+                                        config.swin_encoder.skip_channels[i]) for i in range(len(config.swin_encoder.image_sizes))])
+
 
     def forward(self, z):
         batch_size, _ = z[0].shape
 
         skip_connections = []
         for i, z_i in enumerate(z):
-            z_i = self.fc_z[i](z_i)
-            z_i.view(batch_size, self.config.swin_encoder.image_sizes[i][0] * self.config.swin_encoder.image_sizes[i][1], self.config.swin_encoder.skip_channels[i])
-
+            z_i = self.fc_z[-(i+1)](z_i)
+            z_i = z_i.view(batch_size, self.config.swin_encoder.image_sizes[-(i+1)][0] * self.config.swin_encoder.image_sizes[-(i+1)][1], self.config.swin_encoder.skip_channels[-(i+1)])
+            skip_connections.append(z_i)
 
         y = self.decoder(skip_connections[0], skip_connections[1:],  self.config.swin_encoder.image_sizes[-1])
         return y
