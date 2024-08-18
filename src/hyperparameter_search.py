@@ -31,4 +31,4 @@ if __name__ == '__main__':
     )
 
     study = optuna.create_study(study_name="test", storage=storage)
-    study.optimize(objective, n_trials=30, n_jobs=6)
+    study.optimize(objective, n_trials=20, n_jobs=4)

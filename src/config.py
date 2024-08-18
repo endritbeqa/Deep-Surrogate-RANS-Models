@@ -6,8 +6,8 @@ def get_config():
     config = config_dict.ConfigDict()
     config.model = "swin" # swin or swin_cnn
     config.data_dir = './data_res_32_uncertainty_preprocessed'
-    #config.output_dir = '/media/blin/VOL REC Blin/endrit/test_run_1'
-    config.output_dir = './Outputs'
+    config.output_dir = '/media/blin/VOL REC Blin/endrit/test_run_1'
+    #config.output_dir = './Outputs'
     config.num_epochs = 51
     config.batch_size = 25
     config.normalize = True

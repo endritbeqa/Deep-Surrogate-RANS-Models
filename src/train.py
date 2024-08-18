@@ -25,8 +25,8 @@ class Trainer(object):
         self.output_dir = config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
-        self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
-        self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
+        self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True, num_workers=4, prefetch_factor=8)
+        self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True, num_workers=4, prefetch_factor=8)
         self.loss_func = loss.KLD #loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.num_epochs, eta_min=0)
