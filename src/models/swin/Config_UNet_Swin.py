@@ -9,11 +9,11 @@ def get_config():
     config.hidden_dim = 0
 
     config.swin_encoder = config_dict.ConfigDict()
-    config.swin_encoder.image_size = 32
+    config.swin_encoder.image_size = 256
     config.swin_encoder.num_channels = 3
-    config.swin_encoder.patch_size = 2
-    config.swin_encoder.embed_dim = 64
-    config.swin_encoder.depths = [2, 6, 4]
+    config.swin_encoder.patch_size = 8
+    config.swin_encoder.embed_dim = 32
+    config.swin_encoder.depths = [2, 4, 2]
     config.swin_encoder.num_heads = [2, 4, 8]
     config.swin_encoder.window_size = 4 #TODO look if we need to assert that the image size needs to be divisible or automatic padding is used
     config.swin_encoder.pretrained_window_sizes = [0, 0,0 ]
@@ -32,12 +32,12 @@ def get_config():
     config.swin_encoder.out_indices = None
 
     config.swin_decoder = config_dict.ConfigDict()
-    config.swin_decoder.image_size = 32
+    config.swin_decoder.image_size = 256
     config.swin_decoder.num_channels = 3
     config.swin_decoder.input_grid_size = (int(config.swin_encoder.image_size / 2**(len(config.swin_encoder.depths))),int(config.swin_encoder.image_size / 2**(len(config.swin_encoder.depths))))
-    config.swin_decoder.patch_size = 2
-    config.swin_decoder.embed_dim = 64
-    config.swin_decoder.depths = [2, 6, 2]
+    config.swin_decoder.patch_size = 8
+    config.swin_decoder.embed_dim = 32
+    config.swin_decoder.depths = [2, 4, 2]
     config.swin_decoder.num_heads = [2, 4, 4]
     config.swin_decoder.window_size = 4  # TODO look if we need to assert that the image size needs to be divisible or automatic padding is used
     config.swin_decoder.pretrained_window_sizes = [0, 0, 0]

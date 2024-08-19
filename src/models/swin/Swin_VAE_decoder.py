@@ -10,7 +10,7 @@ from src.models.swin import Config_UNet_Swin
 class SwinV2Final_DecoderBlock(nn.Module):
     def __init__(self, in_channels, out_channels=3, kernel_size=1, padding=0):
         super(SwinV2Final_DecoderBlock, self).__init__()
-        self.upsample = nn.Upsample(size=(32,32), mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(size=(256,256), mode='bilinear', align_corners=True)
         # Define the convolutional layer
         self.conv = nn.Conv2d(in_channels=in_channels,
                               out_channels=out_channels,

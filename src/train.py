@@ -5,10 +5,10 @@ import json
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
+import tensorflow_datasets as tfds
 from src.models.swin import  U_net_SwinV2, Config_UNet_Swin
-from src.data import dataset
+from src.data import naca_dataset, dataset
 from src.losses import loss
-from torch.utils.data import DataLoader
 import utils
 import config
 def count_parameters(model):
@@ -20,13 +20,11 @@ class Trainer(object):
         self.model_config = Config_UNet_Swin.get_config()
         self.model = U_net_SwinV2.U_NET_Swin(self.model_config)
         self.output_dir = config.output_dir
-        self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
-        self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
-        self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
-        self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
+        self.train_dataset = naca_dataset.get_data_from_tfds(self.config, mode='train')
+        self.validation_dataset = naca_dataset.get_data_from_tfds(self.config, mode='validation')
         self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=300, eta_min=0)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.num_epochs, eta_min=0)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         print("Num parameters: {}".format(count_parameters(self.model)))
@@ -49,11 +47,13 @@ class Trainer(object):
             self.model.train()
             train_loss = 0.0
 
-            for inputs, targets, label in self.train_dataloader:
+            for batch in tfds.as_numpy(self.train_dataset):
+                inputs, targets, label = naca_dataset.preprocess_data(batch)
+                inputs, targets = torch.from_numpy(inputs), torch.from_numpy(targets)
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs= self.model(inputs)
-                loss = self.loss_func(outputs, targets)#, mu, logvar)
+                loss = self.loss_func(outputs, targets)
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
@@ -62,19 +62,21 @@ class Trainer(object):
 
             self.scheduler.step()
 
-            train_loss = train_loss / len(self.train_dataloader.dataset)
+            train_loss = train_loss / len(self.train_dataset)
             train_curve.append(train_loss)
 
             self.model.eval()
             val_loss = 0.0
 
             with torch.no_grad():
-                for inputs, targets, label in self.val_dataloader:
+                for batch  in tfds.as_numpy(self.validation_dataset):
+                    inputs, targets, label = naca_dataset.preprocess_data(batch)
+                    inputs, targets = torch.from_numpy(inputs), torch.from_numpy(targets)
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs)
-                    loss = self.loss_func(outputs, targets)#, mu, logvar)
+                    loss = self.loss_func(outputs, targets)
                     val_loss += loss.item()
-            val_loss = val_loss / len(self.val_dataloader.dataset)
+            val_loss = val_loss / len(self.validation_dataset)
             val_curve.append(val_loss)
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:

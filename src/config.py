@@ -5,16 +5,16 @@ def get_config():
 
     config = config_dict.ConfigDict()
     config.model = "swin" # swin or swin_cnn
-    config.data_dir = './data_res_32_uncertainty/data'
+    config.data_dir = '/media/blin/VOL REC Blin/endrit/naca_dataset/medium_dataset'
     config.output_dir = 'Outputs'
-    config.num_epochs = 100
-    config.batch_size = 500
+    config.num_epochs = 30
+    config.batch_size = 30
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4
     config.weight_decay = 0.01
     config.loss_function = ['mae']
-    config.checkpoint_every = 10
+    config.checkpoint_every = 1
 
     config.data_preprocessing = config_dict.ConfigDict()
     config.data_preprocessing.fixedAirfoilNormalization = False
