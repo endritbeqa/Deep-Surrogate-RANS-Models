@@ -4,7 +4,7 @@ import os
 import json
 import torch.optim as optim
 
-from src.models import  U_net_SwinV2, U_net_SwinV2_CNN, Config_UNet_Swin, Config_UNet_Swin_CNN
+from src.models import  U_Net_SwinV2_Sequence_Modeler, U_net_SwinV2_CNN, Config_UNet_Swin, Config_UNet_Swin_CNN
 from src.data import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader
