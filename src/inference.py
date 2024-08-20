@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 
 from src import utils
-from src.data import dataset
+from src.dataloader import dataset
 from src.models.U_net_SwinV2 import U_NET_Swin
 from src.models import Config_UNet_Swin
 from src import config

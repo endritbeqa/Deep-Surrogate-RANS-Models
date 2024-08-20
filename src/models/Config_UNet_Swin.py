@@ -8,6 +8,8 @@ def get_config():
     config.latent_dim = 32
     config.hidden_dim = 0
 
+########  ENCODER  ########
+
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
     config.swin_encoder.num_channels = 3
@@ -30,16 +32,19 @@ def get_config():
     config.swin_encoder.output_hidden_states = True
     config.swin_encoder.out_features = None
     config.swin_encoder.out_indices = None
-    config.swin_encoder.image_sizes = [(int(config.swin_encoder.image_size / 2**(i+1)),int(config.swin_encoder.image_size / 2**(i+1))) for i in range(0,len (config.swin_encoder.depths))]
+    config.swin_encoder.image_sizes = [(int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**(i))),
+                                        int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**(i))))
+                                       for i in range(0,len (config.swin_encoder.depths))]
     config.swin_encoder.skip_channels = [2 ** (i) * config.swin_encoder.embed_dim for i in range(len(config.swin_encoder.depths))]
 
-
+#########  DECODER  ##############
 
     config.swin_decoder = config_dict.ConfigDict()
     config.swin_decoder.image_size = 32
     config.swin_decoder.num_channels = 3
-    config.swin_decoder.input_grid_size = (int(config.swin_encoder.image_size / 2**(len(config.swin_encoder.depths))),int(config.swin_encoder.image_size / 2**(len(config.swin_encoder.depths))))
     config.swin_decoder.patch_size = 2
+    config.swin_decoder.input_grid_size = (int(config.swin_encoder.image_size / (config.swin_decoder.patch_size* 2 ** (len(config.swin_encoder.depths)-1))),
+                                           int(config.swin_encoder.image_size / (config.swin_decoder.patch_size* 2 ** (len(config.swin_encoder.depths)-1))))
     config.swin_decoder.embed_dim = 16
     config.swin_decoder.depths = [2, 2, 2]
     config.swin_decoder.num_heads = [2, 2, 2]
@@ -47,8 +52,6 @@ def get_config():
     config.swin_decoder.pretrained_window_sizes = [0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
     config.swin_decoder.skip_channels = list(reversed(config.swin_encoder.skip_channels))
-
-
     config.swin_decoder.input_channels = []
     if config.enable_skip_connections:
         for i in range(len(config.swin_decoder.skip_channels)):

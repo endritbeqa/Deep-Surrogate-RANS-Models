@@ -1,14 +1,15 @@
 import os
 import optuna
-import train
-import config
+from src import train
+from src import config
 from sqlalchemy import create_engine
 
+Config = config.get_config()
 
 def objective(trial):
-    trial_config = config.get_config().copy_and_resolve_references()
+    trial_config = Config.copy_and_resolve_references()
     batch_size = trial.suggest_int('batch_size', 20, 150, step=1)
-    learning_rate = trial.suggest_float('learning_rate', 1e-6, 1e-3)
+    learning_rate = trial.suggest_float('learning_rate', 1e-6, 1e-3, log=True)
     directory_name = "{}/batch_{}_learningRate{}".format(trial_config.output_dir,batch_size, learning_rate)
     trial_config.output_dir = directory_name
     trial_config.batch_size = batch_size
@@ -22,7 +23,8 @@ def objective(trial):
 
 if __name__ == '__main__':
 
-    DATABASE_URL = 'sqlite:///Thesis.sqlite'
+    os.makedirs(Config.output_dir)
+    DATABASE_URL = 'sqlite:///{}.sqlite'.format(Config.study_name)
     engine = create_engine(DATABASE_URL, echo=True)
 
     storage = optuna.storages.RDBStorage(
@@ -30,5 +32,5 @@ if __name__ == '__main__':
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},
     )
 
-    study = optuna.create_study(study_name="test", storage=storage)
+    study = optuna.create_study(study_name=Config.study_name, storage=storage)
     study.optimize(objective, n_trials=20, n_jobs=4)

@@ -6,9 +6,9 @@ from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2Encode
 
 
 class SwinV2Final_DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels=3, kernel_size=1, padding=0):
+    def __init__(self,res, in_channels, out_channels=3, kernel_size=1, padding=0):
         super(SwinV2Final_DecoderBlock, self).__init__()
-        self.upsample = nn.Upsample(size=(32,32), mode='bilinear', align_corners=True)
+        self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
         self.conv = nn.Conv2d(in_channels=in_channels,
                               out_channels=out_channels,
                               kernel_size=kernel_size,
@@ -116,7 +116,7 @@ class Swinv2Decoder(nn.Module):
         self.enable_skip_connections = enable_skip_connections
         self.config = config
         self.grid_size = config.input_grid_size
-        self.final_layer = SwinV2Final_DecoderBlock(config.input_channels[-1])
+        self.final_layer = SwinV2Final_DecoderBlock(config.image_size,config.input_channels[-1])
 
         if self.config.pretrained_window_sizes is not None:
             pretrained_window_sizes = config.pretrained_window_sizes

@@ -58,14 +58,14 @@ class Airfoil_Dataset(Dataset):
         if self.fixedAirfoilNormalization:
             # hard coded maxima , inputs dont change
             max_inputs_0 = 100.
-            max_inputs_1 = 38.12
+            max_inputs_1 = 38.5
             max_inputs_2 = 1.0
 
             # targets depend on normalization
             if self.makeDimLess:
-                max_targets_0 = 4.65
-                max_targets_1 = 2.04
-                max_targets_2 = 2.37
+                max_targets_0 = 4.3
+                max_targets_1 = 2.15
+                max_targets_2 = 2.35
 
             else:  # full range
                 max_targets_0 = 40000.

@@ -1,54 +1,103 @@
 import os
-import shutil
 import random
+import shutil
+import numpy as np
+import torch
+import torch.nn.functional as F
 
 
-def move_files_to_parent_directory(root_dir):
-    """
-    Recursively move all files from subdirectories to their parent directory.
+def remove_case_folders(path: str, res:int):
 
-    Args:
-        root_dir (str): The root directory to start from.
-    """
-    # Traverse the directory tree
-    for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
-        for filename in filenames:
-            # Construct the full file path
-            file_path = os.path.join(dirpath, filename)
-            # Move the file to the parent directory
-            shutil.move(file_path, root_dir)
-
-        # Once files are moved, remove the empty directory
-        for dirname in dirnames:
-            sub_dir_path = os.path.join(dirpath, dirname)
-            try:
-                os.rmdir(sub_dir_path)
-            except OSError:
-                # Directory is not empty, skip deletion
-                pass
+    data_path = path
+    output_folder = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_interpolated_2/res_{}".format(res)
 
 
-def split_files_train_val(source_dir, validation_split):
-    all_files = os.listdir(source_dir)
-    random.shuffle(all_files)
-    num_validation_files = int(len(all_files) * validation_split)
-    train_files = all_files[num_validation_files:]
-    validation_files = all_files[:num_validation_files]
+    os.makedirs(output_folder)
+    os.makedirs(os.path.join(output_folder,"train"))
+    os.makedirs(os.path.join(output_folder,"validation"))
 
-    train_dir = os.path.join(source_dir, "train")
-    validation_dir = os.path.join(source_dir, "validation")
-    os.mkdir(train_dir)
-    os.mkdir(validation_dir)
-
-    for file_name in train_files:
-        shutil.move(os.path.join(source_dir,file_name), os.path.join(train_dir,file_name))
-
-    for file_name in validation_files:
-        shutil.move(os.path.join(source_dir,file_name), os.path.join(validation_dir,file_name))
+    for split_folder in ["train", "validation"]:
+        for idx,folder in enumerate(os.listdir(os.path.join(data_path,split_folder))):
+            for file in os.listdir(os.path.join(data_path,split_folder,folder)):
+                src_path = os.path.join(data_path,split_folder, folder, file)
+                dest_path = "{}/{}/{}".format(output_folder,split_folder,file)
+                shutil.copy(src_path, dest_path)
+            print(idx)
 
 
 
-if __name__ == "__main__":
-    #root_directory = "/home/blin/PycharmProjects/Thesis/src/data_res_32_uncertainty/res_32"  # Replace with your root directory
-    #move_files_to_parent_directory(root_directory)
-    split_files_train_val("/home/blin/PycharmProjects/Thesis/src/data_res_32_uncertainty/res_32",0.2)
+
+def interpolate_and_save(path: str, interpolate:bool, res:int):
+
+    data_path = path
+    output_folder = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_interpolated/res_{}".format(res)
+
+
+    os.makedirs(output_folder)
+    os.makedirs(os.path.join(output_folder,"train"))
+    os.makedirs(os.path.join(output_folder,"validation"))
+
+    #for split_folder in ["train", "validation"]:
+    for split_folder in [ "validation"]:
+        for idx,folder in enumerate(os.listdir(os.path.join(data_path,split_folder))):
+            os.makedirs(os.path.join(output_folder,split_folder,folder))
+            for file in os.listdir(os.path.join(data_path,split_folder,folder)):
+
+                data = np.load(os.path.join(data_path,split_folder, folder, file))
+                arrays = data["a"]
+                if interpolate:
+                    arrays = torch.tensor(arrays, dtype=torch.float32)
+                    arrays = torch.unsqueeze(arrays, dim=0)
+                    arrays = F.interpolate(arrays, size=(res,res), mode='bilinear', align_corners=False)
+                    arrays = torch.squeeze(arrays)
+                    arrays = arrays.numpy()
+
+                mask = arrays[2] != 0
+
+                arrays[2][mask] = 1
+
+                for i in [0, 1, 3, 4, 5]:
+                    arrays[i][mask] = 0
+
+                output_path = "{}/{}/{}/{}".format(output_folder,split_folder,folder,file)
+                save_path = os.path.join(output_path)
+                np.savez(save_path, a=arrays)
+            print(idx)
+
+
+
+
+
+def split_folders():
+
+    dir_path = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_data"
+    output_dir = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_interpolated/res_128"
+    train_dir = os.path.join(output_dir,"train")
+    val_dir = os.path.join(output_dir, "val")
+    os.makedirs(train_dir)
+    os.makedirs(val_dir)
+
+    cases = os.listdir(dir_path)
+    random.shuffle(cases)
+
+    num_train = int(len(cases)*0.8)
+
+    train_cases = cases[:num_train]
+    val_cases = cases[num_train:]
+
+
+
+    for folder in train_cases:
+        shutil.move(os.path.join(dir_path, folder), os.path.join(train_dir, folder))
+
+
+    for folder in val_cases:
+        shutil.move(os.path.join(dir_path, folder), os.path.join(val_dir, folder))
+
+
+
+
+if __name__ == '__main__':
+
+    remove_case_folders("/home/blin/PycharmProjects/Thesis/src/Uncertainty_interpolated/res_128", 128)
+    #interpolate_and_save( "/home/blin/PycharmProjects/Thesis/src/Uncertainty_interpolated/res_128", True, 64)

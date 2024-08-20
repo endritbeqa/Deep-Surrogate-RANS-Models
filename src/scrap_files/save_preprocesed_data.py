@@ -1,8 +1,8 @@
 import os
 import numpy as np
-from src.data import dataset
+from src.dataloader import dataset
 from torch.utils.data import DataLoader
-import config
+import src.config as config
 
 
 
@@ -18,10 +18,10 @@ class Trainer(object):
 
 
     def train_model(self):
-        output_dir_train = "/home/blin/PycharmProjects/Thesis/src/data_res_32_uncertainty_preprocessed/train"
-        output_dir_validation = "/home/blin/PycharmProjects/Thesis/src/data_res_32_uncertainty_preprocessed/validation"
-
-
+        output_dir_train = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_preprocessed/res_128/train"
+        output_dir_validation ="/home/blin/PycharmProjects/Thesis/src/Uncertainty_preprocessed/res_128/validation"
+        os.makedirs(output_dir_train)
+        os.makedirs(output_dir_validation)
 
         for data, label in self.train_dataloader:
             save_path = os.path.join(output_dir_train, label[0])

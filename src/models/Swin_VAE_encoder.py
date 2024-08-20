@@ -36,6 +36,7 @@ class Swin_VAE_encoder(nn.Module):
         hidden_states.append(last_hidden_state)
         hidden_states.reverse()
 
+
         # condition is the freestream velocities and binary mask of the case
         condition = self.condition_encoder(condition, output_hidden_states=False)
         condition = condition.last_hidden_state

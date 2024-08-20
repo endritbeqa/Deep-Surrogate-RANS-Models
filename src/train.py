@@ -6,11 +6,11 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
 from src.models import U_net_SwinV2, Config_UNet_Swin
-from src.data import dataset
+from src.dataloader import dataset
 from src.losses import loss
 from torch.utils.data import DataLoader
-import utils
-import config
+from src import utils
+from src import config
 
 
 def count_parameters(model):
@@ -30,7 +30,7 @@ class Trainer(object):
         self.loss_func = loss.KLD #loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.num_epochs, eta_min=0)
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         print("Num parameters: {}".format(count_parameters(self.model)))
         os.mkdir(self.output_dir)
