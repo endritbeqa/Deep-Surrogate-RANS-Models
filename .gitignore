@@ -176,3 +176,5 @@ cython_debug/
 /src/Uncertainty_preprocessed/
 /src/Uncertainty_interpolated/
 /src/Uncertainty_data_test/
+/Run_3_res_32.sqlite
+/Run_3_res_64.sqlite

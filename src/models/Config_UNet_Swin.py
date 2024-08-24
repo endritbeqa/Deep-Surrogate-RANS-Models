@@ -43,8 +43,10 @@ def get_config():
     config.swin_decoder.image_size = 32
     config.swin_decoder.num_channels = 3
     config.swin_decoder.patch_size = 2
-    config.swin_decoder.input_grid_size = (int(config.swin_encoder.image_size / (config.swin_decoder.patch_size* 2 ** (len(config.swin_encoder.depths)-1))),
-                                           int(config.swin_encoder.image_size / (config.swin_decoder.patch_size* 2 ** (len(config.swin_encoder.depths)-1))))
+    config.swin_decoder.input_grid_size = (int(config.swin_encoder.image_size / (config.swin_decoder.patch_size * 2 ** (len(config.swin_encoder.depths)-1))),
+                                           int(config.swin_encoder.image_size / (config.swin_decoder.patch_size * 2 ** (len(config.swin_encoder.depths)-1))))
+
+
     config.swin_decoder.embed_dim = 16
     config.swin_decoder.depths = [2, 2, 2]
     config.swin_decoder.num_heads = [2, 2, 2]
@@ -65,6 +67,15 @@ def get_config():
                 config.swin_decoder.input_channels.append(int(config.swin_decoder.skip_channels[0]))
             else:
                 config.swin_decoder.input_channels.append(int(config.swin_decoder.input_channels[i - 1] / 4 ))
+
+    config.swin_decoder.image_sizes = [
+        (int(config.swin_decoder.input_grid_size[0] * ( 2 ** (i+1))),
+         int(config.swin_decoder.input_grid_size[1] * ( 2 ** (i+1))))
+        for i in range(0, len(config.swin_decoder.depths))]
+
+
+
+
 
     config.swin_decoder.mlp_ratio = 4.0
     config.swin_decoder.qkv_bias = True

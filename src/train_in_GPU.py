@@ -1,5 +1,6 @@
 import math
 
+from datetime import datetime
 import numpy
 import torch
 import os
@@ -26,6 +27,7 @@ class Trainer(object):
         self.model_config = Config_UNet_Swin.get_config()
         self.model = U_net_SwinV2.U_NET_Swin(self.model_config)
         self.output_dir = config.output_dir
+
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2)
@@ -45,6 +47,31 @@ class Trainer(object):
                     os.path.join(self.output_dir, "images/targets")]:
             os.mkdir(dir)
 
+        all_train_inputs = []
+        all_train_targets = []
+
+        for inputs, targets, labels in self.train_dataloader:
+            all_train_inputs.append(inputs)
+            all_train_targets.append(targets)
+
+        all_train_inputs = torch.from_numpy(numpy.concatenate(all_train_inputs, axis=0)).to(self.device)
+        all_train_targets = torch.from_numpy(numpy.concatenate(all_train_targets, axis=0)).to(self.device)
+
+        all_validation_inputs = []
+        all_validation_targets = []
+
+        for inputs, targets, labels in self.train_dataloader:
+            all_validation_inputs.append(inputs)
+            all_validation_targets.append(targets)
+
+        all_validation_inputs = torch.from_numpy(numpy.concatenate(all_validation_inputs, axis=0)).to(self.device)
+        all_validation_targets = torch.from_numpy(numpy.concatenate(all_validation_targets, axis=0)).to(self.device)
+
+        self.GPU_train_dataset = TensorDataset(all_train_inputs, all_train_targets)
+        self.GPU_validation_dataset = TensorDataset(all_validation_inputs, all_validation_targets)
+        self.GPU_train_dataloader = DataLoader(self.GPU_train_dataset, batch_size=config.batch_size, shuffle=True)
+        self.GPU_validation_dataloader = DataLoader(self.GPU_validation_dataset, batch_size=config.batch_size, shuffle=True)
+
     def train_model(self):
 
         train_curve = []
@@ -55,36 +82,38 @@ class Trainer(object):
             self.model.train()
             train_loss = 0.0
 
-            for inputs, targets, label in self.train_dataloader:
-                inputs, targets = inputs.to(self.device), targets.to(self.device)
+            for inputs, targets in self.GPU_train_dataloader:
                 self.optimizer.zero_grad()
                 outputs, mu, logvar = self.model(inputs, targets)
                 loss = self.loss_func(outputs, targets , mu, logvar)
-                if math.isinf(loss) | math.isnan(loss):
-                    print("{}, {}".format(label, loss))
                 train_loss += loss.item()
                 loss.backward()
                 self.optimizer.step()
 
             self.scheduler.step()
 
-            train_loss = train_loss / len(self.train_dataloader.dataset)
+            train_loss = train_loss / len(self.GPU_train_dataset)
             train_curve.append(train_loss)
 
             self.model.eval()
             val_loss = 0.0
 
             with torch.no_grad():
-                for inputs, targets, label in self.val_dataloader:
+                for inputs, targets in self.GPU_validation_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs, mu, logvar = self.model(inputs, targets)
                     loss = self.loss_func(outputs, targets , mu, logvar)
                     val_loss += loss.item()
-            val_loss = val_loss / len(self.val_dataloader.dataset)
+            val_loss = val_loss / len(self.GPU_validation_dataset)
             val_curve.append(val_loss)
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
                 file.write("{},{}\n".format(str(train_loss), str(val_loss)))
+
+            current_time = datetime.now().strftime("%H:%M:%S")
+
+            # Print the current time in the console
+            print(f"Current Time: {current_time}")
 
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {

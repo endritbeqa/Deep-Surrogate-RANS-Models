@@ -1,10 +1,9 @@
 import numpy as np
-import torch
 import os
-import json
-import torch.optim as optim
 from PIL import Image
 from matplotlib import cm
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 
