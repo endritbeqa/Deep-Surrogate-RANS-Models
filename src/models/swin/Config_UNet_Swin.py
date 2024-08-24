@@ -59,6 +59,13 @@ def get_config():
             else:
                 config.swin_decoder.input_channels.append(int(config.swin_decoder.input_channels[i - 1] / 4 ))
 
+    config.swin_decoder.image_sizes = [
+        (int(config.swin_decoder.input_grid_size[0] * ( 2 ** (i+1))),
+         int(config.swin_decoder.input_grid_size[1] * ( 2 ** (i+1))))
+        for i in range(0, len(config.swin_decoder.depths))]
+
+
+
     config.swin_decoder.mlp_ratio = 4.0
     config.swin_decoder.qkv_bias = True
     config.swin_decoder.hidden_dropout_prob = 0.0

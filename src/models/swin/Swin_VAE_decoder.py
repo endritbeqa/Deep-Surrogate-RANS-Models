@@ -8,11 +8,12 @@ from src.models.swin import Config_UNet_Swin
 
 
 class SwinV2Final_DecoderBlock(nn.Module):
-    def __init__(self, in_channels, out_channels=3, kernel_size=1, padding=0):
+    def __init__(self,res, in_channels, out_channels=3, kernel_size=1, padding=0):
         super(SwinV2Final_DecoderBlock, self).__init__()
-        self.upsample = nn.Upsample(size=(256,256), mode='bilinear', align_corners=True)
-        # Define the convolutional layer
-        self.conv = nn.Conv2d(in_channels=in_channels,
+        self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
+        self.non_linearity = nn.GELU()
+        self.conv2 = nn.Conv2d(in_channels=in_channels,
                               out_channels=out_channels,
                               kernel_size=kernel_size,
                               padding=padding)
@@ -23,15 +24,19 @@ class SwinV2Final_DecoderBlock(nn.Module):
         x = x.permute(0, 2, 1)
         x = x.view(batch_size, num_channels, height, height)
         x = self.upsample(x)
-        x = self.conv(x)
+        x = self.conv1(x)
+        x = self.non_linearity(x)
+        x = self.conv2(x)
 
         return x
 
 class SwinUpsample(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, res,in_channels):
         super(SwinUpsample, self).__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.reduce_channels = nn.Conv2d(in_channels, in_channels // 4, kernel_size=1)
+        self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
+        self.non_linearity = nn.GELU()
+        self.conv2 = nn.Conv2d(in_channels, in_channels // 4, kernel_size=1)
 
     def forward(self, x, input_dimensions):
         height, width = input_dimensions
@@ -39,7 +44,9 @@ class SwinUpsample(nn.Module):
         x = x.permute(0,2,1)
         x = x.view(batch_size, num_channels ,height, width)
         x = self.upsample(x)
-        x = self.reduce_channels(x)
+        x = self.conv1(x)
+        x = self.non_linearity(x)
+        x = self.conv2(x)
         batch_size, num_channels, height , width = x.shape
         x = x.view(batch_size, num_channels, height * width)
         x = x.permute(0,2,1)
@@ -133,8 +140,8 @@ class Swinv2Decoder(nn.Module):
                 input_resolution=(self.grid_size[0] * (2 ** i_layer), self.grid_size[1] * (2 ** i_layer)),
                 depth=config.depths[i_layer],
                 num_heads=config.num_heads[i_layer],
-                drop_path=dpr[sum(config.depths[:i_layer]) : sum(config.depths[: i_layer + 1])],
-                upsample=SwinUpsample(int(config.input_channels[i_layer]))  if (i_layer < self.num_layers - 1) else None
+                drop_path=dpr[sum(config.depths[:i_layer]): sum(config.depths[: i_layer + 1])],
+                upsample=SwinUpsample(res=(config.image_sizes[i_layer][0] + 2),in_channels=int(config.input_channels[i_layer])) if (i_layer < self.num_layers - 1) else None
                 #pretrained_window_size=pretrained_window_sizes[i_layer],
             )
             layers.append(stage)
