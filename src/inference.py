@@ -1,27 +1,77 @@
 import os
-
 import torch
-from torch.utils.data import DataLoader
-
 import numpy as np
-
 from src import utils
-from src.dataloader import dataset
 from src.models.U_net_SwinV2 import U_NET_Swin
 from src.models import Config_UNet_Swin
 from src import config
 
 
-def all_arrays_equal(arrays):
-    if len(arrays) < 2:
-        return True  # List with 0 or 1 array is trivially equal
+def preprocess_data( data) -> np.ndarray:
+    removePOffset, makeDimLess, fixedAirfoilNormalization = True, True, True
+    epsilon = 1e-8
 
-    first_array = arrays[0]
-    return all(np.array_equal(first_array, arr) for arr in arrays[1:])
+    if not any((removePOffset, makeDimLess, fixedAirfoilNormalization)):
+        return data
+
+    boundary = ~ data[2].flatten().astype(bool)
+    num_field_elements = np.sum(boundary)
+    c, h, w = data.shape
+
+    data = data.reshape((c, h * w))
+    fields = data[np.tile(boundary, (6, 1))]
+    fields = fields.reshape((6, num_field_elements))
+    p_mean = np.mean(fields[3])
+    v_norm = (np.max(np.abs(fields[0])) ** 2 + np.max(np.abs(fields[1])) ** 2) ** 0.5
+
+    if removePOffset:
+        data[3][boundary] -= p_mean
+        data[3][boundary][data[3][boundary] == 0] = epsilon
+
+    if makeDimLess:
+        data[3][boundary] /= (v_norm ** 2 + epsilon)
+        data[4][boundary] /= (v_norm + epsilon)
+        data[5][boundary] /= (v_norm + epsilon)
+
+    if fixedAirfoilNormalization:
+        # hard coded maxima , inputs dont change
+        max_inputs_0 = 100.
+        max_inputs_1 = 38.5
+        max_inputs_2 = 1.0
+
+        # targets depend on normalization
+        if makeDimLess:
+            max_targets_0 = 4.3
+            max_targets_1 = 2.15
+            max_targets_2 = 2.35
+
+        else:  # full range
+            max_targets_0 = 40000.
+            max_targets_1 = 200.
+            max_targets_2 = 216.
+
+    else:
+        max_inputs_0 = np.max(fields[0]) if np.max(fields[0]) != 0 else epsilon
+        max_inputs_1 = np.max(fields[1]) if np.max(fields[1]) != 0 else epsilon
+
+        max_targets_0 = np.max(fields[3]) if np.max(fields[3]) != 0 else epsilon
+        max_targets_1 = np.max(fields[4]) if np.max(fields[4]) != 0 else epsilon
+        max_targets_2 = np.max(fields[5]) if np.max(fields[5]) != 0 else epsilon
+
+    data[0][boundary] *= (1.0 / max_inputs_0)
+    data[1][boundary] *= (1.0 / max_inputs_1)
+
+    data[3][boundary] *= (1.0 / max_targets_0)
+    data[4][boundary] *= (1.0 / max_targets_1)
+    data[5][boundary] *= (1.0 / max_targets_2)
+
+    data = data.reshape((c, h, w))
+
+    return data
 
 
 
-def sample_from_vae(model_config, checkpoint, condition):
+def sample_from_vae(model_config, checkpoint, condition, num_samples):
 
     model = U_NET_Swin(model_config)
     checkpoint = torch.load(checkpoint, map_location='cpu')
@@ -35,23 +85,75 @@ def sample_from_vae(model_config, checkpoint, condition):
 
     predictions = []
 
-    for i in range(5):
+    for i in range(num_samples):
         with torch.no_grad():
-            random_tensors = [torch.unsqueeze(torch.rand(128), dim=0) for _ in range(3)]
+            random_tensors = [torch.unsqueeze(torch.rand(model_config.latent_dim), dim=0) for _ in range(3)]
             prediction = model.inference(condition, random_tensors)
             predictions.append(prediction)
-            utils.save_images(prediction, '/home/blin/PycharmProjects/Thesis/src/results', "predictions", i)
 
-    print(all_arrays_equal(predictions))
+    return np.array(predictions)
 
+def get_test_files(directory):
+    cases = os.listdir(directory)
+
+    data = {}
+
+    for case in cases:
+
+        case_path = os.path.join(directory, case)
+        case_data =[]
+        for snapshot in os.listdir(case_path):
+            snapshot_data = np.load(os.path.join(case_path, snapshot))
+            snapshot_data = snapshot_data['a'].astype(np.float32)
+            case_data.append(snapshot_data)
+        case_data = np.array(case_data)
+        data[case] = case_data
+
+    return data
+
+
+
+#TODO need to interpolate the test data to 32 and 64 res
 
 if __name__ == '__main__':
+
+    interpolation_files = get_test_files('/home/blin/PycharmProjects/Thesis/src/Uncertainty_data_test_preprocessed/interpolation_32')
     config = config.get_config()
     model_config = Config_UNet_Swin.get_config()
-    test_dataset = dataset.Airfoil_Dataset(config, mode='test')
+    checkpoint = "/home/blin/PycharmProjects/Thesis/src/Outputs/checkpoints/47.pth"
 
-    checkpoint = "/home/blin/PycharmProjects/Thesis/src/Outputs/checkpoints/100.pth"
+    target_means = []
+    target_stds = []
+    predictions_means = []
+    predictions_stds = []
+    count = 0
+    for case, data in interpolation_files.items():
+        print(count)
+        count+=1
+        inputs = data[0][:3]
+        predictions = sample_from_vae(model_config, checkpoint, inputs, 25)
+        predictions = predictions.squeeze()
+        utils.save_images(predictions, "./predictions", case, 0)
+        targets = data[:,3:,:,:]
+        utils.save_images(targets, "./targets", case, 0)
+        target_mean = np.mean(targets, axis=0)
+        target_std = np.std(targets, axis=0)
+        predictions_mean = np.mean(predictions, axis=0)
+        predictions_std = np.std(predictions, axis=0)
 
-    for inputs, targets, label in test_dataset:
-        for i in range(4):
-            sample_from_vae(model_config, checkpoint, inputs)
+        target_means.append(target_mean)
+        target_stds.append(target_std)
+        predictions_means.append(predictions_mean)
+        predictions_stds.append(predictions_std)
+
+
+    target_means = np.array(target_means)
+    target_stds = np.array(target_stds)
+    predictions_means = np.array(predictions_means)
+    predictions_stds = np.array(predictions_stds)
+
+    utils.save_images(target_means, "./test_results", "target_means", 0)
+    utils.save_images(target_stds, "./test_results", "target_stds", 0)
+    utils.save_images(predictions_means, "./test_results", "predictions_means", 0)
+    utils.save_images(predictions_stds, "./test_results", "predictions_stds", 0)
+

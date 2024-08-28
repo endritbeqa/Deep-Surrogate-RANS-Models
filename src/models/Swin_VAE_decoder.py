@@ -233,7 +233,7 @@ class Swin_VAE_decoder(nn.Module):
         super().__init__(*args, **kwargs)
         self.config = config
         self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
-        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim*2, config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
+        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim+config.condition_latent_dim, config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
                                         config.swin_encoder.skip_channels[i]) for i in range(len(config.swin_encoder.image_sizes))])
 
 

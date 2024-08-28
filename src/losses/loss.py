@@ -38,11 +38,10 @@ def mean_relative_loss_function(input, target):
     loss = torch.mean(relative_difference)
     return loss
 
-def KLD(recon_x, x, mu, logvar):
-    MAE = F.l1_loss(recon_x, x)
+def KLD(recon_x, x, mu, logvar, beta):
+    MAE = F.l1_loss(recon_x, x,reduction='sum')
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-    return 0.1*KLD + MAE
-
+    return beta*KLD + MAE
 
 def get_loss_function(loss_name: list):
     loss_functions = {

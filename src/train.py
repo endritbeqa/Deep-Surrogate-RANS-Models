@@ -8,6 +8,8 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import TensorDataset
 
+from datetime import datetime
+
 from src.models import U_net_SwinV2, Config_UNet_Swin
 from src.dataloader import dataset
 from src.losses import loss
@@ -35,6 +37,7 @@ class Trainer(object):
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.num_epochs, eta_min=0)
         self.device = torch.device(config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
+        self.beta = config.beta
         print("Num parameters: {}".format(count_parameters(self.model)))
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
@@ -47,19 +50,31 @@ class Trainer(object):
 
     def train_model(self):
 
+        with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.model_config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
+            file.write("Number of model parameters: {}".format(count_parameters(self.model)))
+
+
         train_curve = []
         val_curve = []
 
         for epoch in range(self.config.num_epochs):
             print("Epoch:{}".format(epoch))
+            print(datetime.now())
             self.model.train()
             train_loss = 0.0
 
             for inputs, targets, label in self.train_dataloader:
+
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs, mu, logvar = self.model(inputs, targets)
-                loss = self.loss_func(outputs, targets , mu, logvar)
+                loss = self.loss_func(outputs, targets, mu, logvar, self.beta)
                 if math.isinf(loss) | math.isnan(loss):
                     print("{}, {}".format(label, loss))
                 train_loss += loss.item()
@@ -78,7 +93,7 @@ class Trainer(object):
                 for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs, mu, logvar = self.model(inputs, targets)
-                    loss = self.loss_func(outputs, targets , mu, logvar)
+                    loss = self.loss_func(outputs, targets , mu, logvar, self.beta)
                     val_loss += loss.item()
             val_loss = val_loss / len(self.val_dataloader.dataset)
             val_curve.append(val_loss)
@@ -97,18 +112,9 @@ class Trainer(object):
                 utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
 
-        loss_plot = utils.plot_losses(train_curve, val_curve)
-        loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
-        loss_plot.close()
-
-        with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
-            json.dump(self.config.to_dict(), json_file, indent=4)
-
-        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
-            json.dump(self.model_config.to_dict(), json_file, indent=4)
-
-        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
-            file.write("Number of model parameters: {}".format(count_parameters(self.model)))
+                loss_plot = utils.plot_losses(train_curve, val_curve)
+                loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
+                loss_plot.close()
 
         return val_curve[-1]
 
