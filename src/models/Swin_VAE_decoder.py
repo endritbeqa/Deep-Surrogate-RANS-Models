@@ -118,12 +118,10 @@ class Swinv2DecoderStage(nn.Module):
 
 
 class Swinv2Decoder(nn.Module):
-    def __init__(self, config, enable_skip_connections ,pretrained_window_sizes=(0, 0, 0, 0)):
+    def __init__(self, config, pretrained_window_sizes=(0, 0, 0, 0)):
         super().__init__()
         self.num_layers = len(config.depths)
-        self.enable_skip_connections = enable_skip_connections
         self.config = config
-        self.grid_size = config.input_grid_size
         self.final_layer = SwinV2Final_DecoderBlock(config.image_size+2,config.input_channels[-1])
 
         if self.config.pretrained_window_sizes is not None:
@@ -134,12 +132,14 @@ class Swinv2Decoder(nn.Module):
         for i_layer in range(self.num_layers):
             stage = Swinv2DecoderStage(
                 config=config,
-                dim=int(config.input_channels[i_layer]),
-                input_resolution=(self.grid_size[0] * (2 ** i_layer), self.grid_size[1] * (2 ** i_layer)),
+                dim = int(config.skip_connection_shape[i_layer][2]),
+                input_resolution=(config.skip_connection_shape[i_layer][0], config.skip_connection_shape[i_layer][1]),
                 depth=config.depths[i_layer],
                 num_heads=config.num_heads[i_layer],
-                drop_path=dpr[sum(config.depths[:i_layer]) : sum(config.depths[: i_layer + 1])],
-                upsample=SwinUpsample(res =(config.image_sizes[i_layer][0]+2) ,in_channels= int(config.input_channels[i_layer]))  if (i_layer < self.num_layers - 1) else None
+                drop_path=dpr[sum(config.depths[:i_layer]): sum(config.depths[: i_layer + 1])],
+                upsample=SwinUpsample(res=(config.skip_connection_shape[i_layer][0] + 2),
+                                      in_channels=int(config.skip_connection_shape[i_layer][2]))
+                                      if (i_layer < self.num_layers - 1) else None
                 #pretrained_window_size=pretrained_window_sizes[i_layer],
             )
             layers.append(stage)
@@ -180,8 +180,7 @@ class Swinv2Decoder(nn.Module):
                 )
             else:
                 if i !=0:
-                    if self.enable_skip_connections:
-                        hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
+                    hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
                 layer_outputs = layer_module(
                     hidden_states,
                     input_dimensions,
@@ -232,9 +231,10 @@ class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
-        self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
-        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim+config.condition_latent_dim, config.swin_encoder.image_sizes[i][0] * config.swin_encoder.image_sizes[i][1] *
-                                        config.swin_encoder.skip_channels[i]) for i in range(len(config.swin_encoder.image_sizes))])
+        self.decoder = Swinv2Decoder(config.swin_decoder)
+        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim + config.condition_latent_dim,
+                                             math.prod(config.swin_decoder.skip_connection_shape[i]))
+                                   for i in range(len(config.swin_encoder.skip_image_shape))])
 
 
     def forward(self, z):
@@ -242,10 +242,10 @@ class Swin_VAE_decoder(nn.Module):
 
         skip_connections = []
         for i, z_i in enumerate(z):
-            z_i = self.fc_z[-(i+1)](z_i)
-            z_i = z_i.view(batch_size, self.config.swin_encoder.image_sizes[-(i+1)][0] * self.config.swin_encoder.image_sizes[-(i+1)][1], self.config.swin_encoder.skip_channels[-(i+1)])
+            z_i = self.fc_z[i](z_i)
+            z_i = z_i.view(batch_size, *self.config.swin_decoder.skip_connection_shape[i])
             skip_connections.append(z_i)
 
-        y = self.decoder(skip_connections[0], skip_connections[1:],  self.config.swin_encoder.image_sizes[-1])
+        y = self.decoder(skip_connections[0], skip_connections[1:], self.config.swin_encoder.skip_image_shape[-1])
         return y
 
