@@ -17,15 +17,15 @@ class Swin_VAE_encoder(nn.Module):
         super().__init__(*args, **kwargs)
         self.encoder = load_swin_transformer(config.swin_encoder)
         self.condition_encoder = load_swin_transformer(config.swin_encoder)
-        self.fc_condition = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_channel_shape[i]),
+        self.fc_condition = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
                                                      config.condition_latent_dim)
-                                           for i in range(len(config.swin_encoder.skip_channel_shape))])
-        self.fc_mu = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_channel_shape[i]),
+                                           for i in range(len(config.swin_encoder.skip_connection_shape))])
+        self.fc_mu = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
                                               config.latent_dim)
-                                    for i in range(len(config.swin_encoder.skip_channel_shape))])
-        self.fc_logvar = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_channel_shape[i]),
+                                    for i in range(len(config.swin_encoder.skip_connection_shape))])
+        self.fc_logvar = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
                                                   config.latent_dim)
-                                        for i in range(len(config.swin_encoder.skip_channel_shape))])
+                                        for i in range(len(config.swin_encoder.skip_connection_shape))])
 
     def forward(self, condition, target):
         swin_encoder_output = self.encoder(target, output_hidden_states=True)
@@ -34,18 +34,16 @@ class Swin_VAE_encoder(nn.Module):
 
         hidden_states = list(hidden_states)[:-2]
         hidden_states.append(last_hidden_state)
-        hidden_states.reverse()
 
         condition_output = self.condition_encoder(condition, output_hidden_states=True)
         condition_hidden_states = condition_output.hidden_states
         condition_hidden_states = list(condition_hidden_states)[:-2]
         condition_hidden_states.append(condition_output.last_hidden_state)
-        condition_hidden_states.reverse()
 
         condition_latent = []
         for i, condition in enumerate(condition_hidden_states):
             condition = torch.flatten(condition, start_dim=1, end_dim=2)
-            condition_latent.append(self.fc_condition[-(i + 1)](condition))
+            condition_latent.append(self.fc_condition[i](condition))
 
         z = []
         mu = []
@@ -53,8 +51,8 @@ class Swin_VAE_encoder(nn.Module):
 
         for i, skip in enumerate(hidden_states):
             skip = torch.flatten(skip, start_dim=1, end_dim=2)
-            mu_i = self.fc_mu[-(i + 1)](skip)
-            logvar_i = self.fc_logvar[-(i + 1)](skip)
+            mu_i = self.fc_mu[i](skip)
+            logvar_i = self.fc_logvar[i](skip)
             std = torch.exp(0.5 * logvar_i)
             eps = torch.randn_like(std)
             z_i = mu_i + eps * std
