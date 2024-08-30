@@ -9,7 +9,9 @@ class SwinV2Final_DecoderBlock(nn.Module):
     def __init__(self,res, in_channels, out_channels=3, kernel_size=1, padding=0):
         super(SwinV2Final_DecoderBlock, self).__init__()
         self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
-        self.conv = nn.Conv2d(in_channels=in_channels,
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
+        self.non_linearity = nn.GELU()
+        self.conv2 = nn.Conv2d(in_channels=in_channels,
                               out_channels=out_channels,
                               kernel_size=kernel_size,
                               padding=padding)
@@ -20,15 +22,19 @@ class SwinV2Final_DecoderBlock(nn.Module):
         x = x.permute(0, 2, 1)
         x = x.view(batch_size, num_channels, height, height)
         x = self.upsample(x)
-        x = self.conv(x)
+        x = self.conv1(x)
+        x = self.non_linearity(x)
+        x = self.conv2(x)
 
         return x
 
 class SwinUpsample(nn.Module):
-    def __init__(self, in_channels):
+    def __init__(self, res,in_channels):
         super(SwinUpsample, self).__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-        self.reduce_channels = nn.Conv2d(in_channels, in_channels // 4, kernel_size=1)
+        self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
+        self.non_linearity = nn.GELU()
+        self.conv2 = nn.Conv2d(in_channels, in_channels // 4, kernel_size=1)
 
     def forward(self, x, input_dimensions):
         height, width = input_dimensions
@@ -36,7 +42,9 @@ class SwinUpsample(nn.Module):
         x = x.permute(0,2,1)
         x = x.view(batch_size, num_channels ,height, width)
         x = self.upsample(x)
-        x = self.reduce_channels(x)
+        x = self.conv1(x)
+        x = self.non_linearity(x)
+        x = self.conv2(x)
         batch_size, num_channels, height , width = x.shape
         x = x.view(batch_size, num_channels, height * width)
         x = x.permute(0,2,1)
@@ -94,7 +102,7 @@ class Swinv2DecoderStage(nn.Module):
 
         hidden_states_before_upsampling = hidden_states
         if self.upsample is not None:
-            height_upsampled, width_upsampled = (height ) * 2, (width ) * 2
+            height_upsampled, width_upsampled = (height) * 2, (width) * 2
             output_dimensions = (height, width, height_upsampled, width_upsampled)
             hidden_states = self.upsample(hidden_states_before_upsampling, input_dimensions)
         else:
@@ -110,13 +118,11 @@ class Swinv2DecoderStage(nn.Module):
 
 
 class Swinv2Decoder(nn.Module):
-    def __init__(self, config, enable_skip_connections ,pretrained_window_sizes=(0, 0, 0, 0)):
+    def __init__(self, config, pretrained_window_sizes=(0, 0, 0, 0)):
         super().__init__()
         self.num_layers = len(config.depths)
-        self.enable_skip_connections = enable_skip_connections
         self.config = config
-        self.grid_size = config.input_grid_size
-        self.final_layer = SwinV2Final_DecoderBlock(config.image_size,config.input_channels[-1])
+        self.final_layer = SwinV2Final_DecoderBlock(config.image_size+2,config.skip_connection_shape[-1][2])
 
         if self.config.pretrained_window_sizes is not None:
             pretrained_window_sizes = config.pretrained_window_sizes
@@ -126,19 +132,19 @@ class Swinv2Decoder(nn.Module):
         for i_layer in range(self.num_layers):
             stage = Swinv2DecoderStage(
                 config=config,
-                dim=int(config.input_channels[i_layer]),
-                input_resolution=(self.grid_size[0] * (2 ** i_layer), self.grid_size[1] * (2 ** i_layer)),
+                dim=int(config.skip_connection_shape[i_layer][2]),
+                input_resolution=(config.skip_connection_shape[i_layer][0], config.skip_connection_shape[i_layer][1]),
                 depth=config.depths[i_layer],
                 num_heads=config.num_heads[i_layer],
-                drop_path=dpr[sum(config.depths[:i_layer]) : sum(config.depths[: i_layer + 1])],
-                upsample=SwinUpsample(int(config.input_channels[i_layer]))  if (i_layer < self.num_layers - 1) else None
+                drop_path=dpr[sum(config.depths[:i_layer]): sum(config.depths[: i_layer + 1])],
+                upsample=SwinUpsample(res=(config.skip_connection_shape[i_layer+1][0] + 2),
+                                      in_channels=int(config.skip_connection_shape[i_layer][2]))
+                                      if (i_layer < self.num_layers - 1) else None
                 #pretrained_window_size=pretrained_window_sizes[i_layer],
             )
             layers.append(stage)
 
         self.layers = nn.ModuleList(layers)
-
-        self.gradient_checkpointing = False
 
     def forward(
         self,
@@ -166,20 +172,14 @@ class Swinv2Decoder(nn.Module):
         for i, layer_module in enumerate(self.layers):
             layer_head_mask = head_mask[i] if head_mask is not None else None
 
-            if self.gradient_checkpointing and self.training:
-                layer_outputs = self._gradient_checkpointing_func(
-                    layer_module.__call__, hidden_states, input_dimensions, layer_head_mask
-                )
-            else:
-                if i !=0:
-                    if self.enable_skip_connections:
-                        hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
-                layer_outputs = layer_module(
-                    hidden_states,
-                    input_dimensions,
-                    layer_head_mask,
-                    output_attentions,
-                )
+            if i !=0:
+                hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
+            layer_outputs = layer_module(
+                hidden_states,
+                input_dimensions,
+                layer_head_mask,
+                output_attentions,
+            )
 
             hidden_states = layer_outputs[0]
             hidden_states_before_downsampling = layer_outputs[1]
@@ -218,6 +218,7 @@ class Swinv2Decoder(nn.Module):
         output = self.final_layer(hidden_states)
 
         return output
+
 
 
 class Swin_VAE_decoder(nn.Module):

@@ -1,3 +1,5 @@
+import copy
+
 from ml_collections import config_dict
 
 
@@ -6,16 +8,34 @@ def get_config():
     config = config_dict.ConfigDict()
     config.context_size=8
 
+########  SEQUENCE DECODER  #################
+
+    config.sequence_decoder = config_dict.ConfigDict()
+    config.sequence_decoder.num_heads = 8
+    config.sequence_decoder.embed_dim = 512
+    config.sequence_decoder.dropout_rate = 0.1
+    config.sequence_decoder.causal_mask = True
+    config.sequence_decoder.use_bias = True
+
+    config.sequence_modeler = config_dict.ConfigDict()
+    config.sequence_modeler.depth = len(config.swin_encoder.depths)
+    config.sequence_modeler.embedding_dimension = [config.swin_encoder.image_sizes[i][0] *
+                                                   config.swin_encoder.image_sizes[i][1] *
+                                                   config.swin_encoder.skip_channels[i]
+                                                   for i in range(len(config.swin_encoder.image_sizes))]
+    config.sequence_modeler.num_heads = [2, 2, 2]
+
+
 ########  ENCODER  ########
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 32
     config.swin_encoder.num_channels = 3
     config.swin_encoder.patch_size = 2
-    config.swin_encoder.embed_dim = 16
-    config.swin_encoder.depths = [2, 2, 2]
-    config.swin_encoder.num_heads = [2, 2, 2]
-    config.swin_encoder.window_size = 4 #TODO look if we need to assert that the image size needs to be divisible or automatic padding is used
+    config.swin_encoder.embed_dim = 32
+    config.swin_encoder.depths = [2, 4, 8]
+    config.swin_encoder.num_heads = [2, 4, 4]
+    config.swin_encoder.window_size = 4
     config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
     config.swin_encoder.qkv_bias = True
@@ -30,40 +50,24 @@ def get_config():
     config.swin_encoder.output_hidden_states = True
     config.swin_encoder.out_features = None
     config.swin_encoder.out_indices = None
-    config.swin_encoder.image_sizes = [(int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**(i))),
-                                        int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**(i))))
-                                       for i in range(0,len (config.swin_encoder.depths))]
-    config.swin_encoder.skip_channels = [2 ** (i) * config.swin_encoder.embed_dim for i in range(len(config.swin_encoder.depths))]
+    config.swin_encoder.skip_connection_shape = [[
+        int(config.swin_encoder.image_size / (config.swin_encoder.patch_size * 2 ** i)),
+        int(config.swin_encoder.image_size / (config.swin_encoder.patch_size * 2 ** i)),
+        2 ** i * config.swin_encoder.embed_dim]
+        for i in range(len(config.swin_encoder.depths))]  # skip connections shape (H,W,C)
 
-#########  DECODER  ##############
+    #########  DECODER  ##############
 
     config.swin_decoder = config_dict.ConfigDict()
     config.swin_decoder.image_size = 32
     config.swin_decoder.num_channels = 3
     config.swin_decoder.patch_size = 2
-    config.swin_decoder.input_grid_size = (int(config.swin_encoder.image_size / (config.swin_decoder.patch_size* 2 ** (len(config.swin_encoder.depths)-1))),
-                                           int(config.swin_encoder.image_size / (config.swin_decoder.patch_size* 2 ** (len(config.swin_encoder.depths)-1))))
-    config.swin_decoder.embed_dim = 16
-    config.swin_decoder.depths = [2, 2, 2]
-    config.swin_decoder.num_heads = [2, 2, 2]
-    config.swin_decoder.window_size = 4  # TODO look if we need to assert that the image size needs to be divisible or automatic padding is used
-    config.swin_decoder.pretrained_window_sizes = [0, 0]
+    config.swin_decoder.embed_dim = 32
+    config.swin_decoder.depths = [2, 4, 8]
+    config.swin_decoder.num_heads = [2, 4, 4]
+    config.swin_decoder.window_size = 4
+    config.swin_decoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
-    config.swin_decoder.skip_channels = list(reversed(config.swin_encoder.skip_channels))
-    config.swin_decoder.input_channels = []
-    if config.enable_skip_connections:
-        for i in range(len(config.swin_decoder.skip_channels)):
-            if i == 0:
-                config.swin_decoder.input_channels.append(int(config.swin_decoder.skip_channels[0]))
-            else:
-                config.swin_decoder.input_channels.append(int(config.swin_decoder.input_channels[i-1]/4+config.swin_decoder.skip_channels[i]))
-    else:
-        for i in range(len(config.swin_decoder.skip_channels)):
-            if i == 0:
-                config.swin_decoder.input_channels.append(int(config.swin_decoder.skip_channels[0]))
-            else:
-                config.swin_decoder.input_channels.append(int(config.swin_decoder.input_channels[i - 1] / 4 ))
-
     config.swin_decoder.mlp_ratio = 4.0
     config.swin_decoder.qkv_bias = True
     config.swin_decoder.hidden_dropout_prob = 0.0
@@ -77,19 +81,6 @@ def get_config():
     config.swin_decoder.output_hidden_states = False
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
-
-
-############## SEQUENCE MODELER  #####################
-
-    config.sequence_modeler = config_dict.ConfigDict()
-    config.sequence_modeler.depth = len(config.swin_encoder.depths)
-    config.sequence_modeler.embedding_dimension = [config.swin_encoder.image_sizes[i][0]*
-                                                   config.swin_encoder.image_sizes[i][1]*
-                                                   config.swin_encoder.skip_channels[i]
-                                                   for i in range(len(config.swin_encoder.image_sizes))]
-    config.sequence_modeler.num_heads = [2, 2, 2]
-
-
-
+    config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))  # skip connections shape (H,W,C)ss
 
     return config
