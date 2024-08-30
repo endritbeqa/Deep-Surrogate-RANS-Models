@@ -4,8 +4,6 @@ import torch.nn as nn
 import torch
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2EncoderOutput
 
-from src.models.swin import Config_UNet_Swin
-
 
 class SwinV2Final_DecoderBlock(nn.Module):
     def __init__(self,res, in_channels, out_channels=3, kernel_size=1, padding=0):
@@ -104,7 +102,7 @@ class Swinv2DecoderStage(nn.Module):
 
         hidden_states_before_upsampling = hidden_states
         if self.upsample is not None:
-            height_upsampled, width_upsampled = (height ) * 2, (width ) * 2
+            height_upsampled, width_upsampled = (height) * 2, (width) * 2
             output_dimensions = (height, width, height_upsampled, width_upsampled)
             hidden_states = self.upsample(hidden_states_before_upsampling, input_dimensions)
         else:
@@ -120,13 +118,11 @@ class Swinv2DecoderStage(nn.Module):
 
 
 class Swinv2Decoder(nn.Module):
-    def __init__(self, config, enable_skip_connections ,pretrained_window_sizes=(0, 0, 0, 0)):
+    def __init__(self, config, pretrained_window_sizes=(0, 0, 0, 0)):
         super().__init__()
         self.num_layers = len(config.depths)
-        self.enable_skip_connections = enable_skip_connections
         self.config = config
-        self.grid_size = config.input_grid_size
-        self.final_layer = SwinV2Final_DecoderBlock(config.input_channels[-1])
+        self.final_layer = SwinV2Final_DecoderBlock(config.image_size+2,config.skip_connection_shape[-1][2])
 
         if self.config.pretrained_window_sizes is not None:
             pretrained_window_sizes = config.pretrained_window_sizes
@@ -136,19 +132,19 @@ class Swinv2Decoder(nn.Module):
         for i_layer in range(self.num_layers):
             stage = Swinv2DecoderStage(
                 config=config,
-                dim=int(config.input_channels[i_layer]),
-                input_resolution=(self.grid_size[0] * (2 ** i_layer), self.grid_size[1] * (2 ** i_layer)),
+                dim=int(config.skip_connection_shape[i_layer][2]),
+                input_resolution=(config.skip_connection_shape[i_layer][0], config.skip_connection_shape[i_layer][1]),
                 depth=config.depths[i_layer],
                 num_heads=config.num_heads[i_layer],
                 drop_path=dpr[sum(config.depths[:i_layer]): sum(config.depths[: i_layer + 1])],
-                upsample=SwinUpsample(res=(config.image_sizes[i_layer][0] + 2),in_channels=int(config.input_channels[i_layer])) if (i_layer < self.num_layers - 1) else None
+                upsample=SwinUpsample(res=(config.skip_connection_shape[i_layer+1][0] + 2),
+                                      in_channels=int(config.skip_connection_shape[i_layer][2]))
+                                      if (i_layer < self.num_layers - 1) else None
                 #pretrained_window_size=pretrained_window_sizes[i_layer],
             )
             layers.append(stage)
 
         self.layers = nn.ModuleList(layers)
-
-        self.gradient_checkpointing = False
 
     def forward(
         self,
@@ -176,20 +172,14 @@ class Swinv2Decoder(nn.Module):
         for i, layer_module in enumerate(self.layers):
             layer_head_mask = head_mask[i] if head_mask is not None else None
 
-            if self.gradient_checkpointing and self.training:
-                layer_outputs = self._gradient_checkpointing_func(
-                    layer_module.__call__, hidden_states, input_dimensions, layer_head_mask
-                )
-            else:
-                if i !=0:
-                    if self.enable_skip_connections:
-                        hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
-                layer_outputs = layer_module(
-                    hidden_states,
-                    input_dimensions,
-                    layer_head_mask,
-                    output_attentions,
-                )
+            if i !=0:
+                hidden_states = torch.cat((hidden_states, skip_connections[i-1]), dim=2)
+            layer_outputs = layer_module(
+                hidden_states,
+                input_dimensions,
+                layer_head_mask,
+                output_attentions,
+            )
 
             hidden_states = layer_outputs[0]
             hidden_states_before_downsampling = layer_outputs[1]
@@ -230,18 +220,15 @@ class Swinv2Decoder(nn.Module):
         return output
 
 
+
+
 class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
+        self.config = config
+        self.decoder = Swinv2Decoder(config.swin_decoder)
 
-    def forward(self, z, skip_connections, shape):
-        batch_size, h_w, hidden_size = shape
-        l = int(math.sqrt(h_w))
-        if skip_connections is not None:
-            skip_connections = list(skip_connections)[:-2]
-            skip_connections.reverse()
-
-        y = self.decoder(z, skip_connections, (l, l))
+    def forward(self, skip_connections):
+        y = self.decoder(skip_connections[0], skip_connections[1:], tuple(self.config.swin_decoder.skip_connection_shape[0][0:2]))
         return y
 
