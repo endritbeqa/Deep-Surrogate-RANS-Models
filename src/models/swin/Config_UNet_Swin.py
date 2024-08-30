@@ -59,7 +59,9 @@ def get_config():
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (H,W,C)
-
-
+    for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):
+        if i != 0:
+            config.swin_decoder.skip_connection_shape[i][2] += int(
+                config.swin_decoder.skip_connection_shape[i - 1][2] / 4)
 
     return config

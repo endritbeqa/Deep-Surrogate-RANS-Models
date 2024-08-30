@@ -5,8 +5,8 @@ def get_config():
 
     config = config_dict.ConfigDict()
     config.model = "swin" # swin or swin_cnn
-    config.data_dir = '/media/blin/VOL REC Blin/endrit/naca_dataset/medium_dataset'
-    config.output_dir = 'Outputs'
+    config.data_dir = '/local/disk1/ebeqa/naca_dataset/dataset'
+    config.output_dir = '/local/disk1/ebeqa/Thesis/Outputs'
     config.num_epochs = 30
     config.batch_size = 30
     config.normalize = True

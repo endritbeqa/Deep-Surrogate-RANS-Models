@@ -7,9 +7,10 @@ import numpy as np
 #TODO check in general if this is correct
 def get_data_from_tfds( config, mode):
 
+    mode = mode+'[:10%]'
     builder = tfds.builder_from_directory(builder_dir=config.data_dir)
     ds = builder.as_dataset(
-        split=tfds.split_for_jax_process(mode),
+        split=mode,
         shuffle_files=True
     )
 

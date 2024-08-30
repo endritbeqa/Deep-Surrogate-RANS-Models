@@ -15,4 +15,10 @@ class Swin_VAE_encoder(nn.Module):
 
     def forward(self, input):
         swin_encoder_output = self.encoder(input, output_hidden_states=True)
-        return swin_encoder_output
+        last_hidden_state = swin_encoder_output.last_hidden_state
+        hidden_states = swin_encoder_output.hidden_states
+
+        hidden_states = list(hidden_states)[:-2]
+        hidden_states.append(last_hidden_state)
+
+        return hidden_states
