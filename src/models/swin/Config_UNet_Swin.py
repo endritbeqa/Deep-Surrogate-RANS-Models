@@ -1,30 +1,11 @@
 import copy
-
+from functools import reduce
 from ml_collections import config_dict
 
 
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.context_size=8
-
-########  SEQUENCE DECODER  #################
-
-    config.sequence_decoder = config_dict.ConfigDict()
-    config.sequence_decoder.num_heads = 8
-    config.sequence_decoder.embed_dim = 512
-    config.sequence_decoder.dropout_rate = 0.1
-    config.sequence_decoder.causal_mask = True
-    config.sequence_decoder.use_bias = True
-
-    config.sequence_modeler = config_dict.ConfigDict()
-    config.sequence_modeler.depth = len(config.swin_encoder.depths)
-    config.sequence_modeler.embedding_dimension = [config.swin_encoder.image_sizes[i][0] *
-                                                   config.swin_encoder.image_sizes[i][1] *
-                                                   config.swin_encoder.skip_channels[i]
-                                                   for i in range(len(config.swin_encoder.image_sizes))]
-    config.sequence_modeler.num_heads = [2, 2, 2]
-
 
 ########  ENCODER  ########
 
@@ -82,5 +63,18 @@ def get_config():
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))  # skip connections shape (H,W,C)ss
+
+    ########  SEQUENCE DECODER  #################
+
+    config.sequence_modeler = config_dict.ConfigDict()
+    config.sequence_modeler.context_size = 8
+    config.sequence_modeler.depths = [2, 2, 2]
+    config.sequence_modeler.skip_connection_dim = [reduce(lambda x, y: x*y, skip_connection) for skip_connection in config.swin_encoder.skip_connection_shape]
+    config.sequence_modeler.embed_dim = [512, 256, 128]
+    config.sequence_modeler.num_heads = [2, 2, 2]
+    config.sequence_modeler.dropout_rate = 0.1
+    config.sequence_modeler.causal_mask = True
+    config.sequence_modeler.use_bias = True
+
 
     return config

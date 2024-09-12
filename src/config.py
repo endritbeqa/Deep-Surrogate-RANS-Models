@@ -4,8 +4,8 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.model = "swin" # swin or swin_cnn
-    config.data_dir = '/home/endrit/PycharmProjects/data/Sequence/128_tra'
+    config.model = "swin"
+    config.data_dir = ''
     config.output_dir = 'Outputs'
     config.context_size = 32
     config.num_epochs = 100
@@ -17,12 +17,11 @@ def get_config():
     config.loss_function = ['mae']
     config.checkpoint_every = 10
 
-    config.data_preprocessing = config_dict.ConfigDict()
-    config.data_preprocessing.preprocess_once = False
-    config.data_preprocessing.fixedAirfoilNormalization = False
-    config.data_preprocessing.makeDimLess = True
-    config.data_preprocessing.removePOffset = True
-
-
+    config.dataset = config_dict.ConfigDict()
+    config.dataset.normalize = True
+    config.dataset.simulation_step = 1
+    config.dataset.data_type = 'inc' # the modes are 'inc' (Incompressible Wake Flows) https://en.wikipedia.org/wiki/Wake_(physics)
+                             # 'tra' (transonic Cylinder Flow) https://en.wikipedia.org/wiki/Transonic
+                             # 'iso' (isotropic Turbulence) https://en.wikipedia.org/wiki/Homogeneous_isotropic_turbulence
 
     return config

@@ -225,7 +225,7 @@ class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
-        self.decoder = Swinv2Decoder(config.swin_decoder, config.enable_skip_connections)
+        self.decoder = Swinv2Decoder(config.swin_decoder)
 
     def forward(self, inputs):
         B, T, C, H, W = inputs[-1].shape

@@ -4,9 +4,9 @@ import os
 import json
 import torch.optim as optim
 
-from src.models import U_Net_SwinV2_Sequence_Modeler, Config_UNet_Swin
+from src.models import model_select
 from src.data import dataset
-from src.losses import loss
+from src import loss
 from torch.utils.data import DataLoader
 import utils
 import config
@@ -15,15 +15,16 @@ import config
 class Trainer(object):
     def __init__(self, config):
         self.config = config
-        self.model_config = Config_UNet_Swin.get_config()
-        self.model = U_Net_SwinV2_Sequence_Modeler.U_NET_Swin_Sequence_Modeler(self.model_config)
+        self.model_config, self.model = model_select.get_model(train_config.model_name)
         self.output_dir = config.output_dir
-        self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')
-        self.val_dataset = dataset.Airfoil_Dataset(config, mode='validation')
+        self.train_dataset = dataset.Turbulent_Dataset(config, mode='tra')
+        #self.val_dataset = dataset.Turbulent_Dataset(config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
         self.val_dataloader = DataLoader(self.val_dataset, config.batch_size, shuffle=True)
         self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
+        self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
+        print("Num parameters: {}".format(self.num_model_parameters))
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
 
@@ -37,6 +38,14 @@ class Trainer(object):
             os.mkdir(dir)
 
     def train_model(self):
+        with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.model_config.to_dict(), json_file, indent=4)
+
+        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
+            file.write("Number of model parameters: {}".format(self.num_model_parameters))
 
         train_curve = []
         val_curve = []
@@ -88,15 +97,9 @@ class Trainer(object):
                 utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
 
-        loss_plot = utils.plot_losses(train_curve, val_curve)
-        loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
-        loss_plot.close()
-
-        config_dict = self.config.to_dict()
-
-        # Save the dictionary as a JSON file
-        with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
-            json.dump(config_dict, json_file, indent=4)
+                loss_plot = utils.plot_losses(train_curve, val_curve)
+                loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
+                loss_plot.close()
 
         return val_curve[-1]
 
