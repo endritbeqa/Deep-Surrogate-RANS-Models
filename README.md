@@ -1,7 +1,7 @@
-<h1> Thesis </h1>
+<h1> Deep surrogate models for RANS simulation</h1>
 
-<p>Github repo for thesis</p>
+Currently, there are 3 experiments being pursued, using a Swin V2 U-net architecture. Experiments are:
 
-<p>The code follows the google python style <a href="https://google.github.io/styleguide/pyguide.html">guide</a></p>
-
-
+1. [Steady State Flow Prediction](https://github.com/endritbeqa/Thesis/tree/Time-Averaged-Flow-Prediction)
+2. [Uncertainty-aware Surrogate Models for Airfoil Flow Simulations](https://github.com/endritbeqa/Thesis/tree/Uncertainty-Aware-Transformer)
+3. [Turbulent Flow Simulations](https://github.com/endritbeqa/Thesis/tree/sequence-modelling)
