@@ -5,8 +5,9 @@ def get_config():
 
     config = config_dict.ConfigDict()
     config.model = "swin" # swin or swin_cnn
-    config.data_dir = './data_res_32/data'
+    config.data_dir = '/home/endrit/PycharmProjects/data/Sequence/128_tra'
     config.output_dir = 'Outputs'
+    config.context_size = 32
     config.num_epochs = 100
     config.batch_size = 600
     config.normalize = True

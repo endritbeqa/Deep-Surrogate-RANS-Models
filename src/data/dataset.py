@@ -1,34 +1,70 @@
+import json
 import os
+import random
+
 import numpy as np
 from ml_collections import config_dict
+from src import config
 from torch.utils.data import Dataset
 
 #TODO test this file for bugs
-class Airfoil_Dataset(Dataset):
+class Turbulent_Dataset(Dataset):
 
-    def __init__(self, config: config_dict, mode: str):
-        self.data_dir = os.path.join(config.data_dir, mode)
+    def __init__(self, config: config_dict):
+        #self.data_dir = os.path.join(config.data_dir, mode)
+        self.data_dir = config.data_dir
         self.batch_size = config.batch_size
+        self.context_size = config.context_size
         self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
         self.makeDimLess = config.data_preprocessing.makeDimLess
         self.removePOffset = config.data_preprocessing.removePOffset
-        self.file_names = [f for f in os.listdir(self.data_dir) if f.endswith('.npz')]
+        self.data = {}
+        self.simulations_names = sorted(os.listdir(self.data_dir))
+        for simulation in self.simulations_names:
+            json_file = open(os.path.join(self.data_dir, simulation,"src", 'description.json'))
+            simulation_config = json.load(json_file)
+            self.data[simulation] = { "timesteps": len(simulation_config.get('Drag Coefficient')),
+                                      "reynolds_number": simulation_config.get('Reynolds Number'),
+                                      "mach_number": simulation_config.get('Mach Number'),
+                "pressure": sorted([f for f in os.listdir(os.path.join(self.data_dir, simulation)) if f.startswith("pressure") and f.endswith(".npz")]),
+                "velocity": sorted([f for f in os.listdir(os.path.join(self.data_dir, simulation)) if f.startswith("velocity") and f.endswith(".npz")])
+                                     }
+            try:
+                self.data[simulation]['density'] = sorted([f for f in os.listdir(os.path.join(self.data_dir, simulation)) if f.startswith("density") and f.endswith(".npz")])
+            except:
+                print("No density data provided")
         self.epsilon =1e-8 #constant for numerical stability
-        data = np.load(os.path.join(self.data_dir, self.file_names[0]))['a']
-        c, h, w = data.shape
-        assert h == w, "Fields are not square"
-        self.res = h
+
 
     def __len__(self):
         return len(self.file_names)
 
     def __getitem__(self, idx):
-        data = np.load(os.path.join(self.data_dir,self.file_names[idx]))
-        data = self.preprocess_data(data['a'].astype(np.float32))
-        input = data[0:3, :, :]
-        target = data[3:, :, :]
+        simulation_name = 'sim_'+str(idx).zfill(6)
+        simulation = self.data[simulation_name]
+        starting_timestep = random.randint(0,simulation['timesteps'])
+        reynolds_number = simulation['reynolds_number']
+        mach_number = simulation['mach_number']
+        data = []
 
-        return (input, target, self.file_names[idx])
+        for i in range(starting_timestep, starting_timestep+self.context_size):
+            pressure = np.load(os.path.join(self.data_dir,simulation_name,simulation["pressure"][i]))['arr_0']
+            velocity = np.load(os.path.join(self.data_dir,simulation_name,simulation["velocity"][i]))['arr_0']
+            fields = np.concatenate((pressure,velocity), axis=0)
+
+            try:
+                density = np.load(os.path.join(self.data_dir,simulation_name,simulation["density"][i]))['arr_0']
+                fields = np.concatenate((fields,density), axis=0)
+            except:
+                print("No density field provided")
+
+            #fields = self.preprocess_data(fields)
+            data.append(fields)
+
+        data = np.array(data)
+        return data, reynolds_number, mach_number
+
+
 
     def preprocess_data(self, data) -> list[np.ndarray]:
 
@@ -90,4 +126,11 @@ class Airfoil_Dataset(Dataset):
 
         return data
 
+if __name__ == '__main__':
+    configgg = config.get_config()
+
+    train_dataset = Turbulent_Dataset(configgg)
+
+    for data, rey, mach in train_dataset:
+        print("hola")
 
