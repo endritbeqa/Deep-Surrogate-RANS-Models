@@ -1,5 +1,3 @@
-import math
-
 from datetime import datetime
 import numpy
 import torch
@@ -9,11 +7,10 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import TensorDataset
 
-from src.models import U_net_SwinV2, Config_UNet_Swin
-from src.dataloader import dataset
-from src.losses import loss
+from src.models.swin import U_net_SwinV2, Config_UNet_Swin
+from src.data import dataset
 from torch.utils.data import DataLoader
-from src import utils
+from src import utils, loss
 from src import config
 
 

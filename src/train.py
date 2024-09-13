@@ -7,30 +7,28 @@ import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 
-from src.models import U_net_SwinV2, Config_UNet_Swin
-from src.dataloader import dataset
-from src.losses import loss
-from src import utils
+from src.models import model_select
+from src.data import dataset
+from src import utils, loss
 from src import config
 
 
 class Trainer(object):
     def __init__(self, train_config):
         self.config = train_config
-        self.model_config = Config_UNet_Swin.get_config()
-        self.model = U_net_SwinV2.U_NET_Swin(self.model_config)
+        self.model_config, self.model = model_select.get_model(train_config.model_name)
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2)
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2)
-        self.loss_func = loss.KLD
+        self.loss_func = loss.get_loss_function(self.config.loss_function)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=train_config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=train_config.num_epochs, eta_min=0)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
-        self.beta = train_config.beta
+        self.beta = train_config.KLD_beta
         print("Num parameters: {}".format(self.num_model_parameters))
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),

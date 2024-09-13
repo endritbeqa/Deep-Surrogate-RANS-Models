@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
-from src.models import Swin_VAE_encoder, Swin_VAE_decoder
-
-
+from src.models.swin import Swin_VAE_decoder, Swin_VAE_encoder
 
 
 class U_NET_Swin(nn.Module):

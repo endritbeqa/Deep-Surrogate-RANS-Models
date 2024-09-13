@@ -2,8 +2,8 @@ import os
 import torch
 import numpy as np
 from src import utils
-from src.models.U_net_SwinV2 import U_NET_Swin
-from src.models import Config_UNet_Swin
+from src.models.swin.U_net_SwinV2 import U_NET_Swin
+from src.models.swin import Config_UNet_Swin
 from src import config
 
 
