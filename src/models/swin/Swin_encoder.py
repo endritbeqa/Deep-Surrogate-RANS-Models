@@ -12,7 +12,7 @@ def load_swin_transformer(config_dict: dict) -> nn.Module:
     return model
 
 
-class Swin_VAE_encoder(nn.Module):
+class Swin_encoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.encoder = load_swin_transformer(config.swin_encoder)

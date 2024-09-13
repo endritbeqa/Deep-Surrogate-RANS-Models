@@ -221,7 +221,7 @@ class Swinv2Decoder(nn.Module):
 
 
 
-class Swin_VAE_decoder(nn.Module):
+class Swin_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
