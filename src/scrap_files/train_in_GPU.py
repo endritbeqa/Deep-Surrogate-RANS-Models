@@ -7,7 +7,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import TensorDataset
 
-from src.models.swin import U_net_SwinV2, Config_UNet_Swin
+from src.models.swin_VAE import U_net_SwinV2_VAE, Config_UNet_Swin
 from src.data import dataset
 from torch.utils.data import DataLoader
 from src import utils, loss
@@ -22,7 +22,7 @@ class Trainer(object):
     def __init__(self, config):
         self.config = config
         self.model_config = Config_UNet_Swin.get_config()
-        self.model = U_net_SwinV2.U_NET_Swin(self.model_config)
+        self.model = U_net_SwinV2.U_NET_Swin_Autoencoder(self.model_config)
         self.output_dir = config.output_dir
 
         self.train_dataset = dataset.Airfoil_Dataset(config, mode='train')

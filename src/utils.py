@@ -22,6 +22,22 @@ def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', titl
     plt.legend()
     return plt
 
+def plot_recon_vs_KLD(train_recon, train_KLD,val_recon,val_KLD, xlabel='Epoch', ylabel='Loss', title='Train/Val loss curves',
+                label1='Training Reconstruction', label2='Training KLD', label3='Validation Reconstruction', label4='Validation KLD'):
+
+    x_values = np.arange(len(train_recon))
+    plt.plot(x_values, train_recon, label=label1, color='blue')
+    plt.plot(x_values, train_KLD, label=label2, color='pink')
+    plt.plot(x_values, val_recon, label=label3, color='orange')
+    plt.plot(x_values, val_KLD, label=label4, color='red')
+    plt.yscale('log')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.legend()
+    return plt
+
+
 
 def save_images(outputs, output_dir, mode , epoch):
     try:

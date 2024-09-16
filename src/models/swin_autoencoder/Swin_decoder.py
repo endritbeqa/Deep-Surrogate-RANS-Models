@@ -220,15 +220,17 @@ class Swinv2Decoder(nn.Module):
         return output
 
 
-class Swin_VAE_decoder(nn.Module):
+class Swin_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
         self.decoder = Swinv2Decoder(config.swin_decoder)
-        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim + config.condition_latent_dim,
+        self.non_linearity = nn.ReLU()
+        self.fc_z = nn.ModuleList([nn.Linear(config.latent_dim[i],
                                              math.prod(config.swin_decoder.skip_connection_shape_pre_cat[i]))
                                    for i in range(len(config.swin_decoder.skip_connection_shape_pre_cat))])
-
+        self.z_layerNorm = nn.ModuleList([nn.LayerNorm(math.prod(config.swin_decoder.skip_connection_shape_pre_cat[i]))
+                                   for i in range(len(config.swin_decoder.skip_connection_shape_pre_cat))])
 
     def forward(self, z):
         batch_size, _ = z[0].shape
@@ -236,6 +238,8 @@ class Swin_VAE_decoder(nn.Module):
         skip_connections = []
         for i, z_i in enumerate(z):
             z_i = self.fc_z[i](z_i)
+            z_i = self.z_layerNorm[i](z_i)
+            z_i = self.non_linearity(z_i)
             h, w, c = self.config.swin_decoder.skip_connection_shape_pre_cat[i]
             z_i = z_i.view(batch_size, h*w, c)
             skip_connections.append(z_i)

@@ -1,11 +1,12 @@
 import torch
 import torch.nn as nn
-from src.models.swin import Swin_VAE_decoder, Swin_VAE_encoder
+from src.models.swin_VAE import Swin_VAE_decoder, Swin_VAE_encoder
 
 
 class U_NET_Swin(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.config = config
         self.encoder = Swin_VAE_encoder.Swin_VAE_encoder(config)
         self.decoder = Swin_VAE_decoder.Swin_VAE_decoder(config)
 
@@ -17,11 +18,13 @@ class U_NET_Swin(nn.Module):
         return prediction , torch.cat(mu, dim =1), torch.cat(log_var, dim =1)
 
 
-    def inference(self, condition, random_tensors):
+    def inference(self, condition):
         condition = self.encoder.condition_encoder(condition, output_hidden_states=True)
         condition_hidden_states = condition.hidden_states
         condition_hidden_states = list(condition_hidden_states)[:-2]
         condition_hidden_states.append(condition.last_hidden_state)
+        random_tensors = [torch.unsqueeze(torch.rand(self.config.latent_dim[i]), dim=0) for i in
+                          range(len(self.config.latent_dim))]
 
         condition_latent = []
 

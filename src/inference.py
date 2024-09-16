@@ -1,13 +1,16 @@
+import json
 import os
 import torch
 import numpy as np
+from ml_collections import ConfigDict
+
 from src import utils
-from src.models.swin.U_net_SwinV2 import U_NET_Swin
-from src.models.swin import Config_UNet_Swin
+from src.models.swin_VAE.U_net_SwinV2_VAE import U_NET_Swin
+from src.models.swin_VAE import Config_UNet_Swin
 from src import config
 
 
-def preprocess_data( data) -> np.ndarray:
+def preprocess_data(data) -> np.ndarray:
     removePOffset, makeDimLess, fixedAirfoilNormalization = True, True, True
     epsilon = 1e-8
 
@@ -64,7 +67,6 @@ def preprocess_data( data) -> np.ndarray:
     data[3][boundary] *= (1.0 / max_targets_0)
     data[4][boundary] *= (1.0 / max_targets_1)
     data[5][boundary] *= (1.0 / max_targets_2)
-
     data = data.reshape((c, h, w))
 
     return data
@@ -79,16 +81,13 @@ def sample_from_vae(model_config, checkpoint, condition, num_samples):
     model.eval()
 
     torch.manual_seed(42)
-
     condition = torch.unsqueeze(torch.from_numpy(condition), 0)
     condition = condition.to(device='cpu')
-
     predictions = []
 
     for i in range(num_samples):
         with torch.no_grad():
-            random_tensors = [torch.unsqueeze(torch.rand(model_config.latent_dim), dim=0) for _ in range(3)]
-            prediction = model.inference(condition, random_tensors)
+            prediction = model.inference(condition)
             predictions.append(prediction)
 
     return np.array(predictions)
@@ -113,14 +112,15 @@ def get_test_files(directory):
 
 
 
-#TODO need to interpolate the test data to 32 and 64 res
 
 if __name__ == '__main__':
 
-    interpolation_files = get_test_files('/home/blin/PycharmProjects/Thesis/src/Uncertainty_data_test_preprocessed/interpolation_32')
     config = config.get_config()
-    model_config = Config_UNet_Swin.get_config()
-    checkpoint = "/home/blin/PycharmProjects/Thesis/src/Outputs/checkpoints/47.pth"
+    with open(config.sampling.model_config, 'r') as f:
+        model_config_data = json.load(f)
+    model_config = ConfigDict(model_config_data)
+    interpolation_files = get_test_files(config.sampling.test_folder)
+    checkpoint = config.sampling.checkpoint
 
     target_means = []
     target_stds = []
@@ -133,9 +133,9 @@ if __name__ == '__main__':
         inputs = data[0][:3]
         predictions = sample_from_vae(model_config, checkpoint, inputs, 25)
         predictions = predictions.squeeze()
-        utils.save_images(predictions, "./predictions", case, 0)
+        utils.save_images(predictions, "{}/predictions".format(config.sampling.output_dir), case, 0)
         targets = data[:,3:,:,:]
-        utils.save_images(targets, "./targets", case, 0)
+        utils.save_images(targets, "{}/targets".format(config.sampling.output_dir), case, 0)
         target_mean = np.mean(targets, axis=0)
         target_std = np.std(targets, axis=0)
         predictions_mean = np.mean(predictions, axis=0)
@@ -152,8 +152,8 @@ if __name__ == '__main__':
     predictions_means = np.array(predictions_means)
     predictions_stds = np.array(predictions_stds)
 
-    utils.save_images(target_means, "./test_results", "target_means", 0)
-    utils.save_images(target_stds, "./test_results", "target_stds", 0)
-    utils.save_images(predictions_means, "./test_results", "predictions_means", 0)
-    utils.save_images(predictions_stds, "./test_results", "predictions_stds", 0)
+    utils.save_images(target_means, "{}/test_results".format(config.sampling.output_dir), "target_means", 0)
+    utils.save_images(target_stds, "{}/test_results".format(config.sampling.output_dir), "target_stds", 0)
+    utils.save_images(predictions_means, "{}/test_results".format(config.sampling.output_dir), "predictions_means", 0)
+    utils.save_images(predictions_stds, "{}/test_results".format(config.sampling.output_dir), "predictions_stds", 0)
 
