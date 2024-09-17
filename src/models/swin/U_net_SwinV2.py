@@ -1,12 +1,12 @@
 import torch.nn as nn
-from src.models.swin import Swin_VAE_encoder, Swin_VAE_decoder
+from src.models.swin import Swin_encoder, Swin_decoder
 
 
 class U_NET_Swin(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.encoder = Swin_VAE_encoder.Swin_VAE_encoder(config)
-        self.decoder = Swin_VAE_decoder.Swin_VAE_decoder(config)
+        self.encoder = Swin_encoder.Swin_encoder(config)
+        self.decoder = Swin_decoder.Swin_decoder(config)
 
 
     def forward(self, input):

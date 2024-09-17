@@ -1,8 +1,5 @@
 import numpy as np
-import torch
 import os
-import json
-import torch.optim as optim
 from PIL import Image
 from matplotlib import cm
 import matplotlib.pyplot as plt
