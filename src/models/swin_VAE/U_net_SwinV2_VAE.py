@@ -10,8 +10,9 @@ class U_NET_Swin(nn.Module):
         self.encoder = Swin_VAE_encoder.Swin_VAE_encoder(config)
         self.decoder = Swin_VAE_decoder.Swin_VAE_decoder(config)
 
-
+    #TODO ADD a skip connection at input resolution you dumbass
     def forward(self, condition, target):
+
         z, mu, log_var = self.encoder(condition, target)
         prediction = self.decoder(z)
 
@@ -19,9 +20,12 @@ class U_NET_Swin(nn.Module):
 
 
     def inference(self, condition):
-        condition = self.encoder.condition_encoder(condition, output_hidden_states=True)
+        condition_conv_block_output = self.encoder.conv_block_condition(condition)
+        condition = self.encoder.condition_encoder(condition_conv_block_output, output_hidden_states=True)
         condition_hidden_states = condition.hidden_states
         condition_hidden_states = list(condition_hidden_states)[:-2]
+        first_condition = torch.permute(torch.flatten(condition_conv_block_output, start_dim=2, end_dim=3),dims=(0, 2, 1))
+        condition_hidden_states.insert(0, first_condition)
         condition_hidden_states.append(condition.last_hidden_state)
         random_tensors = [torch.unsqueeze(torch.rand(self.config.latent_dim[i]), dim=0) for i in
                           range(len(self.config.latent_dim))]

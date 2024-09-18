@@ -21,8 +21,8 @@ class Trainer(object):
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
-        self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2)
-        self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2)
+        self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
+        self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(self.config.loss_function)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=train_config.lr)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=train_config.num_epochs, eta_min=0)
@@ -88,7 +88,9 @@ class Trainer(object):
 
                 loss.backward()
                 self.optimizer.step()
+
             self.scheduler.step()
+
             train_loss = train_loss / len(self.train_dataloader.dataset)
             train_reconstruction_loss = train_reconstruction_loss / len(self.train_dataloader.dataset)
             train_KLD_loss = train_KLD_loss / len(self.train_dataloader.dataset)
@@ -111,9 +113,11 @@ class Trainer(object):
                     val_loss += loss.item()
                     val_reconstruction_loss += mae.item()
                     val_KLD_loss += kld
+
             val_loss = val_loss / len(self.val_dataloader.dataset)
             val_reconstruction_loss = val_reconstruction_loss / len(self.val_dataloader.dataset)
             val_KLD_loss = val_KLD_loss / len(self.val_dataloader.dataset)
+
             val_curve.append(val_loss)
             val_reconstruction_curve.append(val_reconstruction_loss)
             val_KLD_curve.append(val_KLD_loss)

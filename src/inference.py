@@ -6,7 +6,6 @@ from ml_collections import ConfigDict
 
 from src import utils
 from src.models.swin_VAE.U_net_SwinV2_VAE import U_NET_Swin
-from src.models.swin_VAE import Config_UNet_Swin
 from src import config
 
 

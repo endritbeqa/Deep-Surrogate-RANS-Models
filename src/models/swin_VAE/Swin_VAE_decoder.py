@@ -5,33 +5,46 @@ import torch
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2EncoderOutput
 
 
-class SwinV2Final_DecoderBlock(nn.Module):
-    def __init__(self,res, in_channels, out_channels=3, kernel_size=1, padding=0):
-        super(SwinV2Final_DecoderBlock, self).__init__()
-        self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
-        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
-        self.layerNorm = nn.LayerNorm([in_channels, res-2, res-2])
+class Conv_Block(nn.Module):
+    def __init__(self, res, input_dim, out_dim):
+        super(Conv_Block, self).__init__()
+        self.upsample = nn.Upsample(size=(res+2, res+2), mode='bilinear')
+        self.conv1 = nn.Conv2d(input_dim, input_dim, kernel_size=3)
+        self.layerNorm1 = nn.LayerNorm([input_dim, res, res])
         self.non_linearity = nn.GELU()
-        self.conv2 = nn.Conv2d(in_channels=in_channels,
-                              out_channels=out_channels,
-                              kernel_size=kernel_size,
-                              padding=padding)
+        self.conv2 = nn.Conv2d(in_channels=input_dim,
+                              out_channels=out_dim,
+                              kernel_size=1)
 
     def forward(self, x):
-        batch_size, dim, num_channels = x.shape
-        height = int(math.sqrt(dim))
-        x = x.permute(0, 2, 1)
-        x = x.view(batch_size, num_channels, height, height)
         x = self.upsample(x)
         x = self.conv1(x)
-        x = self.layerNorm(x)
+        x = self.layerNorm1(x)
         x = self.non_linearity(x)
         x = self.conv2(x)
 
         return x
 
+
+class Swin_Conv_Upsample(nn.Module):
+    def __init__(self, res, in_channels):
+        super(Swin_Conv_Upsample, self).__init__()
+        self.upsample = nn.Upsample(size=(res+2,res+2), mode='bilinear', align_corners=True)
+        self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
+        self.non_linearity = nn.GELU()
+        self.conv2 = nn.Conv2d(in_channels, in_channels // 4, kernel_size=1)
+
+    def forward(self, x):
+        x = self.upsample(x)
+        x = self.conv1(x)
+        x = self.non_linearity(x)
+        x = self.conv2(x)
+        return x
+
+
+
 class SwinUpsample(nn.Module):
-    def __init__(self, res,in_channels):
+    def __init__(self, res, in_channels):
         super(SwinUpsample, self).__init__()
         self.upsample = nn.Upsample(size=(res,res), mode='bilinear', align_corners=True)
         self.conv1 = nn.Conv2d(in_channels, in_channels, kernel_size=3)
@@ -124,7 +137,9 @@ class Swinv2Decoder(nn.Module):
         super().__init__()
         self.num_layers = len(config.depths)
         self.config = config
-        self.final_layer = SwinV2Final_DecoderBlock(config.image_size+2,config.skip_connection_shape[-1][2])
+        self.second_last_layer = Conv_Block(config.skip_connection_shape[-2][0],config.skip_connection_shape[-2][2],config.skip_connection_shape[-2][2])
+        self.last_upsample = Swin_Conv_Upsample(config.skip_connection_shape[-1][0],config.skip_connection_shape[-2][2])
+        self.last_layer = Conv_Block(config.skip_connection_shape[-1][0],config.skip_connection_shape[-1][2],config.num_channels)
 
         if self.config.pretrained_window_sizes is not None:
             pretrained_window_sizes = config.pretrained_window_sizes
@@ -217,7 +232,25 @@ class Swinv2Decoder(nn.Module):
                 if v is not None
             )
 
-        output = self.final_layer(hidden_states)
+
+       ### TODO Clean this disguisting mess
+        batch_size, dim, num_channels = hidden_states.shape
+        height = int(math.sqrt(dim))
+        hidden_states = hidden_states.permute(0, 2, 1)
+        hidden_states = hidden_states.view(batch_size, num_channels, height, height)
+
+        output = self.second_last_layer(hidden_states)
+        output = self.last_upsample(output)
+        batch_size, num_channels, height, width = output.shape
+        output = output.view(batch_size, num_channels, height * width)
+        output = output.permute(0, 2, 1)
+        output = torch.cat((output,skip_connections[-1]), dim=2)
+
+        batch_size, dim, num_channels = output.shape
+        height = int(math.sqrt(dim))
+        output = output.permute(0, 2, 1)
+        output = output.view(batch_size, num_channels, height, height)
+        output = self.last_layer(output)
 
         return output
 

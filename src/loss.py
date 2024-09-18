@@ -35,7 +35,7 @@ def mean_relative_loss_function(input, target):
     return loss
 
 def beta_KLD(mu, logvar, beta):
-    KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+    KLD = -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
     return beta*KLD
 
 def get_loss_function(losses: list):
