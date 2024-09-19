@@ -22,5 +22,8 @@ def get_config():
     config.data_preprocessing.removePOffset = True
 
 
+    config.data = config_dict.ConfigDict()
+    config.data.type = ""
+
 
     return config

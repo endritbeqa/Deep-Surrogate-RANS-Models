@@ -7,6 +7,12 @@ def get_config():
     config = config_dict.ConfigDict()
 
 
+    config.conv_block = config_dict.ConfigDict()
+    config.conv_block.image_size = 32
+    config.conv_block.num_channels = 3
+    config.conv_block.embed_dim = 12
+    config.conv_block.output_dim = 24
+
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 256
     config.swin_encoder.num_channels = 3
@@ -34,7 +40,8 @@ def get_config():
         int(config.swin_encoder.image_size / (config.swin_encoder.patch_size * 2 ** i)),
         2 ** i * config.swin_encoder.embed_dim]
         for i in range(len(config.swin_encoder.depths))]  # skip connections shape (H,W,C)
-
+    config.swin_encoder.skip_connection_shape.insert(0, [config.conv_block.image_size, config.conv_block.image_size,
+                                                         config.conv_block.output_dim])
 
     config.swin_decoder = config_dict.ConfigDict()
     config.swin_decoder.image_size = 256
