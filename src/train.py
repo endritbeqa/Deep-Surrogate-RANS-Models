@@ -1,5 +1,4 @@
 import os
-import math
 import json
 from datetime import datetime
 
@@ -10,8 +9,12 @@ import torch.nn.functional as F
 
 from src.models import model_select
 from src.data import dataset
-from src import utils, loss
+from src import utils
+from src import loss
 from src import config
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
 
 
 class Trainer(object):
