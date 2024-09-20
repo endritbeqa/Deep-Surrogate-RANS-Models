@@ -27,11 +27,10 @@ def con_of_mass(predictions, targets):
 
 
 def mean_relative_loss_function(prediction, target):
-    epsilon = 1e-6
+    epsilon = 1e-8
     absolute_difference = torch.abs(prediction - target)
-    absolute_target = torch.abs(target)
-    relative_difference = absolute_difference / torch.max(absolute_target, torch.tensor(epsilon, dtype=target.dtype,
-                                                                                        device=target.device))
+    absolute_target = torch.abs(target)+epsilon
+    relative_difference = absolute_difference / absolute_target
     loss = torch.mean(relative_difference)
     return loss
 

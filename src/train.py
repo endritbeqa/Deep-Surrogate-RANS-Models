@@ -5,12 +5,11 @@ import torch
 import os
 import json
 import torch.optim as optim
-import tensorflow_datasets as tfds
 from torch.utils.data import DataLoader
 
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from src.models import model_select
-from src.data import naca_dataset, dataset
+from src.data import dataset
 from src import loss
 
 from src import utils
@@ -40,7 +39,7 @@ class Trainer(object):
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
-                    os.path.join(self.output_dir, "config"),
+                    os.path.join(self.output_dir, "configs"),
                     os.path.join(self.output_dir, "images"),
                     os.path.join(self.output_dir, "images/predictions"),
                     os.path.join(self.output_dir, "images/targets")]:
@@ -98,7 +97,7 @@ class Trainer(object):
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
                     'epoch': epoch,
-                    'state_dict': self.model.state_dict(),
+                    'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                 }
                 torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))

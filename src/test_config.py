@@ -13,12 +13,15 @@ def get_config():
     config.data_dir = '/media/blin/VOL REC Blin/endrit/datasets/steady-state/UIUC_dataset'
     config.output_dir = os.path.join(config.model_folder, "predictions")
     config.batch_size = 1
-    config.loss = ['mre']
+    config.loss = ['mrl']
 
     config.data_preprocessing = config_dict.ConfigDict()
     config.data_preprocessing.fixedAirfoilNormalization = True
     config.data_preprocessing.makeDimLess = True
     config.data_preprocessing.removePOffset = True
+
+    config.data = config_dict.ConfigDict()
+    config.data.type = "test"
 
 
     return config

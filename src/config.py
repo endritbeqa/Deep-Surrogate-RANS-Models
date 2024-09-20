@@ -4,12 +4,12 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test = "small_model_2"
+    config.test = "tiny_model"
     config.model_name = "swin" # swin or swin_cnn
     config.data_dir = '/media/blin/VOL REC Blin/endrit/datasets/steady-state/UIUC_dataset/train'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/results/Steady/{}'.format(config.test)
-    config.num_epochs = 50
-    config.batch_size = 30
+    config.num_epochs = 20
+    config.batch_size = 300
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-5
