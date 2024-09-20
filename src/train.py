@@ -103,12 +103,16 @@ class Trainer(object):
                 }
                 torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
+                if epoch == self.config.num_epochs - 1:
+                    torch.save(checkpoint, os.path.join(self.output_dir, "checkpoints","Final.pth"))
+
                 utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
 
                 loss_plot = utils.plot_losses(train_curve, val_curve)
                 loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
                 loss_plot.close()
+
 
         return val_curve[-1]
 

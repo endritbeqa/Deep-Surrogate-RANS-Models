@@ -44,3 +44,31 @@ def save_images(outputs, output_dir,mode , epoch):
             im = im.resize((h, w))
             file_path = "{}/images/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
             im.save(file_path)
+
+
+def plot_comparison(targets, predictions, output_dir, file_name):
+    if targets.shape != predictions.shape or targets.shape[0] != 3:
+        raise ValueError("Input arrays must have shape (3, H, W)")
+
+    fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+
+    column_labels = ['P', 'Ux', 'Uy']
+    row_labels = ['Target', 'Prediction']
+
+    for i in range(3):
+        im = axes[0, i].imshow(targets[i], cmap=cm.magma)
+        fig.colorbar(im, ax=axes[0, i])
+        axes[0, i].set_title(column_labels[i])
+
+    for i in range(3):
+        im = axes[1, i].imshow(predictions[i], cmap=cm.magma)
+        fig.colorbar(im, ax=axes[1, i])
+
+    for ax, row_label in zip(axes[:, 0], row_labels):
+        ax.set_ylabel(row_label, rotation=90, size='large')
+
+    plt.tight_layout()
+
+    save_path = os.path.join(output_dir, file_name+".png")
+    plt.savefig(save_path)
+    plt.close()
