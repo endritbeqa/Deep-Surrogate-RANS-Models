@@ -6,8 +6,8 @@ from torch.utils.data import Dataset
 
 class Airfoil_Dataset(Dataset):
 
-    def __init__(self, config: config_dict, type: str,mode: str):
-        self.data_dir = os.path.join(config.data_dir, type, mode)
+    def __init__(self, config: config_dict, mode: str):
+        self.data_dir = os.path.join(config.data_dir,config.data.type , mode)
         self.batch_size = config.batch_size
         self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
         self.makeDimLess = config.data_preprocessing.makeDimLess

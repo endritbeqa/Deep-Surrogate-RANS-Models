@@ -1,4 +1,6 @@
 import math
+from datetime import datetime
+
 import torch
 import os
 import json
@@ -8,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from src.models import model_select
-from src.data import naca_dataset
+from src.data import naca_dataset, dataset
 from src import loss
 
 from src import utils
@@ -21,10 +23,12 @@ class Trainer(object):
         self.config = config
         self.model_config, self.model = model_select.get_model(train_config.model_name)
         self.output_dir = config.output_dir
-        self.train_dataset = naca_dataset.get_data_from_tfds(self.config, mode='train')
-        self.validation_dataset = naca_dataset.get_data_from_tfds(self.config, mode='validation')
-        self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True)
-        self.val_dataloader = DataLoader(self.validation_dataset, config.batch_size, shuffle=True)
+        self.train_dataset = dataset.Airfoil_Dataset(self.config, mode='train')
+        self.validation_dataset = dataset.Airfoil_Dataset(self.config, mode='validation')
+        #self.train_dataset = naca_dataset.get_data_from_tfds(self.config, mode='train')
+        #self.validation_dataset = naca_dataset.get_data_from_tfds(self.config, mode='validation')
+        self.train_dataloader = DataLoader(self.train_dataset, config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
+        self.val_dataloader = DataLoader(self.validation_dataset, config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.Adam(self.model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=config.num_epochs, eta_min=0)
@@ -43,26 +47,24 @@ class Trainer(object):
             os.mkdir(dir)
 
     def train_model(self):
-        with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
+        with open("{}/configs/config.json".format(self.output_dir), '+w') as json_file:
             json.dump(self.config.to_dict(), json_file, indent=4)
 
-        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
+        with open("{}/configs/model_config.json".format(self.output_dir), '+w') as json_file:
             json.dump(self.model_config.to_dict(), json_file, indent=4)
 
-        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
+        with open("{}/configs/model_size.txt".format(self.output_dir), '+w') as file:
             file.write("Number of model parameters: {}".format(self.num_model_parameters))
 
         train_curve = []
         val_curve = []
 
         for epoch in range(self.config.num_epochs):
-            print("Epoch:{}".format(epoch))
+            print("Epoch:{}, Started at:{}".format(epoch, datetime.now()))
             self.model.train()
             train_loss = 0.0
 
-            for batch in tfds.as_numpy(self.train_dataset):
-                inputs, targets, label = naca_dataset.preprocess_data(batch)
-                inputs, targets = torch.from_numpy(inputs), torch.from_numpy(targets)
+            for inputs, targets, label in self.train_dataloader:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
@@ -82,9 +84,7 @@ class Trainer(object):
             val_loss = 0.0
 
             with torch.no_grad():
-                for batch in tfds.as_numpy(self.validation_dataset):
-                    inputs, targets, label = naca_dataset.preprocess_data(batch)
-                    inputs, targets = torch.from_numpy(inputs), torch.from_numpy(targets)
+                for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs)
                     loss = self.loss_func(outputs, targets)
@@ -100,10 +100,8 @@ class Trainer(object):
                     'epoch': epoch,
                     'state_dict': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
-                    'loss': train_loss,
-                    'val_loss': val_loss,
                 }
-                torch.save(self.model.state_dict(), "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
+                torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
                 utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
