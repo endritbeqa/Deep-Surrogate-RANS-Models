@@ -20,7 +20,7 @@ from src import config
 class Trainer(object):
     def __init__(self, config):
         self.config = config
-        self.model_config, self.model = model_select.get_model(train_config.model_name)
+        self.model_config, self.model = model_select.get_model(config.model_name)
         self.output_dir = config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(self.config, mode='train')
         self.validation_dataset = dataset.Airfoil_Dataset(self.config, mode='validation')
@@ -28,7 +28,7 @@ class Trainer(object):
         self.val_dataloader = DataLoader(self.validation_dataset, config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(config.loss_function)
         self.optimizer = optim.AdamW(self.model.parameters(), lr=config.lr)  #, weight_decay=config.weight_decay)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=10)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=20)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
         print("Num parameters: {}".format(self.num_model_parameters))
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

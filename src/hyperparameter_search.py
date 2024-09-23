@@ -28,5 +28,5 @@ if __name__ == '__main__':
         engine_kwargs={"pool_size": 20, "connect_args": {"timeout": 10}},
     )
 
-    study = optuna.create_study(study_name="test", storage=storage)
+    study = optuna.create_study(study_name="test-tiny", storage=storage)
     study.optimize(objective, n_trials=20)
