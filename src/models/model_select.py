@@ -21,6 +21,6 @@ def load_model(name: str, model_config, checkpoint):
 
     checkpoint = torch.load(checkpoint, map_location='cpu')
     #TODO model instead of state_dict
-    model.load_state_dict(checkpoint['state_dict'])
+    model.load_state_dict(checkpoint['model'])
 
     return model

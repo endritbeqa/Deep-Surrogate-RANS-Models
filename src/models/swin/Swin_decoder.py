@@ -9,12 +9,13 @@ class Conv_Block(nn.Module):
     def __init__(self, res, input_dim, out_dim):
         super(Conv_Block, self).__init__()
         self.upsample = nn.Upsample(size=(res+2, res+2), mode='bilinear')
-        self.conv1 = nn.Conv2d(input_dim, input_dim, kernel_size=3)
+        self.conv1 = nn.Conv2d(input_dim, input_dim, kernel_size=3, bias=True)
         self.layerNorm1 = nn.LayerNorm([input_dim, res, res])
         self.non_linearity = nn.GELU()
         self.conv2 = nn.Conv2d(in_channels=input_dim,
                               out_channels=out_dim,
-                              kernel_size=1)
+                              kernel_size=1,
+                               bias=True)
 
     def forward(self, x):
         x = self.upsample(x)

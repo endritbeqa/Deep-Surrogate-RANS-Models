@@ -25,13 +25,13 @@ def con_of_mass(predictions, targets):
 
     return loss
 
-
+#loss inside the airfoil is big because its close to 0
 def mean_relative_loss_function(prediction, target):
     epsilon = 1e-8
-    absolute_difference = torch.abs(prediction - target)
-    absolute_target = torch.abs(target)+epsilon
+    absolute_difference = torch.sum(torch.abs(prediction - target))
+    absolute_target = torch.sum(torch.abs(target))
     relative_difference = absolute_difference / absolute_target
-    loss = torch.mean(relative_difference)
+    loss = relative_difference #.mean()
     return loss
 
 def get_loss_function(losses: list):
@@ -51,7 +51,7 @@ def get_loss_function(losses: list):
                              f"Mean squared error, Mean absolute error, Huber loss, Mean relative loss, Conservation of mass loss, KL Divergence with following names.\n"
                              f"mse, mae, hubber_loss, mrl, con_of_mass, beta_KLD")
 
-    def loss(prediction, target, mu=None, logvar=None, beta=None):
+    def loss(prediction, target):
         total_loss = 0
         for loss in losses:
             total_loss += loss_functions[loss](prediction, target)
