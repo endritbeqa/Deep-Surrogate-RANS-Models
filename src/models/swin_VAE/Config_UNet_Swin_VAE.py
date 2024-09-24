@@ -6,16 +6,16 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.latent_dim = [1024, 512, 256, 128]
-    config.condition_latent_dim = [512, 256, 128, 64]
+    config.latent_dim = [128, 64, 32, 16]
+    config.condition_latent_dim = [128, 64, 32, 16]
 
     ####### CONV_BLOCK #######
 
     config.conv_block = config_dict.ConfigDict()
     config.conv_block.image_size = 32
     config.conv_block.num_channels = 3
-    config.conv_block.embed_dim = 12
-    config.conv_block.output_dim = 24
+    config.conv_block.embed_dim = 8
+    config.conv_block.output_dim = 12
 
 
     ########  ENCODER  ########
@@ -24,7 +24,7 @@ def get_config():
     config.swin_encoder.image_size = 32
     config.swin_encoder.num_channels = config.conv_block.output_dim
     config.swin_encoder.patch_size = 2
-    config.swin_encoder.embed_dim = 48
+    config.swin_encoder.embed_dim = 16
     config.swin_encoder.depths = [2, 6, 2]
     config.swin_encoder.num_heads = [2, 4, 4]
     config.swin_encoder.window_size = 8
@@ -55,7 +55,7 @@ def get_config():
     config.swin_decoder.image_size = 32
     config.swin_decoder.num_channels = 3
     config.swin_decoder.patch_size = 2
-    config.swin_decoder.embed_dim = 48
+    config.swin_decoder.embed_dim = 16
     config.swin_decoder.depths = [2, 6, 2]
     config.swin_decoder.num_heads = [2, 4, 4]
     config.swin_decoder.window_size = 8
@@ -74,7 +74,7 @@ def get_config():
     config.swin_decoder.output_hidden_states = False
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
-    config.swin_decoder.fc_z_dim = list([config.latent_dim[i]+config.condition_latent_dim[i] for i in range(len(config.latent_dim))])
+    config.swin_decoder.fc_z_dim = list(reversed([config.latent_dim[i]+config.condition_latent_dim[i] for i in range(len(config.latent_dim))]))
     config.swin_decoder.skip_connection_shape_pre_cat = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (H,W,C)
     for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):

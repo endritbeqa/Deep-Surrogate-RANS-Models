@@ -74,7 +74,9 @@ def get_config():
     config.swin_decoder.output_hidden_states = False
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
-    config.swin_decoder.fc_z_dim = list([config.latent_dim[i]+config.condition_latent_dim[i] for i in range(len(config.latent_dim))])
+    config.swin_decoder.fc_z_dim = list([config.latent_dim[i] + config.latent_dim[i] + config.condition_latent_dim[i] for i in range(len(config.latent_dim)-1)])
+    config.swin_decoder.fc_z_dim.append(config.latent_dim[-1] + config.condition_latent_dim[-1])
+    config.swin_decoder.fc_z_dim = list(reversed(config.swin_decoder.fc_z_dim))
     config.swin_decoder.skip_connection_shape_pre_cat = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (H,W,C)
     for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):

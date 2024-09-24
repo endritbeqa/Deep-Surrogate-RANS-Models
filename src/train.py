@@ -27,8 +27,8 @@ class Trainer(object):
         self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(self.config.loss_function)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=train_config.lr)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=train_config.num_epochs, eta_min=0)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=15)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
@@ -37,20 +37,20 @@ class Trainer(object):
         os.mkdir(self.output_dir)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
-                    os.path.join(self.output_dir, "config"),
+                    os.path.join(self.output_dir, "configs"),
                     os.path.join(self.output_dir, "images"),
                     os.path.join(self.output_dir, "images/predictions"),
                     os.path.join(self.output_dir, "images/targets")]:
             os.mkdir(dir)
 
     def train_model(self):
-        with open("{}/config/config.json".format(self.output_dir), '+w') as json_file:
+        with open("{}/configs/config.json".format(self.output_dir), '+w') as json_file:
             json.dump(self.config.to_dict(), json_file, indent=4)
 
-        with open("{}/config/model_config.json".format(self.output_dir), '+w') as json_file:
+        with open("{}/configs/model_config.json".format(self.output_dir), '+w') as json_file:
             json.dump(self.model_config.to_dict(), json_file, indent=4)
 
-        with open("{}/config/model_size.txt".format(self.output_dir), '+w') as file:
+        with open("{}/configs/model_size.txt".format(self.output_dir), '+w') as file:
             file.write("Number of model parameters: {}".format(self.num_model_parameters))
 
         with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:

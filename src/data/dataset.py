@@ -28,7 +28,6 @@ class Airfoil_Dataset(Dataset):
         input = data[0:3, :, :]
         target = data[3:, :, :]
 
-        #return data, self.file_names[idx]
         return (input, target, self.file_names[idx])
 
 
@@ -93,3 +92,91 @@ class Airfoil_Dataset(Dataset):
         return data
 
 
+class Test_Dataset(Dataset):
+
+    def __init__(self, config):
+        self.data_dir = str(os.path.join(config.data_dir, config.data.type))
+        self.batch_size = config.batch_size
+        self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
+        self.makeDimLess = config.data_preprocessing.makeDimLess
+        self.removePOffset = config.data_preprocessing.removePOffset
+        self.epsilon =1e-8 #constant for numerical stability
+        self.simulation_folders = [f for f in os.listdir(self.data_dir)]
+
+    def __len__(self):
+        return len(self.simulation_folders)
+
+    def __getitem__(self, idx):
+        simulation_folder = os.path.join(self.data_dir, self.simulation_folders[idx])
+        snapshots = os.listdir(simulation_folder)
+        targets = []
+        condition = None
+        for snapshot in snapshots:
+            snapshot_path = os.path.join(simulation_folder, snapshot)
+            snapshot = np.load(snapshot_path)
+            snapshot = self.preprocess_data(snapshot['a'].astype(np.float32))
+            condition = snapshot[:3, :, :] # this is not very optimized, since condition will be the same for every snapshot
+            targets.append(snapshot[3:, :, :])
+        targets = np.array(targets)
+
+        return (condition, targets, self.simulation_folders[idx])
+
+    def preprocess_data(self, data) -> np.ndarray:
+
+        if not any((self.removePOffset, self.makeDimLess, self.fixedAirfoilNormalization)):
+            return data
+
+        boundary = ~ data[2].flatten().astype(bool)
+        num_field_elements = np.sum(boundary)
+        c, h, w = data.shape
+
+        data = data.reshape((c, h * w))
+        fields = data[np.tile(boundary, (6, 1))]
+        fields = fields.reshape((6, num_field_elements))
+        p_mean = np.mean(fields[3])
+        v_norm = (np.max(np.abs(fields[0])) ** 2 + np.max(np.abs(fields[1])) ** 2) ** 0.5
+
+        if self.removePOffset:
+            data[3][boundary] -= p_mean
+            data[3][boundary][data[3][boundary] == 0] = self.epsilon
+
+        if self.makeDimLess:
+            data[3][boundary] /= (v_norm ** 2 + self.epsilon)
+            data[4][boundary] /= (v_norm + self.epsilon)
+            data[5][boundary] /= (v_norm + self.epsilon)
+
+        if self.fixedAirfoilNormalization:
+            # hard coded maxima , inputs dont change
+            max_inputs_0 = 100.
+            max_inputs_1 = 38.5
+            max_inputs_2 = 1.0
+
+            # targets depend on normalization
+            if self.makeDimLess:
+                max_targets_0 = 4.3
+                max_targets_1 = 2.15
+                max_targets_2 = 2.35
+
+            else:  # full range
+                max_targets_0 = 40000.
+                max_targets_1 = 200.
+                max_targets_2 = 216.
+
+        else:
+            max_inputs_0 = np.max(fields[0]) if np.max(fields[0]) != 0 else self.epsilon
+            max_inputs_1 = np.max(fields[1]) if np.max(fields[1]) != 0 else self.epsilon
+
+            max_targets_0 = np.max(fields[3]) if np.max(fields[3]) != 0 else self.epsilon
+            max_targets_1 = np.max(fields[4]) if np.max(fields[4]) != 0 else self.epsilon
+            max_targets_2 = np.max(fields[5]) if np.max(fields[5]) != 0 else self.epsilon
+
+        data[0][boundary] *= (1.0 / max_inputs_0)
+        data[1][boundary] *= (1.0 / max_inputs_1)
+
+        data[3][boundary] *= (1.0 / max_targets_0)
+        data[4][boundary] *= (1.0 / max_targets_1)
+        data[5][boundary] *= (1.0 / max_targets_2)
+
+        data = data.reshape((c, h, w))
+
+        return data

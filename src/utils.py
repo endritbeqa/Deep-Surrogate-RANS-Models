@@ -69,3 +69,71 @@ def save_images(outputs, output_dir, mode , epoch):
             im.save(file_path)
 
 
+def save_samples(samples, output_dir, label, epoch):
+    try:
+        if samples.is_cuda:
+            samples = samples.cpu()
+            samples = samples.numpy()
+    except:
+        print()
+
+    label_dir = os.path.join(output_dir, "images", label)
+    samples_dir = os.path.join(str(label_dir), "samples")
+    os.makedirs(label_dir, exist_ok=True)
+    os.makedirs(samples_dir)
+
+    b, c, h, w = samples.shape
+    fields = ['pressure', "vel_x", "vel_y"]
+    for i in range(len(samples)):
+        for j in range(c):
+            field = np.copy(samples[i, j])
+            field = np.flipud(field.transpose())
+
+            min_value = np.min(field)
+            max_value = np.max(field)
+            field -= min_value
+            max_value -= min_value
+            field /= max_value
+
+            im = Image.fromarray(cm.magma(field, bytes=True))
+            im = im.resize((h, w))
+            file_path = os.path.join(str(samples_dir), "{}_{}.png".format(fields[j], i))
+            im.save(file_path)
+
+
+
+
+
+
+def plot_comparison(targets, predictions, output_dir, file_name):
+    if targets.shape != predictions.shape or targets.shape[0] != 3:
+        raise ValueError("Input arrays must have shape (3, H, W)")
+
+    targets = np.rot90(targets, axes=(1,2))
+    predictions = np.rot90(predictions, axes=(1, 2))
+    delta = targets - predictions
+
+    fig, axes = plt.subplots(3, 3, figsize=(12, 8))
+
+    column_labels = ['P', 'Ux', 'Uy']
+    row_labels = ['Target', 'Prediction', 'Delta']
+
+    for i in range(3):
+        im = axes[0, i].imshow(targets[i] ,cmap=cm.magma)
+        axes[0, i].set_title(column_labels[i])
+
+    for i in range(3):
+        im = axes[1, i].imshow(predictions[i], cmap=cm.magma)
+
+    for i in range(3):
+        im = axes[2, i].imshow(delta[i], cmap=cm.magma)
+
+    for ax, row_label in zip(axes[:, 0], row_labels):
+        ax.set_ylabel(row_label, size='large')
+
+    plt.tight_layout()
+
+    save_path = os.path.join(output_dir,  file_name+".png")
+    plt.savefig(save_path)
+    plt.close()
+

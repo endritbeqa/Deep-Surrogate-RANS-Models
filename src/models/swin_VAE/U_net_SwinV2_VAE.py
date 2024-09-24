@@ -14,12 +14,13 @@ class U_NET_Swin(nn.Module):
     def forward(self, condition, target):
 
         z, mu, log_var = self.encoder(condition, target)
+        z = list(reversed(z)) #reverse for the decoder
         prediction = self.decoder(z)
 
         return prediction , torch.cat(mu, dim =1), torch.cat(log_var, dim =1)
 
 
-    def inference(self, condition):
+    def sample(self, condition):
         condition_conv_block_output = self.encoder.conv_block_condition(condition)
         condition = self.encoder.condition_encoder(condition_conv_block_output, output_hidden_states=True)
         condition_hidden_states = condition.hidden_states
@@ -27,14 +28,17 @@ class U_NET_Swin(nn.Module):
         first_condition = torch.permute(torch.flatten(condition_conv_block_output, start_dim=2, end_dim=3),dims=(0, 2, 1))
         condition_hidden_states.insert(0, first_condition)
         condition_hidden_states.append(condition.last_hidden_state)
-        random_tensors = [torch.unsqueeze(torch.rand(self.config.latent_dim[i]), dim=0) for i in
+        random_tensors = [torch.unsqueeze(torch.randn(self.config.latent_dim[i]), dim=0) for i in
                           range(len(self.config.latent_dim))]
+        random_tensors = list(reversed(random_tensors))
 
         condition_latent = []
 
         for i, condition in enumerate(condition_hidden_states):
             condition = torch.flatten(condition, start_dim=1, end_dim=2)
             condition_latent.append(self.encoder.fc_condition[i](condition))
+
+        condition_latent = list(reversed(condition_latent))
 
         [random_tensor.to(device='cpu') for random_tensor in random_tensors]
 
