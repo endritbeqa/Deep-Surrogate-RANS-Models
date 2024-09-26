@@ -40,7 +40,7 @@ class Swin_VAE_encoder(nn.Module):
                                      config.conv_block.embed_dim,
                                      config.conv_block.output_dim)
         self.conv_block_condition = Conv_Block(config.conv_block.image_size,
-                                     config.conv_block.num_channels_condition,
+                                     config.conv_block.num_channels,
                                      config.conv_block.embed_dim,
                                      config.conv_block.output_dim)
         self.encoder = load_swin_transformer(config.swin_encoder)
@@ -50,21 +50,20 @@ class Swin_VAE_encoder(nn.Module):
                                                      config.condition_latent_dim[i])
                                            for i in range(len(config.swin_encoder.skip_connection_shape))])
         self.fc_mu = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
-                                              config.latent_dim[i])
+                                              config.latent_dim[i]+config.condition_latent_dim[i])
                                     for i in range(len(config.swin_encoder.skip_connection_shape))])
         self.fc_logvar = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
-                                                  config.latent_dim[i])
+                                                  config.latent_dim[i]+config.condition_latent_dim[i])
                                         for i in range(len(config.swin_encoder.skip_connection_shape))])
         self.condition_layerNorm = nn.ModuleList([nn.LayerNorm(config.condition_latent_dim[i])
                                                   for i in range(len(config.condition_latent_dim))])
-        self.mu_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i])
+        self.mu_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i]+config.condition_latent_dim[i])
                                                   for i in range(len(config.latent_dim))])
-        self.logvar_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i])
+        self.logvar_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i]+config.condition_latent_dim[i])
                                                   for i in range(len(config.latent_dim))])
 
 
     def forward(self, condition, target):
-        target = torch.cat([condition, target], dim=1)
         conv_block_output = self.conv_block(target)
         condition_conv_block_output = self.conv_block_condition(condition)
         swin_encoder_output = self.encoder(conv_block_output, output_hidden_states=True)
@@ -97,10 +96,12 @@ class Swin_VAE_encoder(nn.Module):
 
         for i, skip in enumerate(hidden_states):
             skip = torch.flatten(skip, start_dim=1, end_dim=2)
-            mu_i = self.fc_mu[i](skip)
+            mu_i = torch.cat([skip, condition_latent[i]], dim=1)
+            mu_i = self.fc_mu[i](mu_i)
             mu_i = self.mu_layerNorm[i](mu_i)
             mu_i = self.non_linearity(mu_i)
-            logvar_i = self.fc_logvar[i](skip)
+            logvar_i = torch.cat([skip, condition_latent[i]], dim=1)
+            logvar_i = self.fc_logvar[i](logvar_i)
             logvar_i = self.logvar_layerNorm[i](logvar_i)
             logvar_i = self.non_linearity(logvar_i)
             std = torch.exp(0.5 * logvar_i)

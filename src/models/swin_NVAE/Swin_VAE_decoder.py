@@ -1,8 +1,16 @@
 import math
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional
+from transformers import AutoConfig
+from transformers import Swinv2Model
 import torch.nn as nn
 import torch
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer, Swinv2EncoderOutput
+
+def load_swin_transformer(config_dict: dict) -> nn.Module:
+    custom_config = AutoConfig.for_model('swinv2', **config_dict)
+    model = Swinv2Model(custom_config)
+
+    return model
 
 
 class Conv_Block(nn.Module):
@@ -102,6 +110,34 @@ class Swinv2DecoderStage(nn.Module):
 class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.conv_block = Conv_Block(config.conv_block.image_size,
+                                     config.conv_block.num_channels,
+                                     config.conv_block.embed_dim,
+                                     config.conv_block.output_dim)
+        self.conv_block_condition = Conv_Block(config.conv_block.image_size,
+                                               config.conv_block.num_channels_condition,
+                                               config.conv_block.embed_dim,
+                                               config.conv_block.output_dim)
+        self.encoder = load_swin_transformer(config.swin_encoder)
+        self.condition_encoder = load_swin_transformer(config.swin_encoder)
+        self.non_linearity = nn.ReLU()
+        self.fc_condition = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
+                                                     config.condition_latent_dim[i])
+                                           for i in range(len(config.swin_encoder.skip_connection_shape))])
+        self.fc_mu = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
+                                              config.latent_dim[i])
+                                    for i in range(len(config.swin_encoder.skip_connection_shape))])
+        self.fc_logvar = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
+                                                  config.latent_dim[i])
+                                        for i in range(len(config.swin_encoder.skip_connection_shape))])
+        self.condition_layerNorm = nn.ModuleList([nn.LayerNorm(config.condition_latent_dim[i])
+                                                  for i in range(len(config.condition_latent_dim))])
+        self.mu_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i])
+                                           for i in range(len(config.latent_dim))])
+        self.logvar_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i])
+                                               for i in range(len(config.latent_dim))])
+
         self.config = config
         self.num_layers = len(config.swin_decoder.depths)
 
@@ -135,9 +171,38 @@ class Swin_VAE_decoder(nn.Module):
                                                                             config.swin_decoder.latent_dim_reversed[i])
                                    for i in range(1, len(config.swin_decoder.skip_connection_shape))])
 
-    def forward(self, z):
-        batch_size, _ = z[0].shape
+    def forward(self, condition, target):
+        target = torch.cat([condition, target], dim=1)
+        conv_block_output = self.conv_block(target)
+        condition_conv_block_output = self.conv_block_condition(condition)
+        swin_encoder_output = self.encoder(conv_block_output, output_hidden_states=True)
+        last_hidden_state = swin_encoder_output.last_hidden_state
+        hidden_states = swin_encoder_output.hidden_states
 
+        hidden_states = list(hidden_states)[:-2]
+        first_hidden = torch.permute(torch.flatten(conv_block_output, start_dim=2, end_dim=3), dims=(0, 2, 1))
+        hidden_states.insert(0, first_hidden)
+        hidden_states.append(last_hidden_state)
+
+        condition_output = self.condition_encoder(condition_conv_block_output, output_hidden_states=True)
+        condition_hidden_states = condition_output.hidden_states
+        condition_hidden_states = list(condition_hidden_states)[:-2]
+        first_condition = torch.permute(torch.flatten(condition_conv_block_output, start_dim=2, end_dim=3),
+                                        dims=(0, 2, 1))
+        condition_hidden_states.insert(0, first_condition)
+        condition_hidden_states.append(condition_output.last_hidden_state)
+
+        condition_latent = []
+        for i, condition in enumerate(condition_hidden_states):
+            condition = torch.flatten(condition, start_dim=1, end_dim=2)
+            condition = self.fc_condition[i](condition)
+            condition = self.condition_layerNorm[i](condition)
+            condition = self.non_linearity(condition)
+            condition_latent.append(condition)
+
+        z = []
+        mu = []
+        logvar = []
         hidden_state = 0
         for i, skip in enumerate(z):
             if i==0:

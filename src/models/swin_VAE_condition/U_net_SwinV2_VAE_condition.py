@@ -17,7 +17,7 @@ class U_NET_Swin(nn.Module):
         z = list(reversed(z)) #reverse for the decoder
         prediction = self.decoder(z)
 
-        return prediction, mu, log_var
+        return prediction , torch.cat(mu, dim =1), torch.cat(log_var, dim =1)
 
 
     def sample(self, condition):
