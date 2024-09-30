@@ -95,6 +95,8 @@ class Trainer(object):
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
                     'epoch': epoch,
+                    'train_config': self.config,
+                    'model_config': self.model_config,
                     'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                 }
