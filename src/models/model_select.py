@@ -19,7 +19,6 @@ def load_model(name: str, model_config, checkpoint):
     else:
         raise Exception("Model name not found.Check if model is implemented.")
 
-    checkpoint = torch.load(checkpoint, map_location='cpu')
     model.load_state_dict(checkpoint['model'])
 
     return model

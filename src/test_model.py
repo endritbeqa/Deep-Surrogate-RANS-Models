@@ -1,4 +1,3 @@
-import json
 import math
 import os
 import torch
@@ -15,17 +14,14 @@ from src import test_config
 class Model_Test(object):
     def __init__(self, config: ConfigDict):
         self.config = config
-
-        with open(config.train_config, 'r') as f:
-            self.train_config = ConfigDict(json.load(f))
-        with open(config.model_config, 'r') as f:
-            self.model_config = ConfigDict(json.load(f))
-
+        self.checkpoint = torch.load(config.checkpoint, map_location='cpu')
+        self.train_config = self.checkpoint['train_config']
+        self.model_config = self.checkpoint['model_config']
         self.model_name = self.train_config.model_name
-        self.model = model_select.load_model(self.model_name, self.model_config, config.checkpoint)
+        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
         self.output_dir = config.output_dir
         self.loss_func = loss.get_loss_function(config.loss)
-        self.test_dataset = dataset.Airfoil_Dataset(self.config ,mode='test')
+        self.test_dataset = dataset.Airfoil_Dataset(self.config, mode='test')
         self.test_dataloader = DataLoader(self.test_dataset, config.batch_size, shuffle=False)
 
         os.makedirs(self.output_dir, exist_ok=True)
@@ -48,10 +44,15 @@ class Model_Test(object):
                 losses.append(loss.item())
                 targets = targets.numpy().squeeze()
                 outputs = outputs.numpy().squeeze()
-                utils.plot_comparison(targets, outputs, self.output_dir, label[0][:-4])
+                utils.plot_comparison(targets, outputs, os.path.join(self.output_dir, "images"), label[0][:-4])
+                with open(os.path.join(self.output_dir, "log.txt"), 'a') as f:
+                    f.write("Test foil, loss:{}, {}".format(label[0][:-4], loss.item()))
                 print("Test foil, loss:{}, {}".format(label[0][:-4], loss.item()))
 
+            with open(os.path.join(self.output_dir, "Final_Accuracy.txt"), 'a') as f:
+                f.write("Average loss: {}".format(sum(losses) / len(losses)))
             print("Test loss: {}".format(sum(losses) / len(losses)))
+
 
 if __name__ == '__main__':
     config = test_config.get_config()
