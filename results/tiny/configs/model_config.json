@@ -1,0 +1,107 @@
+{
+    "conv_block": {
+        "embed_dim": 6,
+        "image_size": 128,
+        "num_channels": 3,
+        "output_dim": 12
+    },
+    "swin_decoder": {
+        "attention_probs_dropout_prob": 0.0,
+        "depths": [
+            2,
+            4
+        ],
+        "drop_path_rate": 0.1,
+        "embed_dim": 16,
+        "encoder_stride": 8,
+        "hidden_act": "gelu",
+        "hidden_dropout_prob": 0.0,
+        "image_size": 128,
+        "initializer_range": 0.02,
+        "layer_norm_eps": 1e-05,
+        "mlp_ratio": 4.0,
+        "num_channels": 3,
+        "num_heads": [
+            2,
+            4
+        ],
+        "out_features": null,
+        "out_indices": null,
+        "output_hidden_states": false,
+        "patch_size": 8,
+        "pretrained_window_sizes": [
+            0,
+            0,
+            0
+        ],
+        "qkv_bias": true,
+        "skip_connection_shape": [
+            [
+                4,
+                4,
+                32
+            ],
+            [
+                8,
+                8,
+                24
+            ],
+            [
+                128,
+                128,
+                18
+            ]
+        ],
+        "use_absolute_embeddings": false,
+        "window_size": 4
+    },
+    "swin_encoder": {
+        "attention_probs_dropout_prob": 0.0,
+        "depths": [
+            2,
+            4
+        ],
+        "drop_path_rate": 0.1,
+        "embed_dim": 16,
+        "encoder_stride": 8,
+        "hidden_act": "gelu",
+        "hidden_dropout_prob": 0.0,
+        "image_size": 128,
+        "initializer_range": 0.02,
+        "layer_norm_eps": 1e-05,
+        "mlp_ratio": 4.0,
+        "num_channels": 12,
+        "num_heads": [
+            2,
+            4
+        ],
+        "out_features": null,
+        "out_indices": null,
+        "output_hidden_states": true,
+        "patch_size": 16,
+        "pretrained_window_sizes": [
+            0,
+            0
+        ],
+        "qkv_bias": true,
+        "skip_connection_shape": [
+            [
+                128,
+                128,
+                12
+            ],
+            [
+                8,
+                8,
+                16
+            ],
+            [
+                4,
+                4,
+                32
+            ]
+        ],
+        "use_absolute_embeddings": false,
+        "window_size": 4
+    }
+}

@@ -25,6 +25,7 @@ class Model_Test(object):
         self.test_dataloader = DataLoader(self.test_dataset, config.batch_size, shuffle=False)
 
         os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, "images"), exist_ok=True)
 
 
     def predict(self):
@@ -46,11 +47,11 @@ class Model_Test(object):
                 outputs = outputs.numpy().squeeze()
                 utils.plot_comparison(targets, outputs, os.path.join(self.output_dir, "images"), label[0][:-4])
                 with open(os.path.join(self.output_dir, "log.txt"), 'a') as f:
-                    f.write("Test foil, loss:{}, {}".format(label[0][:-4], loss.item()))
-                print("Test foil, loss:{}, {}".format(label[0][:-4], loss.item()))
+                    f.write("Test foil: {}, Loss: {}".format(label[0][:-4], loss.item()))
+                print("Test foil: {}, Loss: {}".format(label[0][:-4], loss.item()))
 
-            with open(os.path.join(self.output_dir, "Final_Accuracy.txt"), 'a') as f:
-                f.write("Average loss: {}".format(sum(losses) / len(losses)))
+            with open(os.path.join(self.output_dir, "Average_Test_Loss.txt"), 'a') as f:
+                f.write("Average test loss: {}".format(sum(losses) / len(losses)))
             print("Test loss: {}".format(sum(losses) / len(losses)))
 
 

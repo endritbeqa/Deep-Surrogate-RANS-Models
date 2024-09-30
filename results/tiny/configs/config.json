@@ -1,0 +1,23 @@
+{
+    "batch_size": 50,
+    "checkpoint_every": 10,
+    "data": {
+        "type": "combined"
+    },
+    "data_dir": "/home/blin/endrit/dataset/preprocesed",
+    "data_preprocessing": {
+        "fixedAirfoilNormalization": false,
+        "makeDimLess": false,
+        "removePOffset": false
+    },
+    "loss_function": [
+        "mae"
+    ],
+    "lr": 1.8e-05,
+    "model_name": "swin",
+    "normalize": true,
+    "num_epochs": 51,
+    "optimizer": "adam",
+    "output_dir": "/media/blin/VOL REC Blin/endrit/tests/Steady/best_results/tiny",
+    "test": "swin_tiny"
+}

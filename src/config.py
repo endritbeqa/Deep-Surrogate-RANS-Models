@@ -4,10 +4,10 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test = "swin_u_net_tiny"
+    config.test = "swin_tiny"
     config.model_name = "swin"
     config.data_dir = '/home/blin/endrit/dataset/preprocesed'
-    config.output_dir = ""   #'/media/blin/VOL REC Blin/endrit/tests/Steady/{}'.format(config.test)
+    config.output_dir = "/media/blin/VOL REC Blin/endrit/tests/Steady/best_results/tiny"   #'/media/blin/VOL REC Blin/endrit/tests/Steady/{}'.format(config.test)
     config.num_epochs = 51
     config.batch_size = 50
     config.normalize = True

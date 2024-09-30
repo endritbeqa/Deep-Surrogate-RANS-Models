@@ -14,6 +14,16 @@ This repository contains the code for training and testing different deep learni
 1. **U_net SwinV2:** U-net architecture using SwinV2 blocks in the encoder and decoder. The hierarchical 
 representation is created through the patch merging in the encoder and upsampling in the decoder.
 
+## Results
+
+Checkpoint, Configs, train/validation curve and model predictions are located in the `results` folder. 
+
+
+1. **Tiny (~1 million parameters):**  Achieved 4.3% mean relative error.
+
+![](./results/tiny/predictions/images/e342_9554_661.png)
+
+
 ## Installation 
 Create a pip virtual environment and install the packages in the requirements.txt file.
 ```shell
@@ -38,7 +48,9 @@ pip install -r requirements.txt
 │   └── utils.py
 ├── LICENSE
 ├── README.md
-├── req.txt
+├── requirements.txt
+├── results
+│   └── tiny
 └── src
     ├── config.py
     ├── data
@@ -46,8 +58,13 @@ pip install -r requirements.txt
     ├── __init__.py
     ├── loss.py
     ├── models
+    ├── __pycache__
+    ├── scrap_files
+    ├── test_config.py
+    ├── test_model.py
     ├── train.py
     └── utils.py
+
 ```
 
 ## Usage 
@@ -61,7 +78,10 @@ In order to change the model structure itself, go to the config file of the mode
 To select loss a loss function edit the ***config.loss_function*** field in the `src/config.py`. You can also use the sum of multiple loss functions at once by just typing the names in form of a list (e.g you are training a VAE version of the model and need also the KL divergence term in the loss )
 
 ### Train setup 
-To change the train setup itself(batch size, number of epoch, dataset etc.) edit the `src/config.py` file. then run `python train.py` to start the training loop
+To change the train setup itself(batch size, number of epoch, dataset etc.) edit the `src/config.py` file. then run `python -m src.train` to start the training loop.
+
+### Test setup  
+To test the model edit the `config.train_folder` field in the `src/test_config.py` file. Then run `python -m src.test_model` to start the evaluation.
 
 ### Dataset selection 
 To change the dataset used during training edit the ***config.dataset.data_type*** field in the `src/config.py` file.
@@ -77,4 +97,5 @@ To train your own model create a new folder in `src/models` and add it to the sw
 To generate a new dataset edit the `data_generation/config.py` file according to your needs. OpenFOAM simulation parameters like number of iterations, timesteps saved, resolution etc. can be changed.
 The dataset is generated in parallel, so you can select the number of workers. Each simulation is wrapped in an individual thread to prevent hanging simulations or gmsh errors stopping the dataset generation. A timeout can be set for converting the .dat file to a mesh, mesh to OpenFOAM and the simulation itself. Datasets at different resolutions can be generated
 sequentially but this is still not tested.
+
 
