@@ -1,5 +1,7 @@
 import math
 import copy
+
+import ml_collections
 from ml_collections import config_dict
 
 
@@ -43,10 +45,9 @@ def get_config():
     config.swin_encoder.output_hidden_states = True
     config.swin_encoder.out_features = None
     config.swin_encoder.out_indices = None
-    config.swin_encoder.skip_connection_shape = [[
+    config.swin_encoder.skip_connection_shape = [[2**i * config.swin_encoder.embed_dim,
         int(config.swin_encoder.image_size / (config.swin_encoder.patch_size * 2**i)),
-        int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**i)),
-        2**i * config.swin_encoder.embed_dim]
+        int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**i))]
         for i in range(len(config.swin_encoder.depths))] #skip connections shape (H,W,C)
     config.swin_encoder.skip_connection_shape.insert(0, [config.conv_block.image_size,config.conv_block.image_size,config.conv_block.output_dim])
 
@@ -76,13 +77,22 @@ def get_config():
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
     config.swin_decoder.latent_dim_reversed = list(reversed(config.latent_dim))
-    config.swin_decoder.fc_z_dim = list([config.latent_dim[i] + config.latent_dim[i] + config.condition_latent_dim[i] for i in range(len(config.latent_dim)-1)])
-    config.swin_decoder.fc_z_dim.append(config.latent_dim[-1] + config.condition_latent_dim[-1])
-    config.swin_decoder.fc_z_dim = list(reversed(config.swin_decoder.fc_z_dim))
     config.swin_decoder.skip_connection_shape_pre_cat = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))
-    config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (H,W,C)
+    config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (C,H,W)
     for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):
         if i != 0:
             config.swin_decoder.skip_connection_shape[i][2] += int(config.swin_decoder.skip_connection_shape[i - 1][2]/4)
+
+
+#########  Z_Cells  ##########
+
+    config.Z_cells = config_dict.ConfigDict()
+    config.Z_cells.latent_dim = [32, 64, 128, 256]
+    config.Z_cells.condition_latent_dim = [32, 64, 128, 256]
+
+    config.Z_cells.encoder_shapes = list(reversed(config.swin_encoder.skip_connection_shape))
+
+
+
 
     return config

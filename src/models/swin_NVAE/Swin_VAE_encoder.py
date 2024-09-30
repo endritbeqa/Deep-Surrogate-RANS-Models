@@ -35,6 +35,7 @@ class Conv_Block(nn.Module):
 class Swin_VAE_encoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.config = config.swin_encoder
         self.conv_block = Conv_Block(config.conv_block.image_size,
                                      config.conv_block.num_channels,
                                      config.conv_block.embed_dim,
@@ -45,22 +46,7 @@ class Swin_VAE_encoder(nn.Module):
                                      config.conv_block.output_dim)
         self.encoder = load_swin_transformer(config.swin_encoder)
         self.condition_encoder = load_swin_transformer(config.swin_encoder)
-        self.non_linearity = nn.ReLU()
-        self.fc_condition = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
-                                                     config.condition_latent_dim[i])
-                                           for i in range(len(config.swin_encoder.skip_connection_shape))])
-        self.fc_mu = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
-                                              config.latent_dim[i])
-                                    for i in range(len(config.swin_encoder.skip_connection_shape))])
-        self.fc_logvar = nn.ModuleList([nn.Linear(math.prod(config.swin_encoder.skip_connection_shape[i]),
-                                                  config.latent_dim[i])
-                                        for i in range(len(config.swin_encoder.skip_connection_shape))])
-        self.condition_layerNorm = nn.ModuleList([nn.LayerNorm(config.condition_latent_dim[i])
-                                                  for i in range(len(config.condition_latent_dim))])
-        self.mu_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i])
-                                                  for i in range(len(config.latent_dim))])
-        self.logvar_layerNorm = nn.ModuleList([nn.LayerNorm(config.latent_dim[i])
-                                                  for i in range(len(config.latent_dim))])
+
 
 
     def forward(self, condition, target):
@@ -83,32 +69,13 @@ class Swin_VAE_encoder(nn.Module):
         condition_hidden_states.insert(0, first_condition)
         condition_hidden_states.append(condition_output.last_hidden_state)
 
-        condition_latent = []
-        for i, condition in enumerate(condition_hidden_states):
-            condition = torch.flatten(condition, start_dim=1, end_dim=2)
-            condition = self.fc_condition[i](condition)
-            condition = self.condition_layerNorm[i](condition)
-            condition = self.non_linearity(condition)
-            condition_latent.append(condition)
+        for i, hidden_state in enumerate(hidden_states):
+            hidden_states[i] = hidden_states[i].permute(dims=(0, 2, 1))
+            hidden_states[i] = hidden_states[i].view(self.config.skip_connection_shape[i])
 
-        z = []
-        mu = []
-        logvar = []
+        for i, condition_hidden_state in enumerate(condition_hidden_states):
+            condition_hidden_states[i] = condition_hidden_states[i].permute(dims=(0, 2, 1))
+            condition_hidden_states[i] = condition_hidden_states[i].view(self.config.skip_connection_shape[i])
 
-        for i, skip in enumerate(hidden_states):
-            skip = torch.flatten(skip, start_dim=1, end_dim=2)
-            mu_i = self.fc_mu[i](skip)
-            mu_i = self.mu_layerNorm[i](mu_i)
-            mu_i = self.non_linearity(mu_i)
-            logvar_i = self.fc_logvar[i](skip)
-            logvar_i = self.logvar_layerNorm[i](logvar_i)
-            logvar_i = self.non_linearity(logvar_i)
-            std = torch.exp(0.5 * logvar_i)
-            eps = torch.randn_like(std)
-            z_i = mu_i + eps * std
-            z_i = torch.cat([z_i, condition_latent[i]], dim=1)
-            z.append(z_i)
-            mu.append(mu_i)
-            logvar.append(logvar_i)
 
-        return z, mu, logvar
+        return hidden_states, condition_hidden_states
