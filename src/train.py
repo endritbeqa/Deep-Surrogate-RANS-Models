@@ -34,14 +34,14 @@ class Trainer(object):
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
         self.beta = train_config.KLD_beta
         print("Num parameters: {}".format(self.num_model_parameters))
-        os.mkdir(self.output_dir)
+        os.makedirs(self.output_dir, exist_ok=True)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
                     os.path.join(self.output_dir, "configs"),
                     os.path.join(self.output_dir, "images"),
                     os.path.join(self.output_dir, "images/predictions"),
                     os.path.join(self.output_dir, "images/targets")]:
-            os.mkdir(dir)
+            os.makedirs(dir, exist_ok=True)
 
     def train_model(self):
         with open("{}/configs/config.json".format(self.output_dir), '+w') as json_file:
@@ -76,6 +76,7 @@ class Trainer(object):
             train_KLD_loss = 0.0
 
             for inputs, targets, label in self.train_dataloader:
+                print("Hello there")
 
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
@@ -134,6 +135,8 @@ class Trainer(object):
             if epoch % self.config.checkpoint_every == 0:
                 checkpoint = {
                     'epoch': epoch,
+                    'train_config': self.config,
+                    'model_config': self.model_config,
                     'model': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
                 }

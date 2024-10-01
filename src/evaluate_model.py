@@ -12,7 +12,7 @@ from src.models import model_select
 from src.data import dataset
 from src import loss
 from src import utils
-from src import test_config
+from src import evaluation_config
 
 class Model_Test(object):
     def __init__(self, config: ConfigDict):
@@ -80,6 +80,6 @@ class Model_Test(object):
 
 
 if __name__ == '__main__':
-    config = test_config.get_config()
+    config = evaluation_config.get_config()
     test = Model_Test(config)
     test.predict()

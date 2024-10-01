@@ -1,120 +1,54 @@
 import torch
 import torch.nn as nn
-
-class MultiHeadSelfAttention(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.num_heads = config.num_heads
-        self.head_dim = config.embed_dim // self.num_heads
-        assert self.head_dim * self.num_heads == config.embed_dim, "Embedding dim must be divisible by num_heads"
-
-        self.scale = self.head_dim ** -0.5
-        self.qkv = nn.Linear(config.embed_dim, config.embed_dim * 3)
-        self.proj = nn.Linear(config.embed_dim, config.embed_dim)
-
-    def forward(self, x):
-        batch_size, num_tokens, embed_dim = x.shape
-
-        qkv = self.qkv(x).reshape(batch_size, num_tokens, 3, self.num_heads, self.head_dim)
-        q, k, v = qkv.permute(2, 0, 3, 1, 4)
-
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-
-        out = (attn @ v).transpose(1, 2).reshape(batch_size, num_tokens, embed_dim)
-        return self.proj(out)
+from src.models.ViT.layers import PositionalEncoding, PatchEmbedding
 
 
-class CrossAttention(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.num_heads = config.num_heads
-        self.head_dim = config.embed_dim // self.num_heads
-        self.scale = self.head_dim ** -0.5
+class Decoder(nn.Module):
+    def __init__(self, img_size=128, patch_size=16, embed_dim=64, num_layers=4, num_heads=4):
+        super(Decoder, self).__init__()
 
-        self.q_proj = nn.Linear(config.embed_dim, config.embed_dim)
-        self.k_proj = nn.Linear(config.embed_dim, config.embed_dim)
-        self.v_proj = nn.Linear(config.embed_dim, config.embed_dim)
-        self.proj = nn.Linear(config.embed_dim, config.embed_dim)
+        # Positional encoding
+        self.pos_encoding = PositionalEncoding((img_size // patch_size) ** 2, embed_dim)
 
-    def forward(self, x, encoder_output):
-        batch_size, num_tokens, embed_dim = x.shape
+        # Transformer decoder layers
+        decoder_layer = nn.TransformerDecoderLayer(d_model=embed_dim, nhead=num_heads, batch_first=True)
+        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_layers)
 
-        q = self.q_proj(x).reshape(batch_size, num_tokens, self.num_heads, self.head_dim)
-        k = self.k_proj(encoder_output).reshape(batch_size, -1, self.num_heads, self.head_dim)
-        v = self.v_proj(encoder_output).reshape(batch_size, -1, self.num_heads, self.head_dim)
+        self.to_patch = nn.Linear(embed_dim, 3 * patch_size * patch_size)
 
-        q = q.permute(2, 0, 1, 3)  # [num_heads, batch_size, num_tokens, head_dim]
-        k = k.permute(2, 0, 1, 3)  # [num_heads, batch_size, encoder_tokens, head_dim]
-        v = v.permute(2, 0, 1, 3)  # [num_heads, batch_size, encoder_tokens, head_dim]
+        # Store image and patch size
+        self.img_size = img_size
+        self.patch_size = patch_size
+        self.n_patches = (img_size // patch_size) ** 2
 
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
+    def forward(self, encoded_patches, x=None):
+        # Optionally use autoregressive input `x`
+        if x is None:
+            x = torch.zeros_like(encoded_patches)
 
-        out = (attn @ v).permute(1, 2, 0, 3).reshape(batch_size, num_tokens, embed_dim)
-        return self.proj(out)
+        output_patches = []
+        for i in range(1, self.n_patches + 1):
+            # Only use the patches seen so far for autoregressive generation
+            input_seq = encoded_patches[:, :i, :]
 
+            # Apply the positional encoding
+            #input_seq = self.pos_encoding(input_seq)
 
-class MLP(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.fc1 = nn.Linear(config.embed_dim, config.mlp_dim)
-        self.fc2 = nn.Linear(config.mlp_dim, config.embed_dim)
-        self.act = nn.GELU()
-        self.dropout = nn.Dropout(config.dropout_rate)
+            # Causal mask to prevent future patches from leaking into the past
+            tgt_mask = self._generate_square_subsequent_mask(i).to(input_seq.device)
 
-    def forward(self, x):
-        x = self.fc1(x)
-        x = self.act(x)
-        x = self.dropout(x)
-        x = self.fc2(x)
-        x = self.dropout(x)
-        return x
+            # Transformer decoder
+            decoded_patch = self.decoder(input_seq, encoded_patches, tgt_mask=tgt_mask)
 
+            # Predict the next patch
+            next_patch = self.to_patch(decoded_patch[:, -1, :])
+            output_patches.append(next_patch)
 
-class TransformerDecoderBlock(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.self_attn_norm = nn.LayerNorm(config.embed_dim)
-        self.cross_attn_norm = nn.LayerNorm(config.embed_dim)
-        self.mlp_norm = nn.LayerNorm(config.embed_dim)
+        # Stack the patches together to form the output image
+        output = torch.stack(output_patches, dim=1)
+        output = output.view(-1, self.img_size, self.img_size, 3).permute(0, 3, 1, 2)  # [B, C, H, W]
+        return output
 
-        self.self_attn = MultiHeadSelfAttention(config)
-        self.cross_attn = CrossAttention(config)
-        self.mlp = MLP(config)
-
-        self.dropout = nn.Dropout(config.dropout_rate)
-
-    def forward(self, x, encoder_output):
-        x = x + self.dropout(self.self_attn(self.self_attn_norm(x)))
-        x = x + self.dropout(self.cross_attn(self.cross_attn_norm(x), encoder_output))
-        x = x + self.dropout(self.mlp(self.mlp_norm(x)))
-        return x
-
-
-class VisionTransformerDecoder(nn.Module):
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-        self.pos_embed = nn.Parameter(torch.zeros(1, config.num_patches, config.embed_dim))
-        self.dropout = nn.Dropout(config.dropout_rate)
-
-        self.decoder_blocks = nn.ModuleList([
-            TransformerDecoderBlock(config) for _ in range(config.num_layers)
-        ])
-
-        self.reconstruction = nn.Linear(config.embed_dim, config.patch_size ** 2 * config.out_channels)
-
-    def forward(self, x, encoder_output):
-        batch_size, num_tokens, _ = x.size()
-
-        x = x + self.pos_embed
-        x = self.dropout(x)
-
-        for block in self.decoder_blocks:
-            x = block(x, encoder_output)
-
-        # Reconstruct image patches
-        x = self.reconstruction(x)
-        x = x.view(batch_size, num_tokens, self.config.patch_size, self.config.patch_size, self.config.out_channels)
-        return x.permute(0, 4, 1, 2, 3).contiguous()
+    def _generate_square_subsequent_mask(self, size):
+        mask = torch.triu(torch.ones(size, size), diagonal=1)
+        return mask.masked_fill(mask == 1, float('-inf'))
