@@ -4,22 +4,22 @@ from src.models.ViT.layers import PositionalEncoding, PatchEmbedding
 
 
 class Decoder(nn.Module):
-    def __init__(self, img_size=32, patch_size=4, embed_dim=32, num_layers=2, num_heads=4):
+    def __init__(self, config):
         super(Decoder, self).__init__()
 
-        # Positional encoding
-        self.pos_encoding = PositionalEncoding((img_size // patch_size) ** 2, embed_dim)
+        self.config = config
+        self.pos_encoding = PositionalEncoding((config.img_size // config.patch_size) ** 2, config.embed_dim)
 
-        # Transformer decoder layers
-        decoder_layer = nn.TransformerDecoderLayer(d_model=embed_dim, nhead=num_heads, batch_first=True)
-        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=num_layers)
+        decoder_layer = nn.TransformerDecoderLayer(d_model=config.embed_dim, nhead=config.num_heads, batch_first=True)
+        self.decoder = nn.TransformerDecoder(decoder_layer, num_layers=config.num_layers)
 
-        self.to_patch = nn.Linear(embed_dim, 3 * patch_size * patch_size)
+        self.to_patch = nn.Linear(config.embed_dim, config.out_channels * config.patch_size * config.patch_size)
 
-        # Store image and patch size
-        self.img_size = img_size
-        self.patch_size = patch_size
-        self.n_patches = (img_size // patch_size) ** 2
+
+        self.img_size = config.img_size
+        self.out_channels = config.out_channels
+        self.patch_size = config.patch_size
+        self.n_patches = (config.img_size // config.patch_size) ** 2
 
     def forward(self, encoded_patches, x=None):
         # Optionally use autoregressive input `x`
@@ -46,7 +46,7 @@ class Decoder(nn.Module):
 
         # Stack the patches together to form the output image
         output = torch.stack(output_patches, dim=1)
-        output = output.view(-1, self.img_size, self.img_size, 3).permute(0, 3, 1, 2)  # [B, C, H, W]
+        output = output.view(-1, self.img_size, self.img_size, self.out_channels).permute(0, 3, 1, 2)  # [B, C, H, W]
         return output
 
     def _generate_square_subsequent_mask(self, size):

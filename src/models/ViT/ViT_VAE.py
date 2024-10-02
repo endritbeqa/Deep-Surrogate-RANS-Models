@@ -1,22 +1,31 @@
 import torch
 import torch.nn as nn
-from src.models.ViT import Config_ViT_VAE, encoder, decoder, Z_cell
+from src.models.ViT import encoder, decoder, prior_select
 
 
 class AutoregressiveImageTransformer(nn.Module):
-    def __init__(self, config ,img_size=32, patch_size=4, in_channels=3, embed_dim=32, num_heads=4, num_layers=2):
+    def __init__(self, config):
         super(AutoregressiveImageTransformer, self).__init__()
 
 
-        self.encoder = encoder.Encoder(img_size=img_size, patch_size=patch_size, in_channels=in_channels, embed_dim=embed_dim,
-                               num_layers=num_layers, num_heads=num_heads)
+        self.encoder = encoder.Encoder(config.encoder)
+        self.condition_encoder = encoder.Encoder(config.encoder)
+        self.z_cell = prior_select.get_Z_Cell(config.prior, config)
+        self.decoder = decoder.Decoder(config.decoder)
 
-        self.decoder = decoder.Decoder(img_size=img_size, patch_size=patch_size, embed_dim=embed_dim, num_layers=num_layers,
-                               num_heads=num_heads)
+    def forward(self, condition, targets):
 
-    def forward(self,inputs ,x):
+        input = torch.cat([condition, targets], dim=1)
 
-        encoded_patches = self.encoder(x)
-        output_image = self.decoder(encoded_patches)
+        encoded_patches = self.encoder(input)
+        patch_shape = encoded_patches.shape
 
-        return output_image, [345,454], [567, 45]
+        encoded_patches = torch.flatten(encoded_patches, start_dim=1, end_dim=-1)
+        encoded_condition_patches = self.condition_encoder(condition)
+
+        z, mu, logvar = self.z_cell(encoded_patches, encoded_condition_patches)
+        z = torch.reshape(z, patch_shape)
+
+        output_image = self.decoder(z)
+
+        return output_image, mu, logvar

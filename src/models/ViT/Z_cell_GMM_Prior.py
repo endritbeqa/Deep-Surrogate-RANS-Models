@@ -18,6 +18,12 @@ class GMMVAEBottleneck(nn.Module):
         # Mixing coefficients (logits for the categorical distribution)
         self.fc_mix_logits = nn.Linear(self.hidden_dim, self.num_components)
 
+        self.means = nn.Parameter(torch.randn(self.num_components, self.L) * multiplier)
+        self.logvars = nn.Parameter(torch.randn(num_components, self.L))
+
+        # mixing weights
+        self.w = nn.Parameter(torch.zeros(num_components, 1, 1))
+
     def reparameterize(self, mu, logvar, mixture_index):
         """Reparameterization trick to sample from the selected Gaussian."""
         std = torch.exp(0.5 * logvar)
