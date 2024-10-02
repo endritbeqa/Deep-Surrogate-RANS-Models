@@ -12,8 +12,8 @@ def get_config():
     config.encoder.img_size = 32
     config.encoder.patch_size = 4
     config.encoder.in_channels = 6
-    config.encoder.embed_dim = 128
-    config.encoder.num_layers = 4
+    config.encoder.embed_dim = 32
+    config.encoder.num_layers = 2
     config.encoder.num_heads = 4
 
 ##### Decoder ##########
@@ -22,15 +22,27 @@ def get_config():
     config.decoder.img_size = 32
     config.decoder.patch_size = 4
     config.decoder.out_channels = 3
-    config.decoder.embed_dim = 128 ## double the encoder because of the condition also
-    config.decoder.num_layers = 4
+    config.decoder.embed_dim = 32 ## double the encoder because of the condition also
+    config.decoder.num_layers = 2
     config.decoder.num_heads = 4
+
+##### Condition Encoder #####
+
+    config.condition_encoder = ConfigDict()
+    config.condition_encoder.img_size = 32
+    config.condition_encoder.patch_size = 4
+    config.condition_encoder.in_channels = 3
+    config.condition_encoder.embed_dim = 32
+    config.condition_encoder.num_layers = 2
+    config.condition_encoder.num_heads = 4
+
+
 
 ##### Gaussian Prior Bottleneck ######
 
     config.gaussian_prior = ConfigDict()
     config.gaussian_prior.latent_dim = 512
-    config.gaussian_prior.hidden_dim = config.encoder.embed_dim * (config.encoder.img_size/config.encoder.patch_size)**2
+    config.gaussian_prior.hidden_dim = int(config.encoder.embed_dim * (config.encoder.img_size/config.encoder.patch_size)**2)
 
 
 ##### Vamp Prior Bottleneck ##########
