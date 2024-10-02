@@ -6,11 +6,11 @@ def get_config():
     config = config_dict.ConfigDict()
     config.study_name = 'test_AR_ViT'
     config.model_name = "ViT_VAE"
-    config.data_dir = '/home/endrit/PycharmProjects/data/Uncertainty/1_parameter'  #'/media/blin/VOL REC Blin/endrit/datasets/uncertainty/Uncertainty_preprocessed/res_32_small'
-    config.output_dir = '/home/endrit/PycharmProjects/results/Uncertainty/{}'.format(config.study_name) #'/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
-    config.device = 'cpu'
-    config.num_epochs = 50
-    config.batch_size = 3
+    config.data_dir = '/media/blin/VOL REC Blin/endrit/datasets/uncertainty/Uncertainty_preprocessed/res_32_small'
+    config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
+    config.device = 'cuda:0'
+    config.num_epochs = 450
+    config.batch_size = 30
     config.normalize = True
     config.optimizer = 'adam'
     config.lr = 1e-4

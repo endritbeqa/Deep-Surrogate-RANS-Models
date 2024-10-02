@@ -26,4 +26,5 @@ class PositionalEncoding(nn.Module):
         self.pos_embedding = nn.Parameter(torch.randn(1, n_patches, embed_dim))
 
     def forward(self, x):
-        return x + self.pos_embedding
+        B, P, C = x.shape
+        return x + self.pos_embedding[:,:P,:]

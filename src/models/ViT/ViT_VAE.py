@@ -4,7 +4,7 @@ from src.models.ViT import Config_ViT_VAE, encoder, decoder, Z_cell
 
 
 class AutoregressiveImageTransformer(nn.Module):
-    def __init__(self, config ,img_size=128, patch_size=16, in_channels=3, embed_dim=64, num_heads=4, num_layers=4):
+    def __init__(self, config ,img_size=32, patch_size=4, in_channels=3, embed_dim=32, num_heads=4, num_layers=2):
         super(AutoregressiveImageTransformer, self).__init__()
 
 

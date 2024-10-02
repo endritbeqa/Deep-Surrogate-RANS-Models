@@ -3,7 +3,7 @@ import torch.nn as nn
 from src.models.ViT.layers import PositionalEncoding, PatchEmbedding
 
 class Encoder(nn.Module):
-    def __init__(self, img_size=128, patch_size=16, in_channels=3, embed_dim=64, num_layers=4, num_heads=4):
+    def __init__(self, img_size=32, patch_size=4, in_channels=3, embed_dim=32, num_layers=2, num_heads=4):
         
         super(Encoder, self).__init__()
 

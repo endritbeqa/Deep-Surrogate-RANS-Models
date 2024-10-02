@@ -4,7 +4,7 @@ from src.models.ViT.layers import PositionalEncoding, PatchEmbedding
 
 
 class Decoder(nn.Module):
-    def __init__(self, img_size=128, patch_size=16, embed_dim=64, num_layers=4, num_heads=4):
+    def __init__(self, img_size=32, patch_size=4, embed_dim=32, num_layers=2, num_heads=4):
         super(Decoder, self).__init__()
 
         # Positional encoding
@@ -32,7 +32,7 @@ class Decoder(nn.Module):
             input_seq = encoded_patches[:, :i, :]
 
             # Apply the positional encoding
-            #input_seq = self.pos_encoding(input_seq)
+            input_seq = self.pos_encoding(input_seq)
 
             # Causal mask to prevent future patches from leaking into the past
             tgt_mask = self._generate_square_subsequent_mask(i).to(input_seq.device)
