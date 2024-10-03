@@ -1,7 +1,4 @@
-import math
 from typing import Tuple, Optional
-from transformers import AutoConfig
-from transformers import Swinv2Model
 import torch.nn as nn
 import torch
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer
