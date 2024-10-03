@@ -8,8 +8,7 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.latent_dim = [256, 128, 64, 32]
-    config.condition_latent_dim = [256, 128, 64, 32]
+    config.prior = 'gaussian'
 
     ####### CONV_BLOCK #######
 
@@ -48,8 +47,8 @@ def get_config():
     config.swin_encoder.skip_connection_shape = [[2**i * config.swin_encoder.embed_dim,
         int(config.swin_encoder.image_size / (config.swin_encoder.patch_size * 2**i)),
         int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**i))]
-        for i in range(len(config.swin_encoder.depths))] #skip connections shape (H,W,C)
-    config.swin_encoder.skip_connection_shape.insert(0, [config.conv_block.image_size,config.conv_block.image_size,config.conv_block.output_dim])
+        for i in range(len(config.swin_encoder.depths))] #skip connections shape (C,W,H)
+    config.swin_encoder.skip_connection_shape.insert(0, [config.conv_block.output_dim, config.conv_block.image_size,config.conv_block.image_size])
 
 #########  DECODER  ##############
 
@@ -76,7 +75,6 @@ def get_config():
     config.swin_decoder.output_hidden_states = False
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
-    config.swin_decoder.latent_dim_reversed = list(reversed(config.latent_dim))
     config.swin_decoder.skip_connection_shape_pre_cat = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (C,H,W)
     for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):
@@ -84,14 +82,26 @@ def get_config():
             config.swin_decoder.skip_connection_shape[i][2] += int(config.swin_decoder.skip_connection_shape[i - 1][2]/4)
 
 
-#########  Z_Cells  ##########
+##### Gaussian Prior Bottleneck ######
 
-    config.Z_cells = config_dict.ConfigDict()
-    config.Z_cells.latent_dim = [32, 64, 128, 256]
-    config.Z_cells.condition_latent_dim = [32, 64, 128, 256]
+    config.gaussian_prior = config_dict.ConfigDict()
+    config.gaussian_prior.latent_dim = [512, 256, 128, 64]
+    config.gaussian_prior.hidden_dim = list(reversed([math.prod(skip) for skip in config.swin_encoder.skip_connection_shape]))
 
-    config.Z_cells.encoder_shapes = list(reversed(config.swin_encoder.skip_connection_shape))
 
+##### Vamp Prior Bottleneck ##########
+
+    config.vamp_prior = config_dict.ConfigDict()
+    config.vamp_prior.latent_dim = 64  # Dimensionality of the latent space
+    config.vamp_prior.hidden_dim = 256  # Dimensionality of the input features (before the bottleneck)
+    config.vamp_prior.num_pseudo_inputs = 10
+
+##### GMM Prior Bottleneck ##########
+
+    config.gmm_prior = config_dict.ConfigDict()
+    config.gmm_prior.latent_dim = 64  # Dimensionality of the latent space
+    config.gmm_prior.hidden_dim = 256  # Dimensionality of the input features (before the bottleneck)
+    config.gmm_prior.num_components = 10  # Number of Gaussian components in the mixture
 
 
 
