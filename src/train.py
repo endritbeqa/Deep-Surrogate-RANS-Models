@@ -31,7 +31,7 @@ class Trainer(object):
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=20)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
         print("Num parameters: {}".format(self.num_model_parameters))
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
 
         os.mkdir(self.output_dir)
