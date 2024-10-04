@@ -106,28 +106,27 @@ class Swin_VAE_decoder(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.conv_block = Conv_Block(config.conv_block.image_size,
-                                     config.conv_block.num_channels,
-                                     config.conv_block.embed_dim,
-                                     config.conv_block.output_dim)
+
 
         self.config = config
         self.num_layers = len(config.swin_decoder.depths)
 
         layers = []
         for i_layer in range(self.num_layers):
+            C, H, W = config.swin_decoder.skip_connection_shape[i_layer]
             stage = Swinv2DecoderStage(
                 config=config.swin_decoder,
-                dim=int(config.swin_decoder.skip_connection_shape[i_layer][2]),
-                input_resolution=(config.swin_decoder.skip_connection_shape[i_layer][0], config.swin_decoder.skip_connection_shape[i_layer][1]),
+                dim=int(C),
+                input_resolution=(H, W),
                 depth=config.swin_decoder.depths[i_layer],
                 num_heads=config.swin_decoder.num_heads[i_layer],
-                upsample=SwinUpsample(res=(config.swin_decoder.skip_connection_shape[i_layer + 1][0] + 2),
-                                      in_channels=int(config.swin_decoder.skip_connection_shape[i_layer][2]))
+                ## TODO this 2*H is ugly, maybe refactor it
+                upsample=SwinUpsample(res=(2*H + 2), in_channels=int(C))
             )
             layers.append(stage)
 
-        self.last_layer = Conv_Block(config.swin_decoder.skip_connection_shape[-1][0],config.swin_decoder.skip_connection_shape[-1][2],config.swin_decoder.num_channels)
+        C, H, W = config.swin_decoder.skip_connection_shape[-1]
+        self.last_layer = Conv_Block(H, C, config.swin_decoder.out_channels)
 
         layers.append(self.last_layer)
         self.layers = nn.ModuleList(layers)

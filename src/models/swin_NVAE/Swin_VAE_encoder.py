@@ -50,9 +50,12 @@ class Swin_VAE_encoder(nn.Module):
 
 
     def forward(self, condition, target):
+        B, _, _, _ = target.shape
+
         target = torch.cat([condition, target], dim=1)
         conv_block_output = self.conv_block(target)
         condition_conv_block_output = self.conv_block_condition(condition)
+
         swin_encoder_output = self.encoder(conv_block_output, output_hidden_states=True)
         last_hidden_state = swin_encoder_output.last_hidden_state
         hidden_states = swin_encoder_output.hidden_states
@@ -71,11 +74,11 @@ class Swin_VAE_encoder(nn.Module):
 
         for i, hidden_state in enumerate(hidden_states):
             hidden_states[i] = hidden_states[i].permute(dims=(0, 2, 1))
-            hidden_states[i] = hidden_states[i].view(self.config.skip_connection_shape[i])
+            hidden_states[i] = hidden_states[i].view(B,*self.config.skip_connection_shape[i])
 
         for i, condition_hidden_state in enumerate(condition_hidden_states):
             condition_hidden_states[i] = condition_hidden_states[i].permute(dims=(0, 2, 1))
-            condition_hidden_states[i] = condition_hidden_states[i].view(self.config.skip_connection_shape[i])
+            condition_hidden_states[i] = condition_hidden_states[i].view(B,*self.config.skip_connection_shape[i])
 
 
         return hidden_states, condition_hidden_states

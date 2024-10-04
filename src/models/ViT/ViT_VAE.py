@@ -30,3 +30,23 @@ class AutoregressiveImageTransformer(nn.Module):
         output_image = self.decoder(z)
 
         return output_image, mu, logvar
+
+
+
+    def sample(self, condition):
+
+        encoded_condition_patches = self.condition_encoder(condition)
+        encoded_condition_patches = torch.flatten(encoded_condition_patches, start_dim=1, end_dim=-1)
+
+        noise = torch.unsqueeze(torch.randn(self.config.latent_dim), dim=0)
+
+        condition_latent = self.z_cell.fc_condition(encoded_condition_patches)
+
+        z = torch.cat((noise, condition_latent), dim=1)
+
+        output = self.decoder(z)
+
+        return output
+
+
+

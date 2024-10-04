@@ -87,7 +87,7 @@ class Swinv2DecoderStage(nn.Module):
 
         self.blocks = nn.ModuleList(blocks)
 
-        # patch merging layer
+        # patch merging i_layer
         if upsample is not None:
             self.upsample = upsample
         else:

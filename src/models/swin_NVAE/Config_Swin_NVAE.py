@@ -16,8 +16,8 @@ def get_config():
     config.conv_block.image_size = 32
     config.conv_block.num_channels = 6
     config.conv_block.num_channels_condition = 3
-    config.conv_block.embed_dim = 8
-    config.conv_block.output_dim = 12
+    config.conv_block.embed_dim = 12
+    config.conv_block.output_dim = 24
 
 
     ########  ENCODER  ########
@@ -26,9 +26,9 @@ def get_config():
     config.swin_encoder.image_size = 32
     config.swin_encoder.num_channels = config.conv_block.output_dim
     config.swin_encoder.patch_size = 2
-    config.swin_encoder.embed_dim = 16
+    config.swin_encoder.embed_dim = 32
     config.swin_encoder.depths = [2, 4, 2]
-    config.swin_encoder.num_heads = [2, 4, 4]
+    config.swin_encoder.num_heads = [2, 2, 2]
     config.swin_encoder.window_size = 8
     config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
@@ -54,11 +54,11 @@ def get_config():
 
     config.swin_decoder = config_dict.ConfigDict()
     config.swin_decoder.image_size = 32
-    config.swin_decoder.num_channels = 3
+    config.swin_decoder.out_channels = 3
     config.swin_decoder.patch_size = 2
-    config.swin_decoder.embed_dim = 16
+    config.swin_decoder.embed_dim = 32
     config.swin_decoder.depths = [2, 4, 2]
-    config.swin_decoder.num_heads = [2, 4, 4]
+    config.swin_decoder.num_heads = [2, 2, 2]
     config.swin_decoder.window_size = 8
     config.swin_decoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
@@ -77,16 +77,22 @@ def get_config():
     config.swin_decoder.out_indices = None
     config.swin_decoder.skip_connection_shape_pre_cat = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (C,H,W)
+    config.swin_decoder.stage_output_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (C,H,W)
     for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):
         if i != 0:
-            config.swin_decoder.skip_connection_shape[i][2] += int(config.swin_decoder.skip_connection_shape[i - 1][2]/4)
-
+            config.swin_decoder.stage_output_shape[i][0] = int(config.swin_decoder.skip_connection_shape[i - 1][0] / 4)
+            config.swin_decoder.skip_connection_shape[i][0] += int(config.swin_decoder.skip_connection_shape[i - 1][0]/4)
 
 ##### Gaussian Prior Bottleneck ######
 
     config.gaussian_prior = config_dict.ConfigDict()
     config.gaussian_prior.latent_dim = [512, 256, 128, 64]
-    config.gaussian_prior.hidden_dim = list(reversed([math.prod(skip) for skip in config.swin_encoder.skip_connection_shape]))
+    config.gaussian_prior.hidden_dim = [math.prod(skip) for skip in config.swin_decoder.skip_connection_shape_pre_cat]
+
+    config.gaussian_prior.output_dims = config.swin_decoder.stage_output_shape
+
+
+    config.gaussian_prior.previous_dim = [math.prod(prev) for prev in config.gaussian_prior.output_dims]
 
 
 ##### Vamp Prior Bottleneck ##########

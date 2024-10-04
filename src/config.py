@@ -4,8 +4,8 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.study_name = 'test_AR_ViT_VAE'
-    config.model_name = "ViT_VAE"
+    config.study_name = 'test_NVAE'
+    config.model_name = "swin_NVAE"
     config.data_dir = '/media/blin/VOL REC Blin/endrit/datasets/uncertainty/Uncertainty_preprocessed/res_32_small'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
     config.device = 'cuda:0'
