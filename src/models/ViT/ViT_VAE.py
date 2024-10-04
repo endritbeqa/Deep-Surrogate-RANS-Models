@@ -6,11 +6,10 @@ from src.models.ViT import encoder, decoder, prior_select
 class AutoregressiveImageTransformer(nn.Module):
     def __init__(self, config):
         super(AutoregressiveImageTransformer, self).__init__()
-
-
+        self.config = config
         self.encoder = encoder.Encoder(config.encoder)
         self.condition_encoder = encoder.Encoder(config.condition_encoder)
-        self.z_cell = prior_select.get_Z_Cell(config.prior, config)
+        self.z_cell, self.z_cell_config = prior_select.get_Z_Cell(config.prior, config)
         self.decoder = decoder.Decoder(config.decoder)
 
     def forward(self, condition, targets):
@@ -36,13 +35,19 @@ class AutoregressiveImageTransformer(nn.Module):
     def sample(self, condition):
 
         encoded_condition_patches = self.condition_encoder(condition)
+        patch_shape = encoded_condition_patches.shape
+
+
         encoded_condition_patches = torch.flatten(encoded_condition_patches, start_dim=1, end_dim=-1)
 
-        noise = torch.unsqueeze(torch.randn(self.config.latent_dim), dim=0)
+        noise = torch.unsqueeze(torch.randn(self.z_cell_config.latent_dim), dim=0)
 
         condition_latent = self.z_cell.fc_condition(encoded_condition_patches)
 
         z = torch.cat((noise, condition_latent), dim=1)
+        z = self.z_cell.fc_z(z)
+        z = torch.reshape(z, patch_shape)
+
 
         output = self.decoder(z)
 

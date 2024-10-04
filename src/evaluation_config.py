@@ -5,12 +5,10 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = "test_AR_ViT_VAE"
-    config.model_folder = os.path.join("/home/endrit/PycharmProjects/results/Uncertainty", config.test_name)
-    config.model_config = os.path.join(config.model_folder, "configs", "model_config.json")
-    config.train_config = os.path.join(config.model_folder, "configs", "config.json")
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "200.pth")
-    config.data_dir = '/home/endrit/PycharmProjects/data/Uncertainty/1_parameter/test'
+    config.test_name = "test_NVAE"
+    config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "40.pth")
+    config.data_dir = '/media/blin/VOL REC Blin/endrit/datasets/uncertainty/test/Uncertainty_data_test_preprocessed/interpolation'
     config.output_dir = os.path.join(config.model_folder, "predictions")
     config.batch_size = 1
     config.loss = ['mrl']

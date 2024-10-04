@@ -51,5 +51,36 @@ class U_NET_Swin(nn.Module):
 
 
 
+    def sample(self, condition):
+        B, _, _, _ = condition.shape
+
+        place_holder = torch.randn_like(condition)
+        _, conditions = self.encoder(condition, place_holder)
+        conditions = list(reversed(conditions))
+
+        hidden_state = self.z_cells[0].H.repeat(B, 1)
+        #hidden_state = torch.reshape(hidden_state, self.config.swin_decoder.skip_connection_shape_pre_cat[0])
+
+
+        for i, condition in enumerate(conditions):
+
+            condition_flattened = torch.flatten(condition, start_dim=1, end_dim=-1)
+            hidden_state_flattened = torch.flatten(hidden_state, start_dim=1, end_dim=-1)
+
+            noise = torch.unsqueeze(torch.randn(self.prior_config.latent_dim[i]), dim=0)
+
+            condition_latent = self.z_cells[i].fc_condition(condition_flattened)
+            hidden_state_latent = self.z_cells[i].fc_prev(hidden_state_flattened)
+
+            z = torch.cat((noise, hidden_state_latent, condition_latent), dim=1)
+            z = self.z_cells[i].fc_z(z)
+            shape = self.config.swin_decoder.skip_connection_shape_pre_cat[i]
+            z = z.view(B,*shape)
+            z = torch.cat((z, hidden_state), dim=1)
+            input_dimension = shape[1:3]
+            hidden_state = self.decoder.layers[i](z, input_dimension)
+
+        return hidden_state
+
 
 

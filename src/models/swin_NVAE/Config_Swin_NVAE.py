@@ -86,7 +86,7 @@ def get_config():
 ##### Gaussian Prior Bottleneck ######
 
     config.gaussian_prior = config_dict.ConfigDict()
-    config.gaussian_prior.latent_dim = [512, 256, 128, 64]
+    config.gaussian_prior.latent_dim = [64, 128, 256, 512]
     config.gaussian_prior.hidden_dim = [math.prod(skip) for skip in config.swin_decoder.skip_connection_shape_pre_cat]
 
     config.gaussian_prior.output_dims = config.swin_decoder.stage_output_shape

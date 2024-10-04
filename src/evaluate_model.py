@@ -16,15 +16,13 @@ from src import evaluation_config
 
 class Model_Test(object):
     def __init__(self, config: ConfigDict):
+
         self.config = config
-
-        with open(config.train_config, 'r') as f:
-            self.train_config = ConfigDict(json.load(f))
-        with open(config.model_config, 'r') as f:
-            self.model_config = ConfigDict(json.load(f))
-
+        self.checkpoint = torch.load(config.checkpoint)
+        self.train_config = self.checkpoint['train_config']
+        self.model_config = self.checkpoint['model_config']
         self.model_name = self.train_config.model_name
-        self.model = model_select.load_model(self.model_name, self.model_config, config.checkpoint)
+        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
         self.output_dir = config.output_dir
         self.loss_func = loss.get_loss_function(config.loss)
         self.test_dataset = dataset.Test_Dataset(self.config)
