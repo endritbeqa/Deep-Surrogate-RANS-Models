@@ -59,7 +59,7 @@ class U_NET_Swin(nn.Module):
         conditions = list(reversed(conditions))
 
         hidden_state = self.z_cells[0].H.repeat(B, 1)
-        #hidden_state = torch.reshape(hidden_state, self.config.swin_decoder.skip_connection_shape_pre_cat[0])
+        hidden_state = torch.reshape(hidden_state, (B,*self.config.swin_decoder.skip_connection_shape_pre_cat[0]))
 
 
         for i, condition in enumerate(conditions):
@@ -76,7 +76,8 @@ class U_NET_Swin(nn.Module):
             z = self.z_cells[i].fc_z(z)
             shape = self.config.swin_decoder.skip_connection_shape_pre_cat[i]
             z = z.view(B,*shape)
-            z = torch.cat((z, hidden_state), dim=1)
+            if i!=0:
+                z = torch.cat((z, hidden_state), dim=1)
             input_dimension = shape[1:3]
             hidden_state = self.decoder.layers[i](z, input_dimension)
 

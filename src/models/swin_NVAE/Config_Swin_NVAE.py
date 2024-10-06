@@ -26,9 +26,9 @@ def get_config():
     config.swin_encoder.image_size = 32
     config.swin_encoder.num_channels = config.conv_block.output_dim
     config.swin_encoder.patch_size = 2
-    config.swin_encoder.embed_dim = 32
-    config.swin_encoder.depths = [2, 4, 2]
-    config.swin_encoder.num_heads = [2, 2, 2]
+    config.swin_encoder.embed_dim = 48
+    config.swin_encoder.depths = [2, 6, 2]
+    config.swin_encoder.num_heads = [2, 4, 4]
     config.swin_encoder.window_size = 8
     config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
@@ -56,9 +56,9 @@ def get_config():
     config.swin_decoder.image_size = 32
     config.swin_decoder.out_channels = 3
     config.swin_decoder.patch_size = 2
-    config.swin_decoder.embed_dim = 32
-    config.swin_decoder.depths = [2, 4, 2]
-    config.swin_decoder.num_heads = [2, 2, 2]
+    config.swin_decoder.embed_dim = 48
+    config.swin_decoder.depths = [2, 6, 2]
+    config.swin_decoder.num_heads = [2, 4, 4]
     config.swin_decoder.window_size = 8
     config.swin_decoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
@@ -86,7 +86,7 @@ def get_config():
 ##### Gaussian Prior Bottleneck ######
 
     config.gaussian_prior = config_dict.ConfigDict()
-    config.gaussian_prior.latent_dim = [64, 128, 256, 512]
+    config.gaussian_prior.latent_dim = [32, 64, 128, 256]
     config.gaussian_prior.hidden_dim = [math.prod(skip) for skip in config.swin_decoder.skip_connection_shape_pre_cat]
 
     config.gaussian_prior.output_dims = config.swin_decoder.stage_output_shape

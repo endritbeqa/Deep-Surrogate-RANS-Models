@@ -1,13 +1,58 @@
 import os
+import random
+import shutil
 import numpy as np
 import torch
 import torch.nn.functional as F
 
+SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/case_split"
+TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/train_val_split/train"
+VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/train_val_split/validation"
+
+
+removePOffset = True
+makeDimLess = True
+fixedAirfoilNormalization = True
+epsilon = 1e-8
+res = 32
+percentage = 1
+train_val_split = 0.95
+
+
+def split_train_val():
+
+    os.makedirs(TRAIN_DIR, exist_ok=True)
+    os.makedirs(VALIDATION_DIR, exist_ok=True)
+    
+    dirs = [os.path.join(PREPROCESS_DIR, d) for d in os.listdir(PREPROCESS_DIR) if os.path.isdir(os.path.join(PREPROCESS_DIR, d))]
+    random.shuffle(dirs)
+    train_count = int(len(dirs) * train_val_split)
+    
+    train_dirs = dirs[:train_count]
+    validation_dirs = dirs[train_count:]
+    
+    print(f"Copying {len(train_dirs)} directories to the train set...")
+    for dir_path in train_dirs:
+        if len(os.listdir(dir_path))==0:
+            print("Empty directory")
+            continue
+        for file in os.listdir(dir_path):
+            shutil.copy(os.path.join(dir_path, file), os.path.join(TRAIN_DIR, file))
+    
+    print(f"Copying {len(validation_dirs)} directories to the validation set...")
+    for dir_path in validation_dirs:
+        if len(os.listdir(dir_path))==0:
+            print("Empty directory")
+            continue
+        for file in os.listdir(dir_path):
+            shutil.copy(os.path.join(dir_path, file), os.path.join(VALIDATION_DIR, file))
+    
+    print("Data split completed!")
+
 
 
 def preprocess_data(data) -> np.ndarray:
-    removePOffset, makeDimLess, fixedAirfoilNormalization = True, True, True
-    epsilon = 1e-8
 
     if not any((removePOffset, makeDimLess, fixedAirfoilNormalization)):
         return data
@@ -69,28 +114,27 @@ def preprocess_data(data) -> np.ndarray:
 
 
 
-
-
-
 def preprocess_test_files():
+    all_cases = os.listdir(SRC_DIR)
+    random.shuffle(all_cases)
+    num_cases = int(len(all_cases)*percentage)
+    cases = all_cases[:num_cases]
 
-    directory = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_data_test/test/interpolation"
-    cases = os.listdir(directory)
+    os.makedirs(PREPROCESS_DIR, exist_ok=True)
 
-    output_dir = "/home/blin/PycharmProjects/Thesis/src/Uncertainty_data_test_preprocessed/interpolation_64"
-    os.makedirs(output_dir)
-
-    for case in cases:
-        case_path = os.path.join(directory, case)
-        os.makedirs(os.path.join(output_dir,case))
+    for i, case in enumerate(cases):
+        print("Case: {}/{}".format(i+1, num_cases))
+        case_path = os.path.join(SRC_DIR, case)
+        os.makedirs(os.path.join(PREPROCESS_DIR,case))
 
         for snapshot in os.listdir(case_path):
             snapshot_data = np.load(os.path.join(case_path, snapshot))
-            snapshot_data = preprocess_data(snapshot_data['a'].astype(np.float32))
+            snapshot_data = snapshot_data['a'].astype(np.float32)
+            snapshot_data = preprocess_data(snapshot_data)
 
             arrays = torch.tensor(snapshot_data, dtype=torch.float32)
             arrays = torch.unsqueeze(arrays, dim=0)
-            arrays = F.interpolate(arrays, size=(64, 64), mode='bilinear', align_corners=False)
+            arrays = F.interpolate(arrays, size=(res, res), mode='bilinear', align_corners=False)
             arrays = torch.squeeze(arrays)
             arrays = arrays.numpy()
 
@@ -103,7 +147,7 @@ def preprocess_test_files():
 
             arrays = preprocess_data(arrays)
 
-            output_path = "{}/{}/{}".format(output_dir, case, snapshot)
+            output_path = "{}/{}/{}".format(PREPROCESS_DIR, case, snapshot)
             save_path = os.path.join(output_path)
             np.savez(save_path, a=arrays)
 
@@ -111,3 +155,4 @@ def preprocess_test_files():
 
 if __name__ == '__main__':
     preprocess_test_files()
+    split_train_val()

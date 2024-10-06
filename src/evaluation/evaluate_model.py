@@ -1,5 +1,3 @@
-import json
-import math
 import os
 
 import numpy as np
@@ -12,7 +10,8 @@ from src.models import model_select
 from src.data import dataset
 from src import loss
 from src import utils
-from src import evaluation_config
+from src.evaluation import evaluation_config
+
 
 class Model_Test(object):
     def __init__(self, config: ConfigDict):

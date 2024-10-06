@@ -95,7 +95,7 @@ class Airfoil_Dataset(Dataset):
 class Test_Dataset(Dataset):
 
     def __init__(self, config):
-        self.data_dir = str(os.path.join(config.data_dir, config.data.type))
+        self.data_dir = config.data_dir
         self.batch_size = config.batch_size
         self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
         self.makeDimLess = config.data_preprocessing.makeDimLess

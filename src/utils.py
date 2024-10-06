@@ -63,6 +63,10 @@ def save_images(outputs, output_dir, mode , epoch):
             max_value -= min_value
             field /= max_value
 
+            #grayscale_field = ((field * 127) + 128).astype(np.uint8)  # Grayscale mapping
+            #rgb_field = np.stack([grayscale_field] * 3, axis=-1)  # Convert to RGB (R=G=B for grayscale)
+            #im = Image.fromarray(rgb_field)
+
             im = Image.fromarray(cm.magma(field, bytes=True))
             im = im.resize((h, w))
             file_path = "{}/images/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
@@ -94,6 +98,10 @@ def save_samples(samples, output_dir, label, epoch):
             field -= min_value
             max_value -= min_value
             field /= max_value
+
+            # grayscale_field = ((field * 127) + 128).astype(np.uint8)  # Grayscale mapping
+            # rgb_field = np.stack([grayscale_field] * 3, axis=-1)  # Convert to RGB (R=G=B for grayscale)
+            # im = Image.fromarray(rgb_field)
 
             im = Image.fromarray(cm.magma(field, bytes=True))
             im = im.resize((h, w))
