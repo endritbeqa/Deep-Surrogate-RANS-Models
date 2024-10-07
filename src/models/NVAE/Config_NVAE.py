@@ -10,17 +10,26 @@ def get_config():
     config = config_dict.ConfigDict()
     config.prior = 'gaussian'
 
+    ####### CONV_BLOCK #######
+
+    config.conv_block = config_dict.ConfigDict()
+    config.conv_block.image_size = 128
+    config.conv_block.num_channels = 6
+    config.conv_block.num_channels_condition = 3
+    config.conv_block.embed_dim = 12
+    config.conv_block.output_dim = 24
+
 
     ########  ENCODER  ########
 
     config.swin_encoder = config_dict.ConfigDict()
     config.swin_encoder.image_size = 128
-    config.swin_encoder.num_channels = 6
+    config.swin_encoder.num_channels = config.conv_block.output_dim
     config.swin_encoder.patch_size = 8
     config.swin_encoder.embed_dim = 48
     config.swin_encoder.depths = [2, 6, 2]
     config.swin_encoder.num_heads = [2, 4, 4]
-    config.swin_encoder.window_size = 4
+    config.swin_encoder.window_size = 8
     config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
     config.swin_encoder.qkv_bias = True
@@ -39,6 +48,7 @@ def get_config():
         int(config.swin_encoder.image_size / (config.swin_encoder.patch_size * 2**i)),
         int(config.swin_encoder.image_size/(config.swin_encoder.patch_size * 2**i))]
         for i in range(len(config.swin_encoder.depths))] #skip connections shape (C,W,H)
+    config.swin_encoder.skip_connection_shape.insert(0, [config.conv_block.output_dim, config.conv_block.image_size,config.conv_block.image_size])
 
 #########  DECODER  ##############
 
@@ -49,7 +59,7 @@ def get_config():
     config.swin_decoder.embed_dim = 48
     config.swin_decoder.depths = [2, 6, 2]
     config.swin_decoder.num_heads = [2, 4, 4]
-    config.swin_decoder.window_size = 4
+    config.swin_decoder.window_size = 8
     config.swin_decoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
     config.swin_decoder.mlp_ratio = 4.0
@@ -76,7 +86,7 @@ def get_config():
 ##### Gaussian Prior Bottleneck ######
 
     config.gaussian_prior = config_dict.ConfigDict()
-    config.gaussian_prior.latent_dim = [128, 256, 512]
+    config.gaussian_prior.latent_dim = [32, 64, 128, 256]
     config.gaussian_prior.hidden_dim = [math.prod(skip) for skip in config.swin_decoder.skip_connection_shape_pre_cat]
 
     config.gaussian_prior.output_dims = config.swin_decoder.stage_output_shape

@@ -28,12 +28,12 @@ class Trainer(object):
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(self.config.loss_function)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=50)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=40)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
         self.beta = train_config.KLD_beta
-        print("Num parameters: {}".format(self.num_model_parameters))
+        print("Model: {}, Num parameters: {}".format(self.config.model_name, self.num_model_parameters))
         os.makedirs(self.output_dir, exist_ok=True)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),

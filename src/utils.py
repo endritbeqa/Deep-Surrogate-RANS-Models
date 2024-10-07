@@ -117,11 +117,12 @@ def plot_comparison(targets, predictions, output_dir, file_name):
     if targets.shape != predictions.shape or targets.shape[0] != 3:
         raise ValueError("Input arrays must have shape (3, H, W)")
 
+
     targets = np.rot90(targets, axes=(1,2))
     predictions = np.rot90(predictions, axes=(1, 2))
     delta = targets - predictions
 
-    fig, axes = plt.subplots(3, 3, figsize=(12, 8))
+    fig, axes = plt.subplots(2, 3, figsize=(12, 8))
 
     column_labels = ['P', 'Ux', 'Uy']
     row_labels = ['Target', 'Prediction', 'Delta']
@@ -129,17 +130,24 @@ def plot_comparison(targets, predictions, output_dir, file_name):
     for i in range(3):
         im = axes[0, i].imshow(targets[i] ,cmap=cm.magma)
         axes[0, i].set_title(column_labels[i])
+    fig.colorbar(im, ax=axes[0, :], orientation='vertical')  # For vertical colorbar
+
 
     for i in range(3):
         im = axes[1, i].imshow(predictions[i], cmap=cm.magma)
+    fig.colorbar(im, ax=axes[1, :], orientation='vertical')  # For vertical colorbar
 
-    for i in range(3):
-        im = axes[2, i].imshow(delta[i], cmap=cm.magma)
+
+    #for i in range(3):
+    #    im = axes[2, i].imshow(delta[i], cmap=cm.magma)
+    #fig.colorbar(im, ax=axes[2, :], orientation='vertical')  # For vertical colorbar
+
+
 
     for ax, row_label in zip(axes[:, 0], row_labels):
         ax.set_ylabel(row_label, size='large')
 
-    plt.tight_layout()
+    #plt.tight_layout()
 
     save_path = os.path.join(output_dir,  file_name+".png")
     plt.savefig(save_path)

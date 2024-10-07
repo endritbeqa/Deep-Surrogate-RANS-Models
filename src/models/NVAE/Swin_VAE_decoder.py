@@ -5,18 +5,19 @@ from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer
 
 
 
+
 class Conv_Block(nn.Module):
-    def __init__(self, res=128, input_dim=21, hidden_dim=32, out_dim=3):
+    def __init__(self, res, input_dim, out_dim):
         super(Conv_Block, self).__init__()
         self.upsample = nn.Upsample(size=(res+2, res+2), mode='bilinear')
-        self.conv1 = nn.Conv2d(input_dim, hidden_dim, kernel_size=3)
-        self.layerNorm1 = nn.LayerNorm([hidden_dim, res, res])
+        self.conv1 = nn.Conv2d(input_dim, input_dim, kernel_size=3)
+        self.layerNorm1 = nn.LayerNorm([input_dim, res, res])
         self.non_linearity = nn.GELU()
-        self.conv2 = nn.Conv2d(in_channels=hidden_dim,
+        self.conv2 = nn.Conv2d(in_channels=input_dim,
                               out_channels=out_dim,
                               kernel_size=1)
 
-    def forward(self, x):
+    def forward(self, x, tuple):
         x = self.upsample(x)
         x = self.conv1(x)
         x = self.layerNorm1(x)
@@ -24,7 +25,6 @@ class Conv_Block(nn.Module):
         x = self.conv2(x)
 
         return x
-
 
 
 class SwinUpsample(nn.Module):
@@ -125,9 +125,10 @@ class Swin_VAE_decoder(nn.Module):
             )
             layers.append(stage)
 
-        #TODO need to add this into the config
-        self.last_layer = Conv_Block()
+        C, H, W = config.swin_decoder.skip_connection_shape[-1]
+        self.last_layer = Conv_Block(H, C, config.swin_decoder.out_channels)
 
+        layers.append(self.last_layer)
         self.layers = nn.ModuleList(layers)
 
         

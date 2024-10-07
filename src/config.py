@@ -4,17 +4,17 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.study_name = 'test_NVAE_full'
+    config.study_name = 'test_swin_NVAE_128_small'
     config.model_name = "swin_NVAE"
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/train_val_split'
+    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_small'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
-    config.device = 'cuda:1'
+    config.device = 'cuda:0'
     config.num_epochs = 101
     config.batch_size = 30
-    config.optimizer = 'adamW' # doesnt do anything right now (AdamW is used)
+    config.optimizer = 'adamW' # TODO doesnt do anything right now (AdamW is used)
     config.lr = 1e-4
     config.weight_decay = 1e-2
-    config.scheduler_restart_epochs = int(config.num_epochs/4)
+    config.scheduler_restart_epochs = int(config.num_epochs/4)#  TODO   currently does nothing
     config.loss_function = ['mae', 'beta_KLD'] # available losses: mse, mae, hubber_loss, mrl, con_of_mass, beta_KLD
     config.KLD_beta = 0.01
     config.checkpoint_every = 5

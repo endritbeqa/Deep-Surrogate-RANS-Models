@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from src.models.swin_NVAE import Swin_VAE_decoder, Swin_VAE_encoder, prior_select, Z_cell
+from src.models.NVAE import Swin_VAE_decoder, Swin_VAE_encoder, prior_select, Z_cell
 
 
 class U_NET_Swin(nn.Module):
@@ -47,8 +47,6 @@ class U_NET_Swin(nn.Module):
             input_dimension = shape[1:3]
             hidden_state = self.decoder.layers[i](z, input_dimension)
 
-        hidden_state = self.decoder.last_layer(hidden_state)
-
         return hidden_state, mu, logvar
 
 
@@ -82,8 +80,6 @@ class U_NET_Swin(nn.Module):
                 z = torch.cat((z, hidden_state), dim=1)
             input_dimension = shape[1:3]
             hidden_state = self.decoder.layers[i](z, input_dimension)
-
-        hidden_state = self.decoder.last_layer(hidden_state)
 
         return hidden_state
 

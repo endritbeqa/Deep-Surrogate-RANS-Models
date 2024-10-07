@@ -1,0 +1,1 @@
+Every block(encoder, decoder, z_cell) needs to output the tensor in the shape(B, C, H, W)

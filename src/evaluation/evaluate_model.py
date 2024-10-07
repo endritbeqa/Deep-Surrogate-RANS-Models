@@ -28,6 +28,8 @@ class Model_Test(object):
         self.test_dataloader = DataLoader(self.test_dataset, config.batch_size, shuffle=False)
 
         os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, 'test_results','mean_comparisons'), exist_ok=True)
+        os.makedirs(os.path.join(self.output_dir, 'test_results', 'std_comparisons'), exist_ok=True)
 
 
     def predict(self):
@@ -60,6 +62,10 @@ class Model_Test(object):
                 target_mean = np.mean(targets, axis=0)
                 target_std = np.std(targets, axis=0)
 
+                # dirty fix with the label[0]
+                utils.plot_comparison(target_mean, sample_mean, os.path.join(self.output_dir, 'test_results','mean_comparisons'), label[0])
+                utils.plot_comparison(target_std, sample_std, os.path.join(self.output_dir, 'test_results', 'std_comparisons'), label[0])
+
                 target_means.append(np.squeeze(target_mean))
                 target_stds.append(np.squeeze(target_std))
                 sample_means.append(np.squeeze(sample_mean))
@@ -69,6 +75,8 @@ class Model_Test(object):
             target_stds = np.array(target_stds)
             sample_means = np.array(sample_means)
             sample_stds = np.array(sample_stds)
+
+
 
             utils.save_images(target_means, "{}/test_results".format(config.output_dir), "target_means", 0)
             utils.save_images(target_stds, "{}/test_results".format(config.output_dir), "target_stds", 0)
