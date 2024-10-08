@@ -6,14 +6,16 @@ from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer
 
 
 class Conv_Block(nn.Module):
-    def __init__(self, res=128, input_dim=21, hidden_dim=32, out_dim=3):
+    def __init__(self, config):
         super(Conv_Block, self).__init__()
-        self.upsample = nn.Upsample(size=(res+2, res+2), mode='bilinear')
-        self.conv1 = nn.Conv2d(input_dim, hidden_dim, kernel_size=3)
-        self.layerNorm1 = nn.LayerNorm([hidden_dim, res, res])
+        self.upsample = nn.Upsample(size=(config.res+8, config.res+8), mode='bilinear')
+        self.conv1 = nn.Conv2d(config.input_dim, config.hidden_dim_1, kernel_size=7)
+        self.layerNorm1 = nn.LayerNorm([config.hidden_dim_1, config.res+2, config.res+2])
+        self.conv2 = nn.Conv2d(config.hidden_dim_1, config.hidden_dim_2, kernel_size=3)
+        self.layerNorm2 = nn.LayerNorm([config.hidden_dim_2, config.res, config.res])
         self.non_linearity = nn.GELU()
-        self.conv2 = nn.Conv2d(in_channels=hidden_dim,
-                              out_channels=out_dim,
+        self.conv3 = nn.Conv2d(in_channels=config.hidden_dim_2,
+                              out_channels=config.out_dim,
                               kernel_size=1)
 
     def forward(self, x):
@@ -22,6 +24,9 @@ class Conv_Block(nn.Module):
         x = self.layerNorm1(x)
         x = self.non_linearity(x)
         x = self.conv2(x)
+        x = self.layerNorm2(x)
+        x = self.non_linearity(x)
+        x = self.conv3(x)
 
         return x
 
@@ -126,7 +131,7 @@ class Swin_VAE_decoder(nn.Module):
             layers.append(stage)
 
         #TODO need to add this into the config
-        self.last_layer = Conv_Block()
+        self.last_layer = Conv_Block(self.config.conv_block)
 
         self.layers = nn.ModuleList(layers)
 

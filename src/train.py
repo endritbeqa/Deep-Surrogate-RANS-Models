@@ -28,7 +28,7 @@ class Trainer(object):
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(self.config.loss_function)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=40)
+        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
