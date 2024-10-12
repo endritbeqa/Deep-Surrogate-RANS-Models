@@ -1,3 +1,4 @@
+import math
 import os
 import random
 import numpy as np
@@ -26,8 +27,8 @@ def saveAsImage(res, filename, field_param):
     im = im.resize((res, res))
     im.save(filename)
 
-def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfoil_database  = "./airfoil_database/",min_velocity=10,max_velocity=100,min_AoA=-22.5,max_AoA=22.5):
-    seed = random.randint(0, 2**32 - 1)
+def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfoil_database  = "./airfoil_database/",min_velocity=10,max_velocity=100,min_AoA=-math.pi/8.0,max_AoA=math.pi/8.0):
+    seed = 42
     np.random.seed(seed)
     if name_airfoil is None:
         files = os.listdir(path_airfoil_database)

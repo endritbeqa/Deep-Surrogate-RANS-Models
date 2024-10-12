@@ -154,19 +154,20 @@ def plot_comparison(targets, predictions, output_dir, file_name):
     plt.close()
 
 
-def plot_comparison_all(predictions, output_dir, file_name):
 
 
-    predictions = np.rot90(predictions, axes=(2, 3))
-    B, C, _, _ = predictions.shape
+def plot_comparison_all(predictions, labels, output_dir, file_name):
 
-    fig, axes = plt.subplots(5, 6, figsize=(12, 8))
+
+    num_RE, num_Angle, C, H, W = predictions.shape
+
+    fig, axes = plt.subplots(num_RE, C, figsize=(12, 8))
 
     column_labels = ['mean_P', 'mean_Ux', 'mean_Uy','std_P', 'std_Ux', 'std_Uy']
-    row_labels = ['Target', 'Prediction', 'Delta']
+    row_labels = labels
 
 
-    for i in range(B):
+    for i in range(num_RE):
         for j in range(C):
             im = axes[i, j].imshow(predictions[i, j], cmap=cm.magma)
             fig.colorbar(im, ax=axes[i, :], orientation='vertical')  # For vertical colorbar

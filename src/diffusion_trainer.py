@@ -9,7 +9,6 @@ import torch.nn.functional as F
 
 from src.models import model_select
 from src.data import dataset
-from src import utils
 from src import config
 
 def count_parameters(model):
@@ -29,18 +28,22 @@ class DiffusionTrainer(object):
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
+        self.num_timesteps = train_config.diffusion.num_timesteps
+        self.beta_start = train_config.diffusion.beta_start
+        self.beta_end = train_config.diffusion.beta_end
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
         print("Model: {}, Num parameters: {}".format(self.config.model_name, self.num_model_parameters))
         os.makedirs(self.output_dir, exist_ok=True)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
-                    os.path.join(self.output_dir, "configs"),
-                    os.path.join(self.output_dir, "images"),
-                    os.path.join(self.output_dir, "images/predictions"),
-                    os.path.join(self.output_dir, "images/targets")]:
+                    os.path.join(self.output_dir, "configs")]:
             os.makedirs(dir, exist_ok=True)
 
     def train_model(self):
+        torch.manual_seed(42)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(42)
+
         torch.cuda.empty_cache()
         with open("{}/configs/config.json".format(self.output_dir), '+w') as json_file:
             json.dump(self.config.to_dict(), json_file, indent=4)
@@ -62,21 +65,16 @@ class DiffusionTrainer(object):
             self.model.train()
             train_loss = 0.0
 
-            for inputs, _ in self.train_dataloader:
-
-                inputs = inputs.to(self.device)
-                t = torch.randint(0, self.config.num_timesteps, (inputs.size(0),)).to(self.device)  # Random timesteps
-                noise = torch.randn_like(inputs).to(self.device)
-
-                # Forward process: generate noisy inputs
-                noisy_inputs = self.add_noise(inputs, t, noise)
+            for conditions, targets, labels in self.train_dataloader:
+                conditions = conditions.to(self.device)
+                targets = targets.to(self.device)
+                t = torch.randint(0, self.num_timesteps, (targets.size(0),)).to(self.device)
+                noise = torch.randn_like(targets).to(self.device)
+                noisy_targets = self.add_noise(targets, t, noise)
 
                 self.optimizer.zero_grad()
 
-                # Model predicts noise at timestep t
-                predicted_noise = self.model(noisy_inputs, t)
-
-                # Loss is MSE between actual and predicted noise
+                predicted_noise = self.model(conditions, noisy_targets, t)
                 loss = F.mse_loss(predicted_noise, noise)
                 train_loss += loss.item()
 
@@ -85,24 +83,25 @@ class DiffusionTrainer(object):
 
             self.scheduler.step()
 
-            train_loss = train_loss / len(self.train_dataloader.dataset)
+            train_loss = train_loss / len(self.train_dataloader)
             train_curve.append(train_loss)
 
             # Validation phase
             self.model.eval()
             val_loss = 0.0
             with torch.no_grad():
-                for inputs, _ in self.val_dataloader:
-                    inputs = inputs.to(self.device)
-                    t = torch.randint(0, self.config.num_timesteps, (inputs.size(0),)).to(self.device)
-                    noise = torch.randn_like(inputs).to(self.device)
+                for conditions, targets, labels in self.val_dataloader:
+                    conditions = conditions.to(self.device)
+                    targets = targets.to(self.device)
+                    t = torch.randint(0, self.num_timesteps, (targets.size(0),)).to(self.device)
+                    noise = torch.randn_like(targets).to(self.device)
 
-                    noisy_inputs = self.add_noise(inputs, t, noise)
-                    predicted_noise = self.model(noisy_inputs, t)
+                    noisy_targets = self.add_noise(targets, t, noise)
+                    predicted_noise = self.model(conditions, noisy_targets, t)
 
                     val_loss += F.mse_loss(predicted_noise, noise).item()
 
-            val_loss = val_loss / len(self.val_dataloader.dataset)
+            val_loss = val_loss / len(self.val_dataloader)
             val_curve.append(val_loss)
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
@@ -125,11 +124,12 @@ class DiffusionTrainer(object):
         alpha_t = self.compute_alpha_t(t)
         return torch.sqrt(alpha_t) * x0 + torch.sqrt(1 - alpha_t) * noise
 
+
     def compute_alpha_t(self, t):
-        """Compute the scaling factor for the forward process at timestep t."""
-        beta_t = torch.linspace(self.config.beta_start, self.config.beta_end, self.config.num_timesteps).to(self.device)
+        beta_t = torch.linspace(self.beta_start, self.beta_end, self.num_timesteps).to(self.device)
         alpha_t = torch.cumprod(1 - beta_t, dim=0)
-        return alpha_t[t]
+        # Ensure proper indexing when t is a batch of indices
+        return alpha_t[t.long()].view(-1, 1, 1, 1)
 
 
 if __name__ == '__main__':

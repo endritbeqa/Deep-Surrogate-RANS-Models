@@ -1,3 +1,5 @@
+import itertools
+import math
 import os
 import numpy as np
 from ml_collections import config_dict
@@ -180,3 +182,68 @@ class Test_Dataset(Dataset):
         data = data.reshape((c, h, w))
 
         return data
+
+class Inference_Dataset(Dataset):
+
+        def __init__(self, config):
+            self.data_dir = config.data_dir
+            self.batch_size = config.batch_size
+            self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
+            self.makeDimLess = config.data_preprocessing.makeDimLess
+            self.removePOffset = config.data_preprocessing.removePOffset
+            self.RE_numbers = config.RE_range_test.RE_numbers
+            self.angles = config.RE_range_test.angles
+            self.epsilon = 1e-8  # constant for numerical stability
+            self.simulation_folders = [f for f in os.listdir(self.data_dir)]
+
+        def __len__(self):
+            return len(self.simulation_folders)
+
+        def __getitem__(self, idx):
+            mask = np.load(self.simulation_folders[idx])
+            mask = mask['a'].astype(np.float32)
+            field_mask = ~mask
+
+            labels = np.array(list(itertools.product(self.RE_numbers, self.angles)))
+            labels.reshape((len(self.RE_numbers), len(self.angles)))
+
+            freestream_list = []
+            for freestream in self.RE_numbers:
+                angle_list = []
+                for angle in self.angles:
+                    f_x = math.cos(angle) * freestream
+                    f_y = math.sin(angle) * freestream
+                    field_x = field_mask * f_x
+                    field_y = field_mask * f_y
+                    data = np.concatenate((field_x,field_y, mask), axis=0)
+                    data = self.preprocess_data(data)
+                    angle_list.append(data)
+                freestream_list.append(angle_list)
+
+            data = np.array(freestream_list)
+
+            return data, labels
+
+        def preprocess_data(self, data) -> np.ndarray:
+
+            if not  self.fixedAirfoilNormalization:
+                return data
+
+            boundary = ~ data[2].flatten().astype(bool)
+            num_field_elements = np.sum(boundary)
+            c, h, w = data.shape
+
+            if self.fixedAirfoilNormalization:
+                # hard coded maxima , inputs dont change
+                max_inputs_0 = 100.
+                max_inputs_1 = 38.5
+                max_inputs_2 = 1.0
+
+
+
+            data[0][boundary] *= (1.0 / max_inputs_0)
+            data[1][boundary] *= (1.0 / max_inputs_1)
+
+            data = data.reshape((c, h, w))
+
+            return data

@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 
 SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/case_split_full"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/mask_only"
 TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_full/train"
 VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_full/validation"
 
@@ -114,7 +114,7 @@ def preprocess_data(data) -> np.ndarray:
 
 
 
-def preprocess_test_files():
+def preprocess_files():
     all_cases = os.listdir(SRC_DIR)
     random.shuffle(all_cases)
     num_cases = int(len(all_cases)*percentage)
@@ -152,7 +152,40 @@ def preprocess_test_files():
             np.savez(save_path, a=arrays)
 
 
+def save_mask_only():
+    all_cases = os.listdir(SRC_DIR)
+    airfoils = {}
+
+    for case in all_cases:
+        airfoil_name = case.split('_')[0]
+        if airfoil_name not in airfoils:
+            snapshot = os.listdir(os.path.join(SRC_DIR, case))[0]
+            airfoils[airfoil_name] = os.path.join(SRC_DIR, case, snapshot)
+
+    os.makedirs(PREPROCESS_DIR, exist_ok=True)
+
+    for airfoil_name, snapshot_path in airfoils.items():
+
+            snapshot_data = np.load(snapshot_path)
+            snapshot_data = snapshot_data['a'].astype(np.float32)
+
+            arrays = torch.tensor(snapshot_data, dtype=torch.float32)
+            mask = arrays[2] != 0
+            arrays[2][mask] = 1
+
+            arrays = torch.unsqueeze(arrays, dim=0)
+            arrays = F.interpolate(arrays, size=(res, res), mode='bilinear', align_corners=False)
+            arrays = torch.squeeze(arrays)
+            arrays = arrays.numpy()
+
+            output_path = "{}/{}".format(PREPROCESS_DIR, airfoil_name)
+            save_path = os.path.join(output_path)
+            np.savez(save_path, a=arrays)
+
+
+
 
 if __name__ == '__main__':
-    preprocess_test_files()
-    split_train_val()
+    save_mask_only()
+    #preprocess_files()
+    #split_train_val()

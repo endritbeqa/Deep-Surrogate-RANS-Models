@@ -18,4 +18,10 @@ def get_config():
     config.data_preprocessing.makeDimLess = False
     config.data_preprocessing.removePOffset = False
 
+    config.RE_range_test = config_dict.ConfigDict()
+    config.RE_range_test.RE_numbers = []
+    config.RE_range_test.angles = []
+    config.RE_range_test.data_dir = ''
+
+
     return config
