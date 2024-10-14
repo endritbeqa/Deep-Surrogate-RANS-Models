@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import os
 from PIL import Image
@@ -63,10 +65,6 @@ def save_images(outputs, output_dir, mode , epoch):
             max_value -= min_value
             field /= max_value
 
-            #grayscale_field = ((field * 127) + 128).astype(np.uint8)  # Grayscale mapping
-            #rgb_field = np.stack([grayscale_field] * 3, axis=-1)  # Convert to RGB (R=G=B for grayscale)
-            #im = Image.fromarray(rgb_field)
-
             im = Image.fromarray(cm.magma(field, bytes=True))
             im = im.resize((h, w))
             file_path = "{}/images/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
@@ -98,10 +96,6 @@ def save_samples(samples, output_dir, label, epoch):
             field -= min_value
             max_value -= min_value
             field /= max_value
-
-            # grayscale_field = ((field * 127) + 128).astype(np.uint8)  # Grayscale mapping
-            # rgb_field = np.stack([grayscale_field] * 3, axis=-1)  # Convert to RGB (R=G=B for grayscale)
-            # im = Image.fromarray(rgb_field)
 
             im = Image.fromarray(cm.magma(field, bytes=True))
             im = im.resize((h, w))
@@ -142,12 +136,8 @@ def plot_comparison(targets, predictions, output_dir, file_name):
     #    im = axes[2, i].imshow(delta[i], cmap=cm.magma)
     #fig.colorbar(im, ax=axes[2, :], orientation='vertical')  # For vertical colorbar
 
-
-
     for ax, row_label in zip(axes[:, 0], row_labels):
         ax.set_ylabel(row_label, size='large')
-
-    #plt.tight_layout()
 
     save_path = os.path.join(output_dir,  file_name+".png")
     plt.savefig(save_path)
@@ -156,31 +146,69 @@ def plot_comparison(targets, predictions, output_dir, file_name):
 
 
 
-def plot_comparison_all(predictions, labels, output_dir, file_name):
 
+def plot_comparison_2(predictions, row_labels, table_label):
+    rows, C, H, W = predictions.shape
 
-    num_RE, num_Angle, C, H, W = predictions.shape
+    fig, axes = plt.subplots(rows, C, figsize=(12, 8))
+    column_labels = ['mean_P', 'mean_Ux', 'mean_Uy', 'std_P', 'std_Ux', 'std_Uy']
 
-    fig, axes = plt.subplots(num_RE, C, figsize=(12, 8))
+    for j in range(C):
+        axes[0, j].set_title(column_labels[j])
 
-    column_labels = ['mean_P', 'mean_Ux', 'mean_Uy','std_P', 'std_Ux', 'std_Uy']
-    row_labels = labels
-
-
-    for i in range(num_RE):
+    for i in range(rows):
         for j in range(C):
             im = axes[i, j].imshow(predictions[i, j], cmap=cm.magma)
-            fig.colorbar(im, ax=axes[i, :], orientation='vertical')  # For vertical colorbar
-
+            #fig.colorbar(im, ax=axes[i, :], orientation='vertical')
 
 
     for ax, row_label in zip(axes[:, 0], row_labels):
         ax.set_ylabel(row_label, size='large')
 
-    #plt.tight_layout()
+    plt.suptitle(table_label)
 
-    save_path = os.path.join(output_dir,  file_name+".png")
-    plt.savefig(save_path)
-    plt.close()
+    return plt
+
+
+
+def plot_comparison_all(predictions, labels, output_dir):
+    num_REs, num_Angles, C, H, W = predictions.shape
+    predictions = np.rot90(predictions, axes=(3, 4))
+
+    reynolds_comparison_folder = os.path.join(output_dir, "Reynolds_comparison")
+    angle_comparison_folder = os.path.join(output_dir, "Angle_comparison")
+
+    os.makedirs(reynolds_comparison_folder, exist_ok=True)
+    os.makedirs(angle_comparison_folder, exist_ok=True)
+
+    for i in range(num_Angles):
+        slice = predictions[:, i]
+        re_nums = labels[:,i, 0]
+        angle = labels[0,i,1]
+        angle = round(math.degrees(angle.item()),ndigits=2)
+
+        re_nums_lables = ["Re:{}e-5".format(int(re.item())) for re in re_nums]
+        angle_lable = "Angle of Attack:{} degrees".format(angle)
+
+        plt = plot_comparison_2(slice, re_nums_lables, angle_lable)
+        save_path = os.path.join(reynolds_comparison_folder,"Reynolds_comparison_at_{}.png".format(angle))
+        plt.savefig(save_path)
+        plt.close()
+
+    for i in range(num_REs):
+        slice = predictions[i, :]
+        angles = labels[i,:, 1]
+        re = labels[i,0,0]
+        angles = [round(math.degrees(angle.item()),ndigits=2) for angle in angles]
+
+        angle_lables = ["Angle:{}".format(angle) for angle in angles]
+        re_lable = "Re:{}e-5 ".format(int(re.item()))
+
+        plt = plot_comparison_2(slice, angle_lables, re_lable)
+        save_path = os.path.join(angle_comparison_folder,"Angle_comparison_at_{}.png".format(re))
+        plt.savefig(save_path)
+        plt.close()
+
+
 
 

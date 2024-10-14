@@ -69,7 +69,7 @@ class U_NET_Swin(nn.Module):
             condition_flattened = torch.flatten(condition, start_dim=1, end_dim=-1)
             hidden_state_flattened = torch.flatten(hidden_state, start_dim=1, end_dim=-1)
 
-            noise = torch.unsqueeze(torch.randn(self.prior_config.latent_dim[i]), dim=0)
+            noise = torch.randn([B,self.prior_config.latent_dim[i]])
 
             condition_latent = self.z_cells[i].fc_condition(condition_flattened)
             hidden_state_latent = self.z_cells[i].fc_prev(hidden_state_flattened)

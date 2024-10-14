@@ -1,3 +1,4 @@
+import math
 import os
 from ml_collections import config_dict
 
@@ -5,10 +6,10 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = "test_ViT_VAE_32_full"
+    config.test_name = "test_swin_NVAE_128_full"
     config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "15.pth")
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test_small'
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "50.pth")
+    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/test_small'
     config.output_dir = os.path.join(config.model_folder, "predictions")
     config.batch_size = 1
     config.loss = ['mrl']
@@ -18,10 +19,11 @@ def get_config():
     config.data_preprocessing.makeDimLess = False
     config.data_preprocessing.removePOffset = False
 
-    config.RE_range_test = config_dict.ConfigDict()
-    config.RE_range_test.RE_numbers = []
-    config.RE_range_test.angles = []
-    config.RE_range_test.data_dir = ''
+    config.comparison = config_dict.ConfigDict()
+    config.comparison.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/mask_only'
+    config.comparison.num_samples = 100
+    config.comparison.freestream_velocities = [10, 40, 80, 100]
+    config.comparison.angles = [math.radians(-10), math.radians(5), math.radians(10), math.radians(20)]
 
 
     return config

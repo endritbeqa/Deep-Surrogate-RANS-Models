@@ -1,7 +1,7 @@
 from src.models.swin_NVAE import Config_Swin_NVAE, Swin_NVAE
 from src.models.NVAE import Config_NVAE, NVAE
 from src.models.ViT import Config_ViT_VAE, ViT_VAE
-from src.models.swin_UNet import Config_Swin_UNet, Swin_UNet
+from src.models.diffusion_swin_UNet import Config_Swin_UNet, Swin_UNet
 
 def get_model(name: str):
 
@@ -14,7 +14,7 @@ def get_model(name: str):
     elif name == 'ViT_VAE':
         model_config = Config_ViT_VAE.get_config()
         model = ViT_VAE.AutoregressiveImageTransformer(model_config)
-    elif name == 'swin_UNet':
+    elif name == 'diffusion_swin_UNet':
         model_config = Config_Swin_UNet.get_config()
         model = Swin_UNet.U_NET_Swin(model_config)
     else:

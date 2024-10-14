@@ -177,6 +177,7 @@ def save_mask_only():
             arrays = F.interpolate(arrays, size=(res, res), mode='bilinear', align_corners=False)
             arrays = torch.squeeze(arrays)
             arrays = arrays.numpy()
+            arrays = arrays[2]
 
             output_path = "{}/{}".format(PREPROCESS_DIR, airfoil_name)
             save_path = os.path.join(output_path)
