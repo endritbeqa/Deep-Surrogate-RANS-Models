@@ -224,8 +224,8 @@ class Comparison_Dataset(Dataset):
         return airfoil, data, self.labels
 
     def preprocess_data(self, data) -> np.ndarray:
-        max_inputs_0 = 100.
-        max_inputs_1 = 38.5
+        max_inputs_0 = 100.*100.
+        max_inputs_1 = 38.5*38.5
         data[0] *= (1.0 / max_inputs_0)
         data[1] *= (1.0 / max_inputs_1)
 

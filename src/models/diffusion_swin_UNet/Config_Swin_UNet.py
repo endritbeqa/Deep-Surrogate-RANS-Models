@@ -13,11 +13,11 @@ def get_config():
     config.swin_encoder.image_size = 128
     config.swin_encoder.num_channels = 6
     config.swin_encoder.patch_size = 8
-    config.swin_encoder.embed_dim = 48
-    config.swin_encoder.depths = [2, 2, 4, 2]
-    config.swin_encoder.num_heads = [2, 4, 6, 6]
+    config.swin_encoder.embed_dim = 64
+    config.swin_encoder.depths = [2, 6, 2]
+    config.swin_encoder.num_heads = [2, 4, 4]
     config.swin_encoder.window_size = 4
-    config.swin_encoder.pretrained_window_sizes = [0, 0, 0 , 0]
+    config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
     config.swin_encoder.qkv_bias = True
     config.swin_encoder.hidden_dropout_prob = 0.0
@@ -42,11 +42,11 @@ def get_config():
     config.swin_decoder.image_size = 128
     config.swin_decoder.out_channels = 3
     config.swin_decoder.patch_size = 8
-    config.swin_decoder.embed_dim = 48
-    config.swin_decoder.depths = [2, 2, 6, 2]
-    config.swin_decoder.num_heads = [2, 4, 6, 6]
+    config.swin_decoder.embed_dim = 64
+    config.swin_decoder.depths = [2, 6, 2]
+    config.swin_decoder.num_heads = [2, 4, 4]
     config.swin_decoder.window_size = 4
-    config.swin_decoder.pretrained_window_sizes = [0, 0, 0, 0]
+    config.swin_decoder.pretrained_window_sizes = [0, 0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
     config.swin_decoder.mlp_ratio = 4.0
     config.swin_decoder.qkv_bias = True
@@ -61,17 +61,19 @@ def get_config():
     config.swin_decoder.output_hidden_states = False
     config.swin_decoder.out_features = None
     config.swin_decoder.out_indices = None
+    config.swin_decoder.num_channels_time_embedding = 64
     config.swin_decoder.skip_connection_shape_pre_cat = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape)))
-    config.swin_decoder.skip_connection_shape_pre_cat[0][0] *=2# time embedding concat
-
+    config.swin_decoder.skip_connection_shape_pre_cat[0][0] += config.swin_decoder.num_channels_time_embedding # time embedding concat
     config.swin_decoder.skip_connection_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (C,H,W)
-    config.swin_decoder.skip_connection_shape[0][0] *= 2
-
+    config.swin_decoder.skip_connection_shape[0][0] += config.swin_decoder.num_channels_time_embedding # time embedding concat
     config.swin_decoder.stage_output_shape = list(reversed(copy.deepcopy(config.swin_encoder.skip_connection_shape))) #skip connections shape (C,H,W)
     for i, skip_connection_shape in enumerate(config.swin_decoder.skip_connection_shape):
         if i != 0:
             config.swin_decoder.stage_output_shape[i][0] = int(config.swin_decoder.skip_connection_shape[i - 1][0] / 4)
             config.swin_decoder.skip_connection_shape[i][0] += int(config.swin_decoder.skip_connection_shape[i - 1][0]/4)
+
+    config.swin_decoder.time_embedding = (config.swin_decoder.num_channels_time_embedding, int(config.swin_decoder.skip_connection_shape[0][1]), int(config.swin_decoder.skip_connection_shape[0][2]))
+
 
 
 ##### Conv Block ##########

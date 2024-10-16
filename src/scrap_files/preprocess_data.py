@@ -6,9 +6,9 @@ import torch
 import torch.nn.functional as F
 
 SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/mask_only"
-TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_full/train"
-VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_full/validation"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/case_split_small"
+TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_small/train"
+VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_small/validation"
 
 
 removePOffset = True
@@ -16,7 +16,7 @@ makeDimLess = True
 fixedAirfoilNormalization = True
 epsilon = 1e-8
 res = 128
-percentage = 1
+percentage = 0.1
 train_val_split = 0.95
 
 
@@ -139,13 +139,10 @@ def preprocess_files():
             arrays = arrays.numpy()
 
             mask = arrays[2] != 0
-
             arrays[2][mask] = 1
 
             for i in [0, 1, 3, 4, 5]:
                 arrays[i][mask] = 0
-
-            arrays = preprocess_data(arrays)
 
             output_path = "{}/{}/{}".format(PREPROCESS_DIR, case, snapshot)
             save_path = os.path.join(output_path)
@@ -187,6 +184,6 @@ def save_mask_only():
 
 
 if __name__ == '__main__':
-    save_mask_only()
-    #preprocess_files()
-    #split_train_val()
+    #save_mask_only()
+    preprocess_files()
+    split_train_val()

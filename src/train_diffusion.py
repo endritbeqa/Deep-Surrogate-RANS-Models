@@ -1,3 +1,4 @@
+import math
 import os
 from datetime import datetime
 
@@ -9,8 +10,7 @@ import torch.nn.functional as F
 from src.models import model_select
 from src.data import dataset
 from src import diffusion_config, utils
-from src import diffusion_utils
-
+from src import Noise_scheduler
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
@@ -29,9 +29,7 @@ class DiffusionTrainer(object):
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-        self.noise_scheduler = diffusion_utils.get_noise_scheduler(self.config)
-        self.noise_scheduler.alpha_bar.to(self.device)
-        self.num_timesteps = train_config.timesteps
+        self.noise_scheduler = Noise_scheduler.get_noise_scheduler(self.config)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
         print("Model: {}, Num parameters: {}".format(self.config.model_name, self.num_model_parameters))
         os.makedirs(self.output_dir, exist_ok=True)
@@ -48,6 +46,19 @@ class DiffusionTrainer(object):
         noisy_data = torch.sqrt(alpha_bar_t) * x_0 + torch.sqrt(1 - alpha_bar_t) * noise
         return noisy_data, noise
 
+
+    def sinusoidal_embedding(self, timesteps, dim):
+        half_dim = dim // 2
+        embeddings = math.log(10000) / (half_dim - 1)
+        embeddings = torch.exp(torch.arange(half_dim, dtype=torch.float32) * -embeddings)
+        embeddings = embeddings.to(self.device)
+        timesteps = timesteps.to(self.device)
+        embeddings = timesteps[:, None] * embeddings[None, :]
+        embeddings = torch.cat([torch.sin(embeddings), torch.cos(embeddings)], dim=-1)
+        return embeddings
+
+
+
     def train(self):
         train_curve = []
         val_curve = []
@@ -57,17 +68,18 @@ class DiffusionTrainer(object):
             self.model.train()
             epoch_loss = 0.0
             for conditions, targets, label in self.train_dataloader:
+                B, C, H, W = targets.shape
 
                 conditions = conditions.to(self.device)
                 targets = targets.to(self.device)
 
-                # Sample random time steps for each batch
                 t = torch.randint(0, self.config.timesteps, (targets.size(0),))
-
                 noisy_data, noise = self.noise_step(targets, t)
 
-                predicted_noise = self.model(conditions, noisy_data, t)
+                t_emb = self.sinusoidal_embedding(t, math.prod(self.model_config.swin_decoder.time_embedding))
+                t_emb = t_emb.view(B, *self.model_config.swin_decoder.time_embedding)
 
+                predicted_noise = self.model(conditions, noisy_data, t_emb)
                 loss = F.mse_loss(predicted_noise, noise)
                 epoch_loss += loss.item()
 
@@ -79,7 +91,7 @@ class DiffusionTrainer(object):
             train_curve.append(train_loss)
             val_curve.append(train_loss)
 
-            self.scheduler.step()
+            #self.scheduler.step()
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
                 file.write("{},{}\n".format(str(train_loss), str(train_loss)))

@@ -4,7 +4,7 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.study_name = 'test_diffusion_swin_UNet_res_128_small_2'
+    config.study_name = 'test_diffusion_swin_UNet_128_small'
     config.model_name = "diffusion_swin_UNet"
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_small'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
@@ -15,11 +15,12 @@ def get_config():
     config.lr = 5e-4
     config.weight_decay = 1e-2
     config.scheduler_restart_epochs = int(config.num_epochs/4)#  TODO   currently does nothing
-    config.noise_scheduler = 'cosine'
-    config.timesteps = 500
-    config.beta_start = 1e-4
-    config.beta_end = 0.02
     config.checkpoint_every = 5
+
+    config.noise_scheduler = 'linear'
+    config.timesteps = 300
+    config.start_beta = 1e-4
+    config.end_beta = 0.02
 
     config.data_preprocessing = config_dict.ConfigDict()
     config.data_preprocessing.fixedAirfoilNormalization = False
