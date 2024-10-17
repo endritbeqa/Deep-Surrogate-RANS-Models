@@ -95,8 +95,9 @@ class Airfoil_Dataset(Dataset):
 
 class Test_Dataset(Dataset):
 
-    def __init__(self, config):
-        self.data_dir = config.data_dir
+    def __init__(self, config, mode):
+        self.mode = mode
+        self.data_dir = os.path.join(config.data_dir, mode)
         self.batch_size = config.batch_size
         self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
         self.makeDimLess = config.data_preprocessing.makeDimLess
@@ -186,8 +187,8 @@ class Test_Dataset(Dataset):
 
 class Comparison_Dataset(Dataset):
 
-    def __init__(self, config):
-        self.data_dir = config.comparison.data_dir
+    def __init__(self, config, mode):
+        self.data_dir = os.path.join(config.data_dir, mode)
         self.batch_size = config.batch_size
         self.fixedAirfoilNormalization = config.data_preprocessing.fixedAirfoilNormalization
         self.makeDimLess = config.data_preprocessing.makeDimLess

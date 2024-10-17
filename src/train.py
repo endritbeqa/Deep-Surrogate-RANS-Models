@@ -27,7 +27,7 @@ class Trainer(object):
         self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.loss_func = loss.get_loss_function(self.config.loss_function)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr)
+        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr, weight_decay= train_config.weight_decay)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
@@ -39,7 +39,7 @@ class Trainer(object):
                     os.path.join(self.output_dir, "logs"),
                     os.path.join(self.output_dir, "configs"),
                     os.path.join(self.output_dir, "images"),
-                    os.path.join(self.output_dir, "images/predictions"),
+                    os.path.join(self.output_dir, "images/data"),
                     os.path.join(self.output_dir, "images/targets")]:
             os.makedirs(dir, exist_ok=True)
 
@@ -95,9 +95,9 @@ class Trainer(object):
 
             self.scheduler.step()
 
-            train_loss = train_loss / len(self.train_dataloader.dataset)
-            train_reconstruction_loss = train_reconstruction_loss / len(self.train_dataloader.dataset)
-            train_KLD_loss = train_KLD_loss / len(self.train_dataloader.dataset)
+            train_loss = train_loss / len(self.train_dataloader)
+            train_reconstruction_loss = train_reconstruction_loss / len(self.train_dataloader)
+            train_KLD_loss = train_KLD_loss / len(self.train_dataloader)
             train_curve.append(train_loss)
             train_reconstruction_curve.append(train_reconstruction_loss)
             train_KLD_curve.append(train_KLD_loss)
@@ -118,9 +118,9 @@ class Trainer(object):
                     val_reconstruction_loss += mae.item()
                     val_KLD_loss += kld
 
-            val_loss = val_loss / len(self.val_dataloader.dataset)
-            val_reconstruction_loss = val_reconstruction_loss / len(self.val_dataloader.dataset)
-            val_KLD_loss = val_KLD_loss / len(self.val_dataloader.dataset)
+            val_loss = val_loss / len(self.val_dataloader)
+            val_reconstruction_loss = val_reconstruction_loss / len(self.val_dataloader)
+            val_KLD_loss = val_KLD_loss / len(self.val_dataloader)
 
             val_curve.append(val_loss)
             val_reconstruction_curve.append(val_reconstruction_loss)
@@ -142,7 +142,7 @@ class Trainer(object):
                 }
                 torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
-                utils.save_images(outputs, self.output_dir, "predictions", epoch)
+                utils.save_images(outputs, self.output_dir, "data", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
 
                 loss_plot = utils.plot_losses(train_curve, val_curve)

@@ -89,9 +89,7 @@ def get_config():
     config.gaussian_prior = config_dict.ConfigDict()
     config.gaussian_prior.latent_dim = [64, 128, 256, 512]
     config.gaussian_prior.hidden_dim = [math.prod(skip) for skip in config.swin_decoder.skip_connection_shape_pre_cat]
-
     config.gaussian_prior.output_dims = config.swin_decoder.stage_output_shape
-
 
     config.gaussian_prior.previous_dim = [math.prod(prev) for prev in config.gaussian_prior.output_dims]
 

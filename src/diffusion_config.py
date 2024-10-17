@@ -9,15 +9,15 @@ def get_config():
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_small'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
     config.device = 'cuda:0'
-    config.num_epochs = 101
+    config.num_epochs = 501
     config.batch_size = 30
     config.optimizer = 'adamW' # TODO doesnt do anything right now (AdamW is used)
-    config.lr = 5e-4
-    config.weight_decay = 1e-2
+    config.lr = 2e-4
+    config.weight_decay = 1e-4
     config.scheduler_restart_epochs = int(config.num_epochs/4)#  TODO   currently does nothing
     config.checkpoint_every = 5
 
-    config.noise_scheduler = 'linear'
+    config.noise_scheduler = 'cosine'
     config.timesteps = 300
     config.start_beta = 1e-4
     config.end_beta = 0.02

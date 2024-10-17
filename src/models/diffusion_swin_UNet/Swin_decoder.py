@@ -31,6 +31,7 @@ class Conv_Block(nn.Module):
 
 
 class SwinUpsample(nn.Module):
+    #TODO refactor this reshape arg
     def __init__(self, res, in_channels, reshape=True):
         super(SwinUpsample, self).__init__()
         self.reshape = reshape
@@ -106,6 +107,7 @@ class Swin_VAE_decoder(nn.Module):
         super().__init__(*args, **kwargs)
         self.config = config
         self.num_layers = len(config.swin_decoder.depths)
+        self.last_upsample = nn.Upsample(size=(config.swin_decoder.image_size, config.swin_decoder.image_size), mode='bilinear')
         self.last_layer = Conv_Block(self.config.conv_block)  # conv layer to go from latent dim to output dim
 
         layers = []
@@ -134,6 +136,8 @@ class Swin_VAE_decoder(nn.Module):
             input_dimension = shape[1:3]
             hidden_state = self.layers[i](hidden_state, input_dimension)
 
+        hidden_state = self.last_upsample(hidden_state)
+        hidden_state = torch.cat([hidden_state, skip_connections[-1]], dim=1)
         output = self.last_layer(hidden_state)
 
         return output

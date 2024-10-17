@@ -125,13 +125,13 @@ class Parameter_comparison(object):
                         samples = self.model.sample(condition)
                         predictions[i, j] = samples
 
-                # predictions are array of shape (num_re, num_angles, B, channels , height, width)
+                # data are array of shape (num_re, num_angles, B, channels , height, width)
 
                 prediction_means = np.mean(predictions, axis=2)
                 prediction_stds = np.std(predictions, axis=2)
 
                 predictions_combined = np.concatenate((prediction_means, prediction_stds), axis=2)
-                utils.plot_comparison_all(predictions_combined, labels, os.path.join(self.output_dir, airfoil_name[0]))
+                utils.save_parameter_comparison(predictions_combined, labels, os.path.join(self.output_dir, airfoil_name[0]))
 
 
 

@@ -1,3 +1,4 @@
+import json
 import math
 import os
 from datetime import datetime
@@ -25,7 +26,7 @@ class DiffusionTrainer(object):
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
-        self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=train_config.lr, weight_decay=train_config.weight_decay)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
@@ -60,6 +61,16 @@ class DiffusionTrainer(object):
 
 
     def train(self):
+        with open("{}/configs/config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.config.to_dict(), json_file, indent=4)
+
+        with open("{}/configs/model_config.json".format(self.output_dir), '+w') as json_file:
+            json.dump(self.model_config.to_dict(), json_file, indent=4)
+
+        with open("{}/configs/model_size.txt".format(self.output_dir), '+w') as file:
+            file.write("Number of model parameters: {}".format(self.num_model_parameters))
+
+
         train_curve = []
         val_curve = []
 

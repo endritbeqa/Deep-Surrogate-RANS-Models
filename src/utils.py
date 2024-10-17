@@ -71,73 +71,53 @@ def save_images(outputs, output_dir, mode , epoch):
             im.save(file_path)
 
 
-def save_samples(samples, output_dir, label, epoch):
-    try:
-        if samples.is_cuda:
-            samples = samples.cpu()
-            samples = samples.numpy()
-    except:
-        print()
-
-    label_dir = os.path.join(output_dir, "images", label)
-    samples_dir = os.path.join(str(label_dir), "samples")
-    os.makedirs(label_dir, exist_ok=True)
-    os.makedirs(samples_dir)
-
+def save_samples(samples, output_dir):
+    samples = np.rot90(samples, axes=(2, 3))
     b, c, h, w = samples.shape
-    fields = ['pressure', "vel_x", "vel_y"]
-    for i in range(len(samples)):
-        for j in range(c):
-            field = np.copy(samples[i, j])
-            field = np.flipud(field.transpose())
+    channel_labels = ['P', 'Ux', 'Uy']
 
-            min_value = np.min(field)
-            max_value = np.max(field)
-            field -= min_value
-            max_value -= min_value
-            field /= max_value
+    for i, sample in enumerate(samples):
+        fig, axes = plt.subplots(1, c, figsize=(12, 8))
+        for channel in range(c):
+            im = axes[channel].imshow(sample[channel], cmap=cm.magma)
+            axes[channel].set_title(channel_labels[channel])
+            fig.colorbar(im, ax=axes[channel])
 
-            im = Image.fromarray(cm.magma(field, bytes=True))
-            im = im.resize((h, w))
-            file_path = os.path.join(str(samples_dir), "{}_{}.png".format(fields[j], i))
-            im.save(file_path)
-
-
+        file_path = os.path.join(output_dir, "sample_{}.png".format(i))
+        plt.tight_layout()
+        plt.savefig(file_path)
+        plt.close()
 
 
 
 
 def plot_comparison(targets, predictions, output_dir, file_name):
-    if targets.shape != predictions.shape or targets.shape[0] != 3:
-        raise ValueError("Input arrays must have shape (3, H, W)")
-
+    if targets.shape != predictions.shape:
+        raise ValueError("Input arrays must have same shape!")
 
     targets = np.rot90(targets, axes=(1,2))
     predictions = np.rot90(predictions, axes=(1, 2))
     delta = targets - predictions
 
-    fig, axes = plt.subplots(2, 3, figsize=(12, 8))
+    data = np.stack([targets, predictions], axis=0)
+    rows, C, H, W = data.shape
 
-    column_labels = ['P', 'Ux', 'Uy']
+    fig, axes = plt.subplots(rows, C, figsize=(12, 8))
+
+    column_labels = ['mean_P', 'mean_Ux', 'mean_Uy', 'std_P', 'std_Ux', 'std_Uy']
     row_labels = ['Target', 'Prediction', 'Delta']
 
-    for i in range(3):
-        im = axes[0, i].imshow(targets[i] ,cmap=cm.magma)
-        axes[0, i].set_title(column_labels[i])
-    fig.colorbar(im, ax=axes[0, :], orientation='vertical')  # For vertical colorbar
-
-
-    for i in range(3):
-        im = axes[1, i].imshow(predictions[i], cmap=cm.magma)
-    fig.colorbar(im, ax=axes[1, :], orientation='vertical')  # For vertical colorbar
-
-
-    #for i in range(3):
-    #    im = axes[2, i].imshow(delta[i], cmap=cm.magma)
-    #fig.colorbar(im, ax=axes[2, :], orientation='vertical')  # For vertical colorbar
+    for col in range(C):
+        vmin, vmax = data[:, col, :, :].min(), data[:, col, :, :].max()
+        axes[0, col].set_title(column_labels[col])
+        for row in range(rows):
+            im = axes[row, col].imshow(data[row, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
+            #axes[row, col].axis('off')
+        im = axes[0, col].imshow(data[0, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
+        cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.1)
 
     for ax, row_label in zip(axes[:, 0], row_labels):
-        ax.set_ylabel(row_label, size='large')
+        ax.set_ylabel(row_label, size='medium')
 
     save_path = os.path.join(output_dir,  file_name+".png")
     plt.savefig(save_path)
@@ -147,31 +127,31 @@ def plot_comparison(targets, predictions, output_dir, file_name):
 
 
 
-def plot_comparison_2(predictions, row_labels, table_label):
-    rows, C, H, W = predictions.shape
+def plot_comparison_parameter_range(data, row_labels, table_label):
+    rows, C, H, W = data.shape
 
-    fig, axes = plt.subplots(rows, C, figsize=(12, 8))
+    fig, axes = plt.subplots(rows, C, squeeze=False, figsize=(10,10))
     column_labels = ['mean_P', 'mean_Ux', 'mean_Uy', 'std_P', 'std_Ux', 'std_Uy']
 
-    for j in range(C):
-        axes[0, j].set_title(column_labels[j])
-
-    for i in range(rows):
-        for j in range(C):
-            im = axes[i, j].imshow(predictions[i, j], cmap=cm.magma)
-            #fig.colorbar(im, ax=axes[i, :], orientation='vertical')
+    for col in range(C):
+        vmin, vmax = data[:, col, :, :].min(), data[:, col, :, :].max()
+        axes[0, col].set_title(column_labels[col])
+        for row in range(rows):
+            im = axes[row, col].imshow(data[row, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
+            #axes[row, col].axis('off')
+        im = axes[0, col].imshow(data[0, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
+        cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.1)
 
 
     for ax, row_label in zip(axes[:, 0], row_labels):
-        ax.set_ylabel(row_label, size='large')
+        ax.set_ylabel(row_label, size='medium')
 
     plt.suptitle(table_label)
-
     return plt
 
 
 
-def plot_comparison_all(predictions, labels, output_dir):
+def save_parameter_comparison(predictions, parameters, output_dir):
     num_REs, num_Angles, C, H, W = predictions.shape
     predictions = np.rot90(predictions, axes=(3, 4))
 
@@ -183,28 +163,28 @@ def plot_comparison_all(predictions, labels, output_dir):
 
     for i in range(num_Angles):
         slice = predictions[:, i]
-        re_nums = labels[:,i, 0]
-        angle = labels[0,i,1]
+        re_nums = parameters[:, i, 0]
+        angle = parameters[0, i, 1]
         angle = round(math.degrees(angle.item()),ndigits=2)
 
         re_nums_lables = ["Re:{}e-5".format(int(re.item())) for re in re_nums]
         angle_lable = "Angle of Attack:{} degrees".format(angle)
 
-        plt = plot_comparison_2(slice, re_nums_lables, angle_lable)
+        plt = plot_comparison_parameter_range(slice, re_nums_lables, angle_lable)
         save_path = os.path.join(reynolds_comparison_folder,"Reynolds_comparison_at_{}.png".format(angle))
         plt.savefig(save_path)
         plt.close()
 
     for i in range(num_REs):
         slice = predictions[i, :]
-        angles = labels[i,:, 1]
-        re = labels[i,0,0]
+        angles = parameters[i, :, 1]
+        re = parameters[i,0,0]
         angles = [round(math.degrees(angle.item()),ndigits=2) for angle in angles]
 
         angle_lables = ["Angle:{}".format(angle) for angle in angles]
         re_lable = "Re:{}e-5 ".format(int(re.item()))
 
-        plt = plot_comparison_2(slice, angle_lables, re_lable)
+        plt = plot_comparison_parameter_range(slice, angle_lables, re_lable)
         save_path = os.path.join(angle_comparison_folder,"Angle_comparison_at_{}.png".format(re))
         plt.savefig(save_path)
         plt.close()
