@@ -190,5 +190,22 @@ def save_parameter_comparison(predictions, parameters, output_dir):
         plt.close()
 
 
+def plot_lines_with_shading(arrays, x_low, x_high):
+    plt.figure(figsize=(10, 6))
+
+    for array in arrays:
+        plt.plot(array[:, 0], array[:, 1], marker='o')  # x-values from column 0, y-values from column 1
+
+    plt.axvspan(xmin=-np.inf, xmax=x_low, color='gray', alpha=0.5, label='Shaded Area < x_low')
+    plt.axvspan(xmin=x_high, xmax=np.inf, color='gray', alpha=0.5, label='Shaded Area > x_high')
+
+    plt.xlabel('Re_number')
+    plt.ylabel('std')
+    plt.title('Line Plots with Shaded Areas')
+    plt.legend()
+    plt.grid()
+
+    plt.show()
+
 
 

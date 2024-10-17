@@ -131,6 +131,9 @@ class Raf30_test(object):
         target = np.array(target)
         target = np.expand_dims(target, axis=1)
 
+        #params = np.tile(params,2)
+        #prediction = np.concatenate([prediction, target], axis=0)
+
         utils.save_parameter_comparison(prediction, params, os.path.join(self.output_dir, "Prediction"))
         utils.save_parameter_comparison(target, params, os.path.join(self.output_dir, "Target"))
 

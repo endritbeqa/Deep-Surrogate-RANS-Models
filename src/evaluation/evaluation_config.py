@@ -13,9 +13,9 @@ def get_config():
     config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1
 
-    config.inter_extrapolation_test = True
+    config.inter_extrapolation_test = False
     config.raf30_test = True
-    config.parameter_comparison_test = True
+    config.parameter_comparison_test = False
 
     config.data_preprocessing = config_dict.ConfigDict()
     config.data_preprocessing.fixedAirfoilNormalization = False
