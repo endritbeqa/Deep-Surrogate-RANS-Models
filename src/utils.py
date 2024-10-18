@@ -190,22 +190,25 @@ def save_parameter_comparison(predictions, parameters, output_dir):
         plt.close()
 
 
-def plot_lines_with_shading(arrays, x_low, x_high):
+def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
+    colors = ['blue', 'red', 'pink', 'orange', 'yellow']
+    line_styles = ['-', '--', '---', '----', '-----']
+
     plt.figure(figsize=(10, 6))
+    plt.xlim(min(x)-5, max(x)+5)
 
-    for array in arrays:
-        plt.plot(array[:, 0], array[:, 1], marker='o')  # x-values from column 0, y-values from column 1
+    for i,line in enumerate(lines):
+        plt.plot(x, line, label=labels[i], color=colors[i], linestyle=line_styles[i])
 
-    plt.axvspan(xmin=-np.inf, xmax=x_low, color='gray', alpha=0.5, label='Shaded Area < x_low')
-    plt.axvspan(xmin=x_high, xmax=np.inf, color='gray', alpha=0.5, label='Shaded Area > x_high')
+
+    plt.axvspan(xmin=min(x)-5, xmax=x_low, color='gray', alpha=0.5, label='Shaded Area < {}'.format(x_low))
+    plt.axvspan(xmin=x_high, xmax=max(x)+5, color='gray', alpha=0.5, label='Shaded Area > {}'.format(x_high))
 
     plt.xlabel('Re_number')
     plt.ylabel('std')
-    plt.title('Line Plots with Shaded Areas')
-    plt.legend()
-    plt.grid()
-
-    plt.show()
+    plt.title('Model prediction/ground truth mean std comparison')
+    plt.legend(loc="upper left")
+    plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
 
 
 

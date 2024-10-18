@@ -4,13 +4,16 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.study_name = 'test_swin_NVAE_128_full'
-    config.model_name = "swin_NVAE"
+    config.load_training = False
+    config.checkpoint_path = "/media/blin/VOL REC Blin/endrit/tests/uncertainty/test_diffusion_swin_UNet_128_small/checkpoints/50.pth"
+
+    config.study_name = 'test_diffusion_swin_UNet_128_full'
+    config.model_name = "diffusion_swin_UNet"
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_full'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
     config.device = 'cuda:0'
     config.num_epochs = 201
-    config.batch_size = 30
+    config.batch_size = 20
     config.optimizer = 'adamW' # TODO doesnt do anything right now (AdamW is used)
     config.lr = 1e-4
     config.weight_decay = 1e-4

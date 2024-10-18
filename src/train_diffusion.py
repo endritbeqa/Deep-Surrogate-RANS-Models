@@ -10,17 +10,29 @@ import torch.nn.functional as F
 
 from src.models import model_select
 from src.data import dataset
-from src import diffusion_config, utils
-from src import Noise_scheduler
+from src import config, utils
+
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
 
 
+
+def load_training(trainer,checkpoint_path):
+    checkpoint = torch.load(checkpoint_path)
+    train_config = checkpoint['train_config']
+    trainer.start_epoch = checkpoint['epoch']
+    trainer.model_config = checkpoint['model_config']
+    trainer.model = model_select.load_model(trainer.config.model_name, trainer.model_config, checkpoint)
+    trainer.model = trainer.model.to(trainer.device)
+    trainer.optimizer = torch.optim.Adam(trainer.model.parameters(), lr=train_config.lr,weight_decay=train_config.weight_decay)
+    trainer.optimizer.load_state_dict(checkpoint['optimizer'])
+
 class DiffusionTrainer(object):
     def __init__(self, train_config):
         self.config = train_config
         self.model_config, self.model = model_select.get_model(train_config.model_name)
+        self.model_config.device = self.config.device # TODO this is a bit ugly look into fixing it
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
@@ -30,8 +42,8 @@ class DiffusionTrainer(object):
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
-        self.noise_scheduler = Noise_scheduler.get_noise_scheduler(self.config)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
+        self.start_epoch = 0
         print("Model: {}, Num parameters: {}".format(self.config.model_name, self.num_model_parameters))
         os.makedirs(self.output_dir, exist_ok=True)
         for dir in [os.path.join(self.output_dir, "checkpoints"),
@@ -39,24 +51,6 @@ class DiffusionTrainer(object):
                     os.path.join(self.output_dir, "configs")]:
             os.makedirs(dir, exist_ok=True)
 
-
-    def noise_step(self, x_0, t):
-        alpha_bar_t = self.noise_scheduler.get_alpha_bar(t).to(self.device)
-        alpha_bar_t = alpha_bar_t.view(-1, 1, 1, 1)
-        noise = torch.randn_like(x_0).to(self.device)
-        noisy_data = torch.sqrt(alpha_bar_t) * x_0 + torch.sqrt(1 - alpha_bar_t) * noise
-        return noisy_data, noise
-
-
-    def sinusoidal_embedding(self, timesteps, dim):
-        half_dim = dim // 2
-        embeddings = math.log(10000) / (half_dim - 1)
-        embeddings = torch.exp(torch.arange(half_dim, dtype=torch.float32) * -embeddings)
-        embeddings = embeddings.to(self.device)
-        timesteps = timesteps.to(self.device)
-        embeddings = timesteps[:, None] * embeddings[None, :]
-        embeddings = torch.cat([torch.sin(embeddings), torch.cos(embeddings)], dim=-1)
-        return embeddings
 
 
 
@@ -74,7 +68,7 @@ class DiffusionTrainer(object):
         train_curve = []
         val_curve = []
 
-        for epoch in range(self.config.num_epochs):
+        for epoch in range(self.start_epoch, self.config.num_epochs):
             print("Epoch:{}, Started at:{}".format(epoch, datetime.now()))
             self.model.train()
             epoch_loss = 0.0
@@ -84,10 +78,11 @@ class DiffusionTrainer(object):
                 conditions = conditions.to(self.device)
                 targets = targets.to(self.device)
 
-                t = torch.randint(0, self.config.timesteps, (targets.size(0),))
-                noisy_data, noise = self.noise_step(targets, t)
+                t = torch.randint(0, self.model_config.timesteps, (targets.size(0),))
 
-                t_emb = self.sinusoidal_embedding(t, math.prod(self.model_config.swin_decoder.time_embedding))
+                noisy_data, noise = self.model.noise_step(targets, t)
+
+                t_emb = self.model.sinusoidal_embedding(t, math.prod(self.model_config.swin_decoder.time_embedding))
                 t_emb = t_emb.view(B, *self.model_config.swin_decoder.time_embedding)
 
                 predicted_noise = self.model(conditions, noisy_data, t_emb)
@@ -125,6 +120,8 @@ class DiffusionTrainer(object):
 
 
 if __name__ == '__main__':
-    train_config = diffusion_config.get_config()
+    train_config = config.get_config()
     trainer = DiffusionTrainer(train_config)
+    if train_config.load_training:
+        load_training(trainer, train_config.checkpoint_path)
     trainer.train()

@@ -105,6 +105,16 @@ class Raf30_test(object):
 
         return predicted_moments, target_moments
 
+    def plot_std_prediction(self, prediction, target):
+        prediction_std = [np.mean(value[3:, :, :]) for key, value in sorted(prediction.items())]
+        target_std = [np.mean(value[3:, :, :]) for key, value in sorted(target.items())]
+        x_values = [key for key, value in sorted(target.items())]
+
+        labels = ['prediction', 'target']
+        lines = [prediction_std, target_std]
+        utils.plot_std_curves(lines, x_values, labels, 10, 90, self.output_dir)
+
+
     def evaluate(self):
         prediction = {}
         target = {}
@@ -112,7 +122,7 @@ class Raf30_test(object):
         self.model.eval()
         with torch.no_grad():
             for idx, (condition, targets, label) in enumerate(self.dataloader):
-                print("Interpolation case:{}, {}, {}".format(*label.split('_')))
+                print("Case: {}, {}, {}".format(*label.split('_')))
                 airfoil_name, RE, angle = label.split('_')
                 RE = float(RE)/100
                 angle = math.radians(float(angle)/100)
@@ -123,12 +133,14 @@ class Raf30_test(object):
         params = [[[key, angle]] for key, value in sorted(prediction.items())]
         params = np.array(params)
 
+        self.plot_std_prediction(prediction, target)
+
         prediction = [value for key,value in sorted(prediction.items())]
         target = [value for key, value in sorted(target.items())]
 
         prediction = np.array(prediction)
-        prediction = np.expand_dims(prediction, axis=1)
         target = np.array(target)
+        prediction = np.expand_dims(prediction, axis=1)
         target = np.expand_dims(target, axis=1)
 
         #params = np.tile(params,2)

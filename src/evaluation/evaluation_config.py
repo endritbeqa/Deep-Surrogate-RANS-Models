@@ -6,9 +6,9 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = "test_swin_NVAE_128_full"
+    config.test_name = 'test_diffusion_swin_UNet_128_small'
     config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "30.pth")
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "0.pth")
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/test'
     config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1

@@ -31,6 +31,7 @@ def load_model(name: str, model_config, checkpoint):
     elif name == 'ViT_VAE':
         model = ViT_VAE.AutoregressiveImageTransformer(model_config)
     elif name == 'diffusion_swin_UNet':
+        model_config.device = 'cpu'
         model = Swin_UNet.U_NET_Swin(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")
