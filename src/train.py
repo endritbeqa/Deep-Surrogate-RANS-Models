@@ -80,17 +80,20 @@ class Trainer(object):
 
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
-                outputs, mu, logvar = self.model(inputs, targets)
+                outputs, KLD_loss = self.model(inputs, targets)
 
-                loss = self.loss_func(outputs, targets, mu, logvar, self.beta)
-                reconstruction_loss = F.l1_loss(outputs, targets)
-                kld = loss.item() - reconstruction_loss.item()
+                #RE_loss = self.loss_func(outputs,targets)
+                RE_loss  = F.l1_loss(outputs, targets)
+                KLD_loss *= self.beta
+
+                loss = RE_loss + KLD_loss
+                loss.backward()
 
                 train_loss += loss.item()
-                train_reconstruction_loss += reconstruction_loss.item()
-                train_KLD_loss += kld
+                train_reconstruction_loss += RE_loss.item()
+                train_KLD_loss += KLD_loss.item()
 
-                loss.backward()
+
                 self.optimizer.step()
 
             self.scheduler.step()
@@ -110,13 +113,16 @@ class Trainer(object):
             with torch.no_grad():
                 for inputs, targets, label in self.val_dataloader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
-                    outputs, mu, logvar = self.model(inputs, targets)
-                    loss = self.loss_func(outputs, targets, mu, logvar, self.beta)
-                    mae = F.l1_loss(outputs, targets)
-                    kld = loss.item() - mae.item()
+
+                    outputs, KLD_loss = self.model(inputs, targets)
+                    RE_loss = F.l1_loss(outputs, targets)
+                    KLD_loss *= self.beta
+                    loss = RE_loss + KLD_loss
+
                     val_loss += loss.item()
-                    val_reconstruction_loss += mae.item()
-                    val_KLD_loss += kld
+                    val_reconstruction_loss += RE_loss.item()
+                    val_KLD_loss += KLD_loss.item()
+
 
             val_loss = val_loss / len(self.val_dataloader)
             val_reconstruction_loss = val_reconstruction_loss / len(self.val_dataloader)
@@ -142,7 +148,7 @@ class Trainer(object):
                 }
                 torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
-                utils.save_images(outputs, self.output_dir, "data", epoch)
+                utils.save_images(outputs, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
 
                 loss_plot = utils.plot_losses(train_curve, val_curve)

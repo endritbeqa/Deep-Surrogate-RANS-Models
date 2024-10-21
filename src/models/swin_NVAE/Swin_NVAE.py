@@ -18,6 +18,7 @@ class U_NET_Swin(nn.Module):
 
     def forward(self, condition, target):
         B, _,_,_ = target.shape
+        KLDs = []
 
         skip_connections, conditions = self.encoder(condition, target)
 
@@ -25,7 +26,6 @@ class U_NET_Swin(nn.Module):
         conditions = list(reversed(conditions))
 
         hidden_state = None
-        mu, logvar = [], []
 
         for i, skip_connection in enumerate(skip_connections):
 
@@ -37,9 +37,8 @@ class U_NET_Swin(nn.Module):
                 hidden_state_flattened = torch.flatten(hidden_state, start_dim=1, end_dim=-1)
 
 
-            z, mu_i, logvar_i = self.z_cells[i](skip_connection_flattened, hidden_state_flattened, condition_flattened)
-            mu.insert(0, mu_i)
-            logvar.insert(0, logvar_i)
+            z, KLD_i = self.z_cells[i](skip_connection_flattened, hidden_state_flattened, condition_flattened)
+            KLDs.append(KLD_i)
             shape = self.config.swin_decoder.skip_connection_shape_pre_cat[i]
             z = z.view(B,*shape)
             if hidden_state is not None:
@@ -49,11 +48,11 @@ class U_NET_Swin(nn.Module):
 
         hidden_state = self.decoder.last_layer(hidden_state)
 
-        return hidden_state, mu, logvar
+        return hidden_state, sum(KLDs)
 
 
 
-    def sample(self, condition):
+    def sample(self, condition, device):
         B, _, _, _ = condition.shape
 
         place_holder = torch.randn_like(condition)
@@ -69,7 +68,9 @@ class U_NET_Swin(nn.Module):
             condition_flattened = torch.flatten(condition, start_dim=1, end_dim=-1)
             hidden_state_flattened = torch.flatten(hidden_state, start_dim=1, end_dim=-1)
 
-            noise = torch.randn([B,self.prior_config.latent_dim[i]])
+            #noise = torch.randn([B,self.prior_config.FC_latent_dim[i]])
+            noise = self.z_cells[i].sample(num_samples=B)
+            noise = noise.to(device)
 
             condition_latent = self.z_cells[i].fc_condition(condition_flattened)
             hidden_state_latent = self.z_cells[i].fc_prev(hidden_state_flattened)

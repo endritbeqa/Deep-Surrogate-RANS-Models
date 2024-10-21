@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 
 SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/tiny"
 TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_tiny/train"
 VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_tiny/validation"
 
@@ -16,7 +16,7 @@ makeDimLess = True
 fixedAirfoilNormalization = True
 epsilon = 1e-8
 res = 128
-percentage = 1
+percentage = 0.001
 train_val_split = 0.95
 
 
@@ -186,4 +186,4 @@ def save_mask_only():
 if __name__ == '__main__':
     #save_mask_only()
     preprocess_files()
-    #split_train_val()
+    split_train_val()

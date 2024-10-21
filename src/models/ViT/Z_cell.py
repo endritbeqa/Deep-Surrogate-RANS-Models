@@ -5,7 +5,7 @@ import torch.nn as nn
 class VAEBottleneck(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.latent_dim = config.latent_dim
+        self.latent_dim = config.FC_latent_dim
         self.hidden_dim = config.hidden_dim
 
         self.fc_mu = nn.Linear(self.hidden_dim, self.latent_dim)

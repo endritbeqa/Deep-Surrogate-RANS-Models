@@ -22,6 +22,11 @@ class VAEBottleneck(nn.Module):
 
         self.fc_z = nn.Linear(3*self.latent_dim, self.hidden_dim)
 
+    def get_KLD(self, mu, logvar):
+        return -0.5 * torch.mean(1 + logvar - mu.pow(2) - logvar.exp())
+
+
+
     def forward(self, encoder_input, previous, condition):
         B, _ = encoder_input.shape
         if self.i_layer == 0:
@@ -42,6 +47,11 @@ class VAEBottleneck(nn.Module):
         z = torch.cat((z, previous, condition), dim=1)
         z = self.fc_z(z)
 
-        return z, mu, logvar
+        KLD = self.get_KLD(mu,logvar)
+
+        return z, KLD
+
+    def sample(self, num_samples=1):
+        return torch.randn([num_samples,self.latent_dim])
 
 

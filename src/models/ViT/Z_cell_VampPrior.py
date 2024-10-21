@@ -6,7 +6,7 @@ from ml_collections import ConfigDict
 class VampPriorVAEBottleneck(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.latent_dim = config.latent_dim
+        self.latent_dim = config.FC_latent_dim
         self.hidden_dim = config.hidden_dim
         self.num_pseudo_inputs = config.num_pseudo_inputs
 
@@ -54,9 +54,9 @@ class VampPriorVAEBottleneck(nn.Module):
         num_pseudo_inputs = self.num_pseudo_inputs
 
         # Reshape z to compute distance with all pseudo-inputs
-        z = z.unsqueeze(1)  # Shape: (batch_size, 1, latent_dim)
-        pseudo_mu = pseudo_mu.unsqueeze(0)  # Shape: (1, num_pseudo_inputs, latent_dim)
-        pseudo_logvar = pseudo_logvar.unsqueeze(0)  # Shape: (1, num_pseudo_inputs, latent_dim)
+        z = z.unsqueeze(1)  # Shape: (batch_size, 1, FC_latent_dim)
+        pseudo_mu = pseudo_mu.unsqueeze(0)  # Shape: (1, num_pseudo_inputs, FC_latent_dim)
+        pseudo_logvar = pseudo_logvar.unsqueeze(0)  # Shape: (1, num_pseudo_inputs, FC_latent_dim)
 
         # Compute the log likelihood for each pseudo-input
         log_pseudo = -0.5 * torch.sum(

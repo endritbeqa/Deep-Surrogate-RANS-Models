@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class GMMVAEBottleneck(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.latent_dim = config.latent_dim
+        self.latent_dim = config.FC_latent_dim
         self.hidden_dim = config.hidden_dim
         self.num_components = config.num_components
 
@@ -33,11 +33,11 @@ class GMMVAEBottleneck(nn.Module):
 
     def forward(self, x):
         # Compute the means and log variances for all components
-        mu = self.fc_mu(x)  # Shape: [batch_size, num_components * latent_dim]
-        logvar = self.fc_logvar(x)  # Shape: [batch_size, num_components * latent_dim]
+        mu = self.fc_mu(x)  # Shape: [batch_size, num_components * FC_latent_dim]
+        logvar = self.fc_logvar(x)  # Shape: [batch_size, num_components * FC_latent_dim]
         mixture_logits = self.fc_mix_logits(x)  # Shape: [batch_size, num_components]
 
-        # Reshape to [batch_size, num_components, latent_dim]
+        # Reshape to [batch_size, num_components, FC_latent_dim]
         mu = mu.view(-1, self.num_components, self.latent_dim)
         logvar = logvar.view(-1, self.num_components, self.latent_dim)
 
@@ -48,8 +48,8 @@ class GMMVAEBottleneck(nn.Module):
         mixture_index = torch.multinomial(mixture_probs, 1).squeeze(-1)  # Shape: [batch_size]
 
         # Gather the corresponding mu and logvar for the selected mixture component
-        selected_mu = mu[torch.arange(mu.size(0)), mixture_index]  # Shape: [batch_size, latent_dim]
-        selected_logvar = logvar[torch.arange(logvar.size(0)), mixture_index]  # Shape: [batch_size, latent_dim]
+        selected_mu = mu[torch.arange(mu.size(0)), mixture_index]  # Shape: [batch_size, FC_latent_dim]
+        selected_logvar = logvar[torch.arange(logvar.size(0)), mixture_index]  # Shape: [batch_size, FC_latent_dim]
 
         # Reparameterize to get latent vector z
         z = self.reparameterize(selected_mu, selected_logvar, mixture_index)

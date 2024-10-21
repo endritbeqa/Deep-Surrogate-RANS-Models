@@ -11,7 +11,7 @@ class U_NET_Swin(nn.Module):
         self.decoder = Swin_VAE_decoder.Swin_VAE_decoder(config)
         self.prior_class, self.prior_config = prior_select.get_Z_Cell(config)
 
-        z_cells = [self.prior_class(self.prior_config, i_layer) for i_layer in range(len(self.prior_config.latent_dim))]
+        z_cells = [self.prior_class(self.prior_config, i_layer) for i_layer in range(len(self.prior_config.FC_latent_dim))]
 
         self.z_cells = torch.nn.ModuleList(z_cells)
 
@@ -67,7 +67,7 @@ class U_NET_Swin(nn.Module):
             condition_flattened = torch.flatten(condition, start_dim=1, end_dim=-1)
             hidden_state_flattened = torch.flatten(hidden_state, start_dim=1, end_dim=-1)
 
-            noise = torch.unsqueeze(torch.randn(self.prior_config.latent_dim[i]), dim=0)
+            noise = torch.unsqueeze(torch.randn(self.prior_config.FC_latent_dim[i]), dim=0)
 
             condition_latent = self.z_cells[i].fc_condition(condition_flattened)
             hidden_state_latent = self.z_cells[i].fc_prev(hidden_state_flattened)

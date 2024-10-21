@@ -8,7 +8,7 @@ def get_config():
 
     config.device = 'cuda:0'
     config.noise_scheduler = 'cosine'
-    config.timesteps = 100
+    config.timesteps = 200
     config.start_beta = 1e-4
     config.end_beta = 0.02
 
@@ -29,10 +29,10 @@ def get_config():
     config.swin_encoder.num_channels = config.encoder_conv_block.output_dim
     config.swin_encoder.patch_size = 8
     config.swin_encoder.embed_dim = 64
-    config.swin_encoder.depths = [2, 6, 2]
-    config.swin_encoder.num_heads = [2, 2, 2]
+    config.swin_encoder.depths = [2, 2, 6, 2]
+    config.swin_encoder.num_heads = [2, 2, 2, 2]
     config.swin_encoder.window_size = 4
-    config.swin_encoder.pretrained_window_sizes = [0, 0, 0]
+    config.swin_encoder.pretrained_window_sizes = [0, 0, 0, 0]
     config.swin_encoder.mlp_ratio = 4.0
     config.swin_encoder.qkv_bias = True
     config.swin_encoder.hidden_dropout_prob = 0.0
@@ -60,10 +60,10 @@ def get_config():
     config.swin_decoder.out_channels = 3
     config.swin_decoder.patch_size = 8
     config.swin_decoder.embed_dim = 64
-    config.swin_decoder.depths = [2, 6, 2]
-    config.swin_decoder.num_heads = [2, 2, 2]
+    config.swin_decoder.depths = [2, 2, 6, 2]
+    config.swin_decoder.num_heads = [2, 2, 2, 2]
     config.swin_decoder.window_size = 4
-    config.swin_decoder.pretrained_window_sizes = [0, 0, 0]
+    config.swin_decoder.pretrained_window_sizes = [0, 0, 0, 0]
     config.swin_decoder.channel_reduction_ratio = 2
     config.swin_decoder.mlp_ratio = 4.0
     config.swin_decoder.qkv_bias = True

@@ -32,7 +32,6 @@ class DiffusionTrainer(object):
     def __init__(self, train_config):
         self.config = train_config
         self.model_config, self.model = model_select.get_model(train_config.model_name)
-        self.model_config.device = self.config.device # TODO this is a bit ugly look into fixing it
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
@@ -71,7 +70,7 @@ class DiffusionTrainer(object):
         for epoch in range(self.start_epoch, self.config.num_epochs):
             print("Epoch:{}, Started at:{}".format(epoch, datetime.now()))
             self.model.train()
-            epoch_loss = 0.0
+            train_loss = 0.0
             for conditions, targets, label in self.train_dataloader:
                 B, C, H, W = targets.shape
 
@@ -87,20 +86,45 @@ class DiffusionTrainer(object):
 
                 predicted_noise = self.model(conditions, noisy_data, t_emb)
                 loss = F.mse_loss(predicted_noise, noise)
-                epoch_loss += loss.item()
+                train_loss += loss.item()
 
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            train_loss = epoch_loss / len(self.train_dataloader)
+
+            self.model.eval()
+            val_loss = 0
+
+            with torch.no_grad():
+                for conditions, targets, label in self.val_dataloader:
+                    B, C, H, W = targets.shape
+
+                    conditions = conditions.to(self.device)
+                    targets = targets.to(self.device)
+
+                    t = torch.randint(0, self.model_config.timesteps, (targets.size(0),))
+
+                    noisy_data, noise = self.model.noise_step(targets, t)
+
+                    t_emb = self.model.sinusoidal_embedding(t, math.prod(self.model_config.swin_decoder.time_embedding))
+                    t_emb = t_emb.view(B, *self.model_config.swin_decoder.time_embedding)
+
+                    predicted_noise = self.model(conditions, noisy_data, t_emb)
+                    loss = F.mse_loss(predicted_noise, noise)
+                    val_loss += loss.item()
+
+
+
+            train_loss = train_loss / len(self.train_dataloader)
+            val_loss = val_loss/ len(self.val_dataloader)
             train_curve.append(train_loss)
-            val_curve.append(train_loss)
+            val_curve.append(val_loss)
 
             #self.scheduler.step()
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
-                file.write("{},{}\n".format(str(train_loss), str(train_loss)))
+                file.write("{},{}\n".format(str(train_loss), str(val_loss)))
 
 
             if epoch % self.config.checkpoint_every == 0:
@@ -113,6 +137,8 @@ class DiffusionTrainer(object):
                 }
                 torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 
+                utils.save_images(predicted_noise, self.output_dir, "predictions", epoch)
+                utils.save_images(noise, self.output_dir, "targets", epoch)
 
                 loss_plot = utils.plot_losses(train_curve, val_curve)
                 loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))

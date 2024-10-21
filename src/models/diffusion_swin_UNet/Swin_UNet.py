@@ -48,7 +48,7 @@ class U_NET_Swin(nn.Module):
     def sample(self, condition, eta=1.0):
         B, C, H, W = condition.shape
         x = torch.randn(condition.shape)
-        time_steps = torch.linspace(self.config.timesteps - 1, 0, self.config.timesteps).long()
+        time_steps = torch.linspace(self.config.timesteps - 1 - 15, 0, self.config.timesteps - 15).long()
 
         for t in time_steps:
             t_batch = torch.full((x.size(0),), t)

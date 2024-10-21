@@ -195,14 +195,14 @@ def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
     line_styles = ['-', '--', '---', '----', '-----']
 
     plt.figure(figsize=(10, 6))
-    plt.xlim(min(x)-5, max(x)+5)
+    plt.xlim(min(x)-0.5, max(x)+0.5)
 
     for i,line in enumerate(lines):
         plt.plot(x, line, label=labels[i], color=colors[i], linestyle=line_styles[i])
 
 
-    plt.axvspan(xmin=min(x)-5, xmax=x_low, color='gray', alpha=0.5, label='Shaded Area < {}'.format(x_low))
-    plt.axvspan(xmin=x_high, xmax=max(x)+5, color='gray', alpha=0.5, label='Shaded Area > {}'.format(x_high))
+    plt.axvspan(xmin=min(x)-0.5, xmax=x_low, color='gray', alpha=0.5)
+    plt.axvspan(xmin=x_high, xmax=max(x)+0.5, color='gray', alpha=0.5)
 
     plt.xlabel('Re_number')
     plt.ylabel('std')

@@ -1,5 +1,6 @@
-import torch.nn.functional as F
 import torch
+import torch.nn.functional as F
+
 
 def gradient(tensor, dim):
     grad = torch.zeros_like(tensor)
@@ -34,14 +35,8 @@ def mean_relative_loss_function(input, target):
     loss = torch.mean(relative_difference)
     return loss
 
-def beta_KLD(mu, logvar, beta):
-    KLD = 0
-    for i in range(len(mu)):
-        KLD += -0.5 * torch.mean(1 + logvar[i] - mu[i].pow(2) - logvar[i].exp())
-    return beta*KLD
 
-def get_loss_function(losses: list):
-    assert len(losses) != 0, "No losses were provided."
+def get_loss_function(loss: str):
 
     loss_functions = {
         'mse': F.mse_loss,
@@ -49,22 +44,12 @@ def get_loss_function(losses: list):
         'huber_loss': F.smooth_l1_loss,
         'mrl': mean_relative_loss_function,
         'con_of_mass': con_of_mass,
-        'beta_KLD': beta_KLD
     }
 
-    for loss in losses:
-        if loss not in loss_functions:
-            raise ValueError(f"Loss function '{loss}' not supported. Supported losses are:\n"
+    if loss not in loss_functions:
+        raise ValueError(f"Loss function '{loss}' not supported. Supported losses are:\n"
                              f"Mean squared error, Mean absolute error, Huber loss, Mean relative loss, Conservation of mass loss, KL Divergence with following names.\n"
                              f"mse, mae, hubber_loss, mrl, con_of_mass, beta_KLD")
 
-    def loss(recon_x, x, mu=None, logvar=None, beta=None):
-        total_loss = 0
-        for loss in losses:
-            if loss == 'beta_KLD':
-                total_loss += loss_functions[loss](mu, logvar, beta)
-            else:
-                total_loss += loss_functions[loss](recon_x, x)
-        return total_loss
 
-    return loss
+    return loss_functions[loss]

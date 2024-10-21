@@ -22,6 +22,8 @@ class CosineNoiseScheduler:
         self.alphas = torch.linspace(0, np.pi / 2, config.timesteps)
         self.alphas = torch.cos(self.alphas) ** 2
         self.alpha_bar = torch.cumprod(self.alphas, dim=0)
+        self.betas = 1-self.alphas
+
 
     def get_alpha_bar(self, t):
         return self.alpha_bar[t]

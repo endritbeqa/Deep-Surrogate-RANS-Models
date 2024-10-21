@@ -40,7 +40,7 @@ class AutoregressiveImageTransformer(nn.Module):
 
         encoded_condition_patches = torch.flatten(encoded_condition_patches, start_dim=1, end_dim=-1)
 
-        noise = torch.unsqueeze(torch.randn(self.z_cell_config.latent_dim), dim=0)
+        noise = torch.unsqueeze(torch.randn(self.z_cell_config.FC_latent_dim), dim=0)
 
         condition_latent = self.z_cell.fc_condition(encoded_condition_patches)
 

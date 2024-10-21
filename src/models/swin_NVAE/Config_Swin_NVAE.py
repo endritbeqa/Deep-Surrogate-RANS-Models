@@ -9,7 +9,6 @@ def get_config():
     config = config_dict.ConfigDict()
     config.prior = 'gaussian'
 
-
     ########  ENCODER  ########
 
     config.swin_encoder = config_dict.ConfigDict()
@@ -104,9 +103,11 @@ def get_config():
 ##### GMM Prior Bottleneck ##########
 
     config.gmm_prior = config_dict.ConfigDict()
-    config.gmm_prior.latent_dim = 64  # Dimensionality of the latent space
-    config.gmm_prior.hidden_dim = 256  # Dimensionality of the input features (before the bottleneck)
-    config.gmm_prior.num_components = 10  # Number of Gaussian components in the mixture
+    config.gmm_prior.num_components = [16, 16, 32, 32]
+    config.gmm_prior.latent_dim = [32 ,64, 128, 256]
+    config.gmm_prior.hidden_dim = [math.prod(skip) for skip in config.swin_decoder.skip_connection_shape_pre_cat]
+    config.gmm_prior.output_dims = config.swin_decoder.stage_output_shape
+    config.gmm_prior.previous_dim = [math.prod(prev) for prev in config.gaussian_prior.output_dims]
 
 
 

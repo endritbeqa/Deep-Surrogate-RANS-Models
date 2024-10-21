@@ -10,7 +10,7 @@ class VAEBottleneck(nn.Module):
         if i_layer == 0:
             self.H = nn.Parameter(torch.randn(config.previous_dim[i_layer]))
 
-        self.latent_dim = config.latent_dim[i_layer]
+        self.latent_dim = config.FC_latent_dim[i_layer]
         self.hidden_dim = config.hidden_dim[i_layer]
         self.prev_dim = config.previous_dim[i_layer]
 
