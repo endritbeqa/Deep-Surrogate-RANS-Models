@@ -1,12 +1,25 @@
+import json
 import math
 
 import numpy as np
 import os
+
+import torch
 from PIL import Image
 from matplotlib import cm
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
+def to_numpy(data):
+    if isinstance(data, torch.Tensor):
+        if data.is_cuda:
+            data = data.cpu()
+        return data.numpy()
+    elif isinstance(data, np.ndarray):
+        return data
+    else:
+        raise TypeError("Input must be a PyTorch tensor or a NumPy array.")
 
 
 def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', title='Train/Val loss curves',
@@ -72,6 +85,7 @@ def save_images(outputs, output_dir, mode , epoch):
 
 
 def save_samples(samples, output_dir):
+    samples = to_numpy(samples)
     samples = np.rot90(samples, axes=(2, 3))
     b, c, h, w = samples.shape
     channel_labels = ['P', 'Ux', 'Uy']
@@ -92,6 +106,8 @@ def save_samples(samples, output_dir):
 
 
 def plot_comparison(targets, predictions, output_dir, file_name):
+    targets = to_numpy(targets)
+    predictions = to_numpy(predictions)
     if targets.shape != predictions.shape:
         raise ValueError("Input arrays must have same shape!")
 
@@ -128,6 +144,7 @@ def plot_comparison(targets, predictions, output_dir, file_name):
 
 
 def plot_comparison_parameter_range(data, row_labels, table_label):
+    data = to_numpy(data)
     rows, C, H, W = data.shape
 
     fig, axes = plt.subplots(rows, C, squeeze=False, figsize=(10,10))
@@ -152,6 +169,7 @@ def plot_comparison_parameter_range(data, row_labels, table_label):
 
 
 def save_parameter_comparison(predictions, parameters, output_dir):
+    predictions = to_numpy(predictions)
     num_REs, num_Angles, C, H, W = predictions.shape
     predictions = np.rot90(predictions, axes=(3, 4))
 
@@ -206,9 +224,15 @@ def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
 
     plt.xlabel('Re_number')
     plt.ylabel('std')
-    plt.title('Model prediction/ground truth mean std comparison')
+    plt.title('Model sample/ground truth mean std comparison')
     plt.legend(loc="upper left")
     plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
 
-
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.float32):
+            return float(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
 

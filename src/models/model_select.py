@@ -3,19 +3,23 @@ from src.models.NVAE import Config_NVAE, NVAE
 from src.models.ViT import Config_ViT_VAE, ViT_VAE
 from src.models.diffusion_swin_UNet import Config_Swin_UNet, Swin_UNet
 
-def get_model(name: str):
+def get_model(config):
 
-    if name == 'swin_NVAE':
+    if config.model_name == 'swin_NVAE':
         model_config = Config_Swin_NVAE.get_config()
+        model_config.device = config.device
         model = Swin_NVAE.U_NET_Swin(model_config)
-    elif name == 'NVAE':
+    elif config.model_name == 'NVAE':
         model_config = Config_NVAE.get_config()
+        model_config.device = config.device
         model = NVAE.U_NET_Swin(model_config)
-    elif name == 'ViT_VAE':
+    elif config.model_name == 'ViT_VAE':
         model_config = Config_ViT_VAE.get_config()
+        model_config.device = config.device
         model = ViT_VAE.AutoregressiveImageTransformer(model_config)
-    elif name == 'diffusion_swin_UNet':
+    elif config.model_name == 'diffusion_swin_UNet':
         model_config = Config_Swin_UNet.get_config()
+        model_config.device = config.device
         model = Swin_UNet.U_NET_Swin(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")
@@ -31,7 +35,6 @@ def load_model(name: str, model_config, checkpoint):
     elif name == 'ViT_VAE':
         model = ViT_VAE.AutoregressiveImageTransformer(model_config)
     elif name == 'diffusion_swin_UNet':
-        model_config.device = 'cpu'
         model = Swin_UNet.U_NET_Swin(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")

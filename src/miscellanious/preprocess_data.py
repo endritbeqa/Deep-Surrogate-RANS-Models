@@ -5,18 +5,19 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/tiny"
-TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_tiny/train"
-VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/train_val_split_tiny/validation"
+SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/test/extrapolation"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/test/extrapolation"
+TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split/train"
+VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split/validation"
+MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/masks"
 
 
 removePOffset = True
 makeDimLess = True
 fixedAirfoilNormalization = True
 epsilon = 1e-8
-res = 128
-percentage = 0.001
+res = 64
+percentage = 1
 train_val_split = 0.95
 
 
@@ -125,7 +126,7 @@ def preprocess_files():
     for i, case in enumerate(cases):
         print("Case: {}/{}".format(i+1, num_cases))
         case_path = os.path.join(SRC_DIR, case)
-        os.makedirs(os.path.join(PREPROCESS_DIR,case))
+        os.makedirs(os.path.join(PREPROCESS_DIR, case))
 
         for snapshot in os.listdir(case_path):
             snapshot_data = np.load(os.path.join(case_path, snapshot))
@@ -149,7 +150,7 @@ def preprocess_files():
             np.savez(save_path, a=arrays)
 
 
-def save_mask_only():
+def save_masks():
     all_cases = os.listdir(SRC_DIR)
     airfoils = {}
 
@@ -159,7 +160,7 @@ def save_mask_only():
             snapshot = os.listdir(os.path.join(SRC_DIR, case))[0]
             airfoils[airfoil_name] = os.path.join(SRC_DIR, case, snapshot)
 
-    os.makedirs(PREPROCESS_DIR, exist_ok=True)
+    os.makedirs(MASK_DIR, exist_ok=True)
 
     for airfoil_name, snapshot_path in airfoils.items():
 
@@ -176,7 +177,7 @@ def save_mask_only():
             arrays = arrays.numpy()
             arrays = arrays[2]
 
-            output_path = "{}/{}".format(PREPROCESS_DIR, airfoil_name)
+            output_path = "{}/{}".format(MASK_DIR, airfoil_name)
             save_path = os.path.join(output_path)
             np.savez(save_path, a=arrays)
 
@@ -184,6 +185,6 @@ def save_mask_only():
 
 
 if __name__ == '__main__':
-    #save_mask_only()
     preprocess_files()
-    split_train_val()
+    #split_train_val()
+    #save_masks()

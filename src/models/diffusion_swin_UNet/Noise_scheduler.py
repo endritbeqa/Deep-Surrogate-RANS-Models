@@ -2,6 +2,7 @@ import torch
 import numpy as np
 
 #TODO introduce a parent class Scheduler
+#TODO look into start_beta and end_beta which needs to be bigger??????
 
 
 class LinearNoiseScheduler:
@@ -17,16 +18,23 @@ class LinearNoiseScheduler:
         return self.alpha_bar[t]
 
 class CosineNoiseScheduler:
-    def __init__(self, config):
-        self.timesteps = config.timesteps
-        self.alphas = torch.linspace(0, np.pi / 2, config.timesteps)
-        self.alphas = torch.cos(self.alphas) ** 2
-        self.alpha_bar = torch.cumprod(self.alphas, dim=0)
-        self.betas = 1-self.alphas
+    def __init__(self, config, s=0.008):
+        self.steps = config.timesteps
+        t_list = torch.arange(1, self.steps + 1, 1)
+        temp1 = torch.cos((t_list / config.timesteps + s) / (1 + s) * torch.pi / 2) ** 2
+        temp2 = torch.cos(((t_list-1) / config.timesteps + s) / (1 + s) * torch.pi / 2) ** 2
+        self.beta_source = 1 - (temp1 / temp2)
+        self.beta_source[self.beta_source > 0.999] = 0.999
+        self.betas = torch.cat((torch.tensor([0]), self.beta_source), dim=0)  # 第一项必须是0
+        self.betas = self.betas.view(self.steps + 1, 1, 1, 1)
+        self.betas = self.betas.to(config.device)
+        self.alphas = 1 - self.betas
+        self.alphas_bar = torch.cumprod(self.alphas, 0)
+        self.one_minus_alphas_bar = 1 - self.alphas_bar
+        self.sqrt_alphas = torch.sqrt(self.alphas)
+        self.sqrt_alphas_bar = torch.sqrt(self.alphas_bar)
+        self.sqrt_one_minus_alphas_bar = torch.sqrt(self.one_minus_alphas_bar)
 
-
-    def get_alpha_bar(self, t):
-        return self.alpha_bar[t]
 
 
 # Quadratic noise scheduler

@@ -3,13 +3,16 @@ import torch.nn as nn
 import torch
 from transformers.models.swinv2.modeling_swinv2 import Swinv2Layer
 
+from src.models.Time_embedding import TimeEmbedding
+
 
 class Conv_Block(nn.Module):
     def __init__(self, config):
         super(Conv_Block, self).__init__()
-        self.upsample = nn.Upsample(size=(config.res + 8, config.res + 8), mode='bilinear')
+        self.time_embedding = TimeEmbedding(100, config.input_dim)
+        self.upsample = nn.Upsample(size=(config.res +8, config.res +8), mode='bilinear')
         self.conv1 = nn.Conv2d(config.input_dim, config.hidden_dim_1, kernel_size=7)
-        self.layerNorm1 = nn.LayerNorm([config.hidden_dim_1, config.res + 2, config.res + 2])
+        self.layerNorm1 = nn.LayerNorm([config.hidden_dim_1, config.res+2 , config.res+2])
         self.conv2 = nn.Conv2d(config.hidden_dim_1, config.hidden_dim_2, kernel_size=3)
         self.layerNorm2 = nn.LayerNorm([config.hidden_dim_2, config.res, config.res])
         self.non_linearity = nn.GELU()
@@ -17,7 +20,10 @@ class Conv_Block(nn.Module):
                                out_channels=config.out_dim,
                                kernel_size=1)
 
-    def forward(self, x):
+
+
+    def forward(self, x, t):
+        x = self.time_embedding(x, t)
         x = self.upsample(x)
         x = self.conv1(x)
         x = self.layerNorm1(x)
@@ -26,6 +32,7 @@ class Conv_Block(nn.Module):
         x = self.layerNorm2(x)
         x = self.non_linearity(x)
         x = self.conv3(x)
+
 
         return x
 
@@ -60,6 +67,7 @@ class Swinv2DecoderStage(nn.Module):
         super().__init__()
         self.config = config
         self.upsample = upsample
+        self.time_embedding = TimeEmbedding(100, dim)
         blocks = []
         for i in range(depth):
             block = Swinv2Layer(
@@ -77,11 +85,13 @@ class Swinv2DecoderStage(nn.Module):
     def forward(
             self,
             hidden_states: torch.Tensor,
+            timestep,
             input_dimensions: Tuple[int, int],
             head_mask: Optional[torch.FloatTensor] = None,
             output_attentions: Optional[bool] = False,
     ):
 
+        hidden_states = self.time_embedding(hidden_states, timestep)
         B, C, H, W = hidden_states.shape
         hidden_states = hidden_states.view((B, C, H * W))
         hidden_states = hidden_states.permute(0, 2, 1)
@@ -126,7 +136,7 @@ class Swin_VAE_decoder(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, skip_connections):
+    def forward(self, skip_connections, timestep):
         hidden_state = skip_connections[0]
 
         for i in range(len(self.layers)):
@@ -134,10 +144,10 @@ class Swin_VAE_decoder(nn.Module):
                 hidden_state = torch.cat([hidden_state, skip_connections[i]], dim=1)
             shape = self.config.swin_decoder.skip_connection_shape_pre_cat[i]
             input_dimension = shape[1:3]
-            hidden_state = self.layers[i](hidden_state, input_dimension)
+            hidden_state = self.layers[i](hidden_state,timestep, input_dimension)
 
         hidden_state = self.last_upsample(hidden_state)
         hidden_state = torch.cat([hidden_state, skip_connections[-1]], dim=1)
-        output = self.last_layer(hidden_state)
+        output = self.last_layer(hidden_state, timestep)
 
         return output

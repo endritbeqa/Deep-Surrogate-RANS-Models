@@ -7,13 +7,13 @@ class U_NET_Swin(nn.Module):
     def __init__(self, config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = config
+        self.device = config.device
         self.encoder = Swin_VAE_encoder.Swin_VAE_encoder(config)
         self.decoder = Swin_VAE_decoder.Swin_VAE_decoder(config)
         self.prior_class, self.prior_config = prior_select.get_Z_Cell(config)
-
         z_cells = [self.prior_class(self.prior_config, i_layer) for i_layer in range(len(self.prior_config.latent_dim))]
-
         self.z_cells = torch.nn.ModuleList(z_cells)
+
 
 
     def forward(self, condition, target):
@@ -52,15 +52,15 @@ class U_NET_Swin(nn.Module):
 
 
 
-    def sample(self, condition, device):
-        B, _, _, _ = condition.shape
+    def sample(self, condition, num_samples):
+        condition = condition.unsqueeze(0).repeat(num_samples, 1, 1, 1)
 
         place_holder = torch.randn_like(condition)
         _, conditions = self.encoder(condition, place_holder)
         conditions = list(reversed(conditions))
 
-        hidden_state = self.z_cells[0].H.repeat(B, 1)
-        hidden_state = torch.reshape(hidden_state, (B,*self.config.swin_decoder.skip_connection_shape_pre_cat[0]))
+        hidden_state = self.z_cells[0].H.repeat(num_samples, 1)
+        hidden_state = torch.reshape(hidden_state, (num_samples,*self.config.swin_decoder.skip_connection_shape_pre_cat[0]))
 
 
         for i, condition in enumerate(conditions):
@@ -68,9 +68,8 @@ class U_NET_Swin(nn.Module):
             condition_flattened = torch.flatten(condition, start_dim=1, end_dim=-1)
             hidden_state_flattened = torch.flatten(hidden_state, start_dim=1, end_dim=-1)
 
-            #noise = torch.randn([B,self.prior_config.FC_latent_dim[i]])
-            noise = self.z_cells[i].sample(num_samples=B)
-            noise = noise.to(device)
+            noise = self.z_cells[i].sample(num_samples=num_samples)
+            noise = noise.to(self.device)
 
             condition_latent = self.z_cells[i].fc_condition(condition_flattened)
             hidden_state_latent = self.z_cells[i].fc_prev(hidden_state_flattened)
@@ -78,7 +77,7 @@ class U_NET_Swin(nn.Module):
             z = torch.cat((noise, hidden_state_latent, condition_latent), dim=1)
             z = self.z_cells[i].fc_z(z)
             shape = self.config.swin_decoder.skip_connection_shape_pre_cat[i]
-            z = z.view(B,*shape)
+            z = z.view(num_samples,*shape)
             if i!=0:
                 z = torch.cat((z, hidden_state), dim=1)
             input_dimension = shape[1:3]

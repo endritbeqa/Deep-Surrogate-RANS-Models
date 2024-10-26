@@ -20,7 +20,7 @@ def count_parameters(model):
 class Trainer(object):
     def __init__(self, train_config):
         self.config = train_config
-        self.model_config, self.model = model_select.get_model(train_config.model_name)
+        self.model_config, self.model = model_select.get_model(train_config)
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
@@ -76,11 +76,12 @@ class Trainer(object):
             train_reconstruction_loss = 0.0
             train_KLD_loss = 0.0
 
-            for inputs, targets, label in self.train_dataloader:
-
-                inputs, targets = inputs.to(self.device), targets.to(self.device)
+            for conditions, targets, label in self.train_dataloader:
                 self.optimizer.zero_grad()
-                outputs, KLD_loss = self.model(inputs, targets)
+
+                conditions = conditions.to(self.device)
+                targets = targets.to(self.device)
+                outputs, KLD_loss = self.model(conditions, targets)
 
                 #RE_loss = self.loss_func(outputs,targets)
                 RE_loss  = F.l1_loss(outputs, targets)
@@ -111,10 +112,11 @@ class Trainer(object):
             val_KLD_loss = 0.0
 
             with torch.no_grad():
-                for inputs, targets, label in self.val_dataloader:
-                    inputs, targets = inputs.to(self.device), targets.to(self.device)
+                for conditions, targets, label in self.val_dataloader:
 
-                    outputs, KLD_loss = self.model(inputs, targets)
+                    conditions = conditions.to(self.device)
+                    targets = targets.to(self.device)
+                    outputs, KLD_loss = self.model(conditions, targets)
                     RE_loss = F.l1_loss(outputs, targets)
                     KLD_loss *= self.beta
                     loss = RE_loss + KLD_loss

@@ -31,7 +31,7 @@ def load_training(trainer,checkpoint_path):
 class DiffusionTrainer(object):
     def __init__(self, train_config):
         self.config = train_config
-        self.model_config, self.model = model_select.get_model(train_config.model_name)
+        self.model_config, self.model = model_select.get_model(train_config)
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
@@ -80,9 +80,8 @@ class DiffusionTrainer(object):
                 t = torch.randint(0, self.model_config.timesteps, (targets.size(0),))
 
                 noisy_data, noise = self.model.noise_step(targets, t)
-
-                t_emb = self.model.sinusoidal_embedding(t, math.prod(self.model_config.swin_decoder.time_embedding))
-                t_emb = t_emb.view(B, *self.model_config.swin_decoder.time_embedding)
+                t_emb = self.model.sinusoidal_embedding(t, 100)
+                #t_emb = t_emb.view(B, *self.model_config.time_embedding_shape)
 
                 predicted_noise = self.model(conditions, noisy_data, t_emb)
                 loss = F.mse_loss(predicted_noise, noise)
@@ -106,9 +105,9 @@ class DiffusionTrainer(object):
                     t = torch.randint(0, self.model_config.timesteps, (targets.size(0),))
 
                     noisy_data, noise = self.model.noise_step(targets, t)
-
-                    t_emb = self.model.sinusoidal_embedding(t, math.prod(self.model_config.swin_decoder.time_embedding))
-                    t_emb = t_emb.view(B, *self.model_config.swin_decoder.time_embedding)
+                    #TODO remove this hard coded stuff
+                    t_emb = self.model.sinusoidal_embedding(t, 100)
+                    #t_emb = t_emb.view(B, *self.model_config.time_embedding_shape)
 
                     predicted_noise = self.model(conditions, noisy_data, t_emb)
                     loss = F.mse_loss(predicted_noise, noise)

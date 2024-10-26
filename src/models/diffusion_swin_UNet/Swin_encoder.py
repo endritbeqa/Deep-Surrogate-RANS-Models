@@ -1,6 +1,7 @@
 import torch.nn as nn
 from transformers import AutoConfig
-from transformers import Swinv2Model
+from src.models.modeling_swinV2 import Swinv2Model
+from src.models.Time_embedding import TimeEmbedding
 
 
 def load_swin_transformer(config_dict: dict) -> nn.Module:
@@ -42,13 +43,15 @@ class Swin_VAE_encoder(nn.Module):
                                      config.encoder_conv_block.num_channels,
                                      config.encoder_conv_block.embed_dim,
                                      config.encoder_conv_block.output_dim)
+        self.time_embeddings = TimeEmbedding(100, config.encoder_conv_block.output_dim)
 
 
-    def forward(self,target):
+    def forward(self, target, time):
         B, _, _, _ = target.shape
 
         conv_block_output = self.conv_block(target)
-        swin_encoder_output = self.encoder(conv_block_output, output_hidden_states=True)
+        conv_block_output = self.time_embeddings(conv_block_output, time)
+        swin_encoder_output = self.encoder(conv_block_output, time,output_hidden_states=True)
         last_hidden_state = swin_encoder_output.last_hidden_state
         hidden_states = swin_encoder_output.hidden_states
 
