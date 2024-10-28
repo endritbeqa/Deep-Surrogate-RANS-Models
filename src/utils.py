@@ -210,7 +210,7 @@ def save_parameter_comparison(predictions, parameters, output_dir):
 
 def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
     colors = ['blue', 'red', 'pink', 'orange', 'yellow']
-    line_styles = ['-', '--', '---', '----', '-----']
+    line_styles = ['-', '--', '-.', ':', 'solid']
 
     plt.figure(figsize=(10, 6))
     plt.xlim(min(x)-0.5, max(x)+0.5)
@@ -222,7 +222,7 @@ def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
     plt.axvspan(xmin=min(x)-0.5, xmax=x_low, color='gray', alpha=0.5)
     plt.axvspan(xmin=x_high, xmax=max(x)+0.5, color='gray', alpha=0.5)
 
-    plt.xlabel('Re_number')
+    plt.xlabel('Re_number 10\u2075')
     plt.ylabel('std')
     plt.title('Model sample/ground truth mean std comparison')
     plt.legend(loc="upper left")

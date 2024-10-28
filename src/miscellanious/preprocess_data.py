@@ -5,8 +5,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/test/extrapolation"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/test/extrapolation"
+SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/test/1_parameter"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/test/1_parameter"
 TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split/train"
 VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split/validation"
 MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/masks"

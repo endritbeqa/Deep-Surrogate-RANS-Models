@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import time
 
 import numpy as np
 import torch
@@ -180,8 +181,11 @@ class Raf30_test(object):
         target_std = [torch.mean(value[5, :, :]).item() for key, value in sorted(target.items())]
         x_values = [key/10 for key, value in sorted(target.items())]
 
-        labels = ['Hierarchical VAE', 'Ground truth']
+        labels = ['Model', 'Ground Truth']
         lines = [sample_std, target_std]
+        raf_30_curves = {"Model":sample_std, "Ground Truth":target_std}
+        with open(os.path.join(self.output_dir, "average_std_comparison.json"), 'w') as file:
+            json.dump(raf_30_curves, file, indent=4)
         utils.plot_std_curves(lines, x_values, labels, 1, 9, self.output_dir)
 
 
@@ -266,6 +270,52 @@ class Parameter_Comparison_Test(object):
                 utils.save_parameter_comparison(sample_moments, parameters, case_dir)
 
 
+class Sampling_Speed_Test(object):
+
+    def __init__(self, config):
+        self.config = config
+        self.device = config.device
+        self.checkpoint = torch.load(config.checkpoint)
+        self.train_config = self.checkpoint['train_config']
+        self.model_config = self.checkpoint['model_config']
+        self.num_samples = config.sampling_speed.num_samples
+        self.model_name = self.train_config.model_name
+        self.model_config.device = self.device
+        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
+        self.output_dir = os.path.join(config.output_dir, "Sampling_speed_test")
+        self.dataset = dataset.Test_Dataset(self.config, 'interpolation')
+        self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
+        self.model = self.model.to(self.device)
+        os.makedirs(self.output_dir, exist_ok=True)
+
+    def evaluate(self):
+
+        self.model.eval()
+        with torch.no_grad():
+            sampling_times = {}
+            sampling_times_statistics = {}
+            for num_samples in self.num_samples:
+                for idx, (conditions, targets, label) in tqdm(enumerate(self.dataloader), total=len(self.dataloader)):
+                    condition = conditions[0].squeeze(dim=0)
+                    condition = condition.to(self.device)
+                    start_time = time.time()
+                    samples = self.model.sample(condition, num_samples)
+                    end_time = time.time()
+                    time_elapsed = end_time-start_time
+                    sampling_times.setdefault(num_samples, []).append(time_elapsed)
+
+            with open(os.path.join(self.output_dir, 'sampling_times_raw.json'), "w") as file:
+                json.dump(sampling_times, file, indent=4)
+
+            for key, item in sampling_times.items():
+                item = np.array(item)
+                sampling_times_statistics[key] = {"mean": float(np.mean(item)),
+                                                  "std": float(np.std(item))}
+
+            with open(os.path.join(self.output_dir, 'sampling_times_statistics.json'), 'w') as file:
+                json.dump(sampling_times_statistics, file, indent=4)
+
+
 if __name__ == '__main__':
     config = evaluation_config.get_config()
     os.makedirs(config.output_dir, exist_ok=True)
@@ -275,6 +325,9 @@ if __name__ == '__main__':
     if config.raf30_test:
         raf30_test = Raf30_test(config)
         raf30_test.evaluate()
+    if config.sampling_speed_test:
+        sampling_speed_test = Sampling_Speed_Test(config)
+        sampling_speed_test.evaluate()
     if config.parameter_comparison_test:
         parameter_comparison_test = Parameter_Comparison_Test(config)
         parameter_comparison_test.evaluate()

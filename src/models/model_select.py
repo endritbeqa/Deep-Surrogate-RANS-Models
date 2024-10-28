@@ -2,6 +2,7 @@ from src.models.swin_NVAE import Config_Swin_NVAE, Swin_NVAE
 from src.models.NVAE import Config_NVAE, NVAE
 from src.models.ViT import Config_ViT_VAE, ViT_VAE
 from src.models.diffusion_swin_UNet import Config_Swin_UNet, Swin_UNet
+from src.models.diffusion_ViT_UNet import Config_ViT_UNet, ViT_UNet
 
 def get_model(config):
 
@@ -21,6 +22,10 @@ def get_model(config):
         model_config = Config_Swin_UNet.get_config()
         model_config.device = config.device
         model = Swin_UNet.U_NET_Swin(model_config)
+    elif config.model_name == 'diffusion_ViT_UNet':
+        model_config = Config_ViT_UNet.get_config()
+        model_config.device = config.device
+        model = ViT_UNet.DiffusionUNet(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")
 
@@ -36,6 +41,8 @@ def load_model(name: str, model_config, checkpoint):
         model = ViT_VAE.AutoregressiveImageTransformer(model_config)
     elif name == 'diffusion_swin_UNet':
         model = Swin_UNet.U_NET_Swin(model_config)
+    elif name == 'diffusion_ViT_UNet':
+        model = ViT_UNet.DiffusionUNet(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")
 

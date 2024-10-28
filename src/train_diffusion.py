@@ -21,7 +21,7 @@ def count_parameters(model):
 def load_training(trainer,checkpoint_path):
     checkpoint = torch.load(checkpoint_path)
     train_config = checkpoint['train_config']
-    trainer.start_epoch = checkpoint['epoch']
+    trainer.start_epoch = checkpoint['epoch']+1
     trainer.model_config = checkpoint['model_config']
     trainer.model = model_select.load_model(trainer.config.model_name, trainer.model_config, checkpoint)
     trainer.model = trainer.model.to(trainer.device)

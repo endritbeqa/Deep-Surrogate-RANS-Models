@@ -10,10 +10,11 @@ The data contains input(`x-velocity`, `y-velocity`, `binary mask`) and target(`v
 
 ## Model
 
-1. **U_net SwinV2 VAE:** U-net architecture using SwinV2 blocks in the encoder and decoder. 
+1. **Hierarchical VAE:** U-net architecture using SwinV2 blocks in the encoder and decoder. 
 The hierarchical representation is created through the patch merging in the encoder and upsampling in the decoder.
 In order to sample a VAE bottleneck is introduced in each skip connection. 
 
+2. **Diffusion ViT:** U-net architecture using ViT
 
 ## Installation 
 Create a pip virtual environment and install the packages in the requirements.txt file.
@@ -23,35 +24,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Folder Structure
-```
-.
-├── data_generation
-│   ├── airfoil_database
-│   ├── airfoil_database_test
-│   ├── config.py
-│   ├── dataGeneration.py
-│   ├── download_airfoils.sh
-│   ├── gen_data.sh
-│   ├── main.py
-│   ├── OpenFOAM
-│   ├── simFunctions.py
-│   └── utils.py
-├── LICENSE
-├── README.md
-└── src
-    ├── config.py
-    ├── data
-    ├── hyperparameter_search.py
-    ├── inference.py
-    ├── __init__.py
-    ├── loss.py
-    ├── models
-    ├── scrap_files
-    ├── train.py
-    └── utils.py
+## Results
 
-```
+
+
 
 ## Usage 
 
@@ -59,10 +35,6 @@ pip install -r requirements.txt
 To train the existing architectures in the models folder change the ***config.model*** field in the `src/config.py` file to the desired 
 model name.  
 In order to change the model structure itself, go to the config file of the model itself found in the models folder (e.g `src/models/swin/Config_Unet_Swin.py`).
-
-### Loss function selection
-To select loss a loss function edit the ***config.loss_function*** field in the `src/config.py`.
-You can also use the sum of multiple loss functions at once by just typing the names in form of a list (e.g you are training a VAE version of the model and need also the KL divergence term in the loss )
 
 ### Train setup 
 To change the train setup itself(batch size, number of epoch, dataset etc.) edit the `src/config.py` file.
