@@ -1,3 +1,4 @@
+import math
 import torch.nn as nn
 from src.models.Time_embedding import TimeEmbedding
 
@@ -21,38 +22,88 @@ class ViTBlock(nn.Module):
         return x
 
 
-class ConvBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, hidden_channels):
-        super(ConvBlock, self).__init__()
-        self.time_embedding = TimeEmbedding(100, hidden_channels)
-        self.conv1 = nn.Conv2d(in_channels, hidden_channels, kernel_size=3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(hidden_channels, hidden_channels, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(hidden_channels, out_channels, kernel_size=3, stride=1, padding=1)
+class Conv_layer(nn.Module):
+    def __init__(self, input_channels, output_channels, output_size):
+        super().__init__()
+        self.time_embedding = TimeEmbedding(100, input_channels)
+        self.upsample = nn.Upsample(size=output_size, mode='bilinear', align_corners=False)
+        hidden_dim = input_channels //2
+        self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
+        self.conv3 = nn.Conv2d(hidden_dim, output_channels, kernel_size=1)
+        self.skip_conv = nn.Conv2d(input_channels, output_channels, kernel_size=1)
+        self.non_linearity = nn.GELU()
+        self.norm1 = nn.GroupNorm(num_groups=hidden_dim // 4, num_channels=hidden_dim)
+        self.norm2 = nn.GroupNorm(num_groups=hidden_dim // 4, num_channels=hidden_dim)
 
-        self.norm1 = nn.LayerNorm([hidden_channels, 1, 1])
-        self.norm2 = nn.LayerNorm([hidden_channels, 1, 1])
-        self.norm3 = nn.LayerNorm([out_channels, 1, 1])
+    def forward(self, x, t, reshape=True):
+        if reshape:
+            b, l, c = x.shape
+            h = w = int(math.sqrt(l))
+            x = x.permute(0, 2, 1)
+            x = x.view(b, c, h, w)
 
-        self.relu = nn.ReLU()
+        x = self.upsample(x)
+        x_initial = x
+        x = self.time_embedding(x, t)
+        x = self.conv1(x)
+        x = self.non_linearity(x)
+        x = self.norm1(x)
+        x = self.conv2(x)
+        x = self.non_linearity(x)
+        x = self.norm2(x)
+        x = self.conv3(x)
 
-        self.skip_conv = nn.Conv2d(in_channels, out_channels,
-                                   kernel_size=1) if in_channels != out_channels else nn.Identity()
+        x_initial = self.skip_conv(x_initial)
+        x = x + x_initial
 
-    def forward(self, x, t):
-        out = self.conv1(x)
-        out = self.norm1(out)
-        out = self.relu(out)
-        out = self.time_embedding(out, t)
+        return x
 
-        out = self.conv2(out)
-        out = self.norm2(out)
-        out = self.relu(out)
 
-        out = self.conv3(out)
-        out = self.norm3(out)
+class Upsample(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.conv1 = nn.Conv2d(dim, dim // 2, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(dim // 2, dim // 4, kernel_size=3, padding=1)
+        self.norm1 = nn.GroupNorm(num_groups=dim//(2*4), num_channels=dim//2)
 
-        skip = self.skip_conv(x)
-        out += skip
-        out = self.relu(out)
 
-        return out
+    def forward(self, x):
+        b, l, c = x.shape
+        h = w = int(math.sqrt(l))
+        x = x.permute(0, 2, 1)
+        x = x.view(b, c, h, w)
+
+        x = self.upsample(x)
+        x = self.conv1(x)
+        x = self.norm1(x)
+        x = self.conv2(x)
+        x = x.flatten(2)
+        x = x.permute(0, 2, 1)
+
+        return x
+
+
+class PatchMerging(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super().__init__()
+        self.proj = nn.Linear(input_dim, output_dim)
+
+    def forward(self, x):
+        b, l, c = x.shape
+        x = x.view(b, l // 4, 4, c)
+        x = x.flatten(2)
+        x = self.proj(x)
+        return x
+
+class PatchEmbedding(nn.Module):
+    def __init__(self, in_channels, embed_dim, patch_size=4):
+        super().__init__()
+        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
+
+    def forward(self, x):
+        x = self.proj(x)
+        x = x.flatten(2)
+        x = x.permute(0, 2, 1) #turn into B, L, C
+        return x

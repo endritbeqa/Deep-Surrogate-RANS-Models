@@ -7,36 +7,10 @@ from src.models.diffusion_ViT_UNet import Noise_scheduler
 from src.models.diffusion_ViT_UNet.layers import ViTBlock
 from src.models.diffusion_ViT_UNet.ViT_Encoder import Encoder
 from src.models.diffusion_ViT_UNet.ViT_Decoder import Decoder
-from src.models.Time_embedding import TimeEmbedding
 
 
 
-class Final_layer(nn.Module):
-    def __init__(self, dim, output_dim):
-        super().__init__()
-        self.time_embedding = TimeEmbedding(100, dim)
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
-        self.conv1 = nn.Conv2d(dim, dim // 2, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(dim//2, dim // 2, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(dim // 2, output_dim, kernel_size=1)
-        self.layerNorm1 = nn.LayerNorm([dim//2, 32, 32])
-        self.layerNorm2 = nn.LayerNorm([dim // 2, 32, 32])
 
-    def forward(self, x, t):
-        b, l, c = x.shape
-        h = w = int(math.sqrt(l))
-        x = x.permute(0,2,1)
-        x = x.view(b,c,h,w)
-
-        x = self.time_embedding(x, t)
-        x = self.upsample(x)
-        x = self.conv1(x)
-        x = self.layerNorm1(x)
-        x = self.conv2(x)
-        x = self.layerNorm2(x)
-        x = self.conv3(x)
-
-        return x
 
 
 class DiffusionUNet(nn.Module):
@@ -46,9 +20,15 @@ class DiffusionUNet(nn.Module):
         self.encoder = Encoder(config)
         self.middle_block = ViTBlock(config.init_dim * (2 ** (len(config.depths)-1)), config.num_heads[-1], config.mlp_ratio)
         self.decoder = Decoder(config)
-        self.final_proj = Final_layer(64, 3)
         self.noise_scheduler = Noise_scheduler.get_noise_scheduler(self.config)
         self.device = torch.device(self.config.device if torch.cuda.is_available() else "cpu")
+
+    def move_to_device(self):
+        self.to(self.device)
+        for attr_name, attr_value in self.noise_scheduler.__dict__.items():
+            if isinstance(attr_value, torch.Tensor):
+                setattr(self.noise_scheduler, attr_name, attr_value.to(self.device))
+
 
     def noise_step(self, x_0, t):
         noise = torch.randn_like(x_0).to(self.device)
@@ -75,7 +55,7 @@ class DiffusionUNet(nn.Module):
         skip_connections = list(reversed(skip_connections))
         x = self.middle_block(x, t)
         x = self.decoder(x, t, skip_connections)
-        return self.final_proj(x, t)
+        return x
 
 
     def sample(self, condition, num_samples,eta=1.0):
@@ -98,9 +78,6 @@ class DiffusionUNet(nn.Module):
             coef2 = self.noise_scheduler.betas[t] / self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
             sig = torch.sqrt(self.noise_scheduler.betas[t]) * self.noise_scheduler.sqrt_one_minus_alphas_bar[t_pre] / self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
             x_t = coef1 * (x_t - coef2 * noise_pred) + sig * torch.randn_like(x_t)
-
-            #if torch.isnan(x_t).any():
-            #    print("NaN detected")
 
             t = t_pre
             t_pre = t_pre - 1

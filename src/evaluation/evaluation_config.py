@@ -6,18 +6,20 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = 'diffusion_ViT_UNet_32_full_cosine'
+    config.test_name = 'diffusion_swin_UNet_V2_32_full_cosine_1_parameter_test7'
+    #config.test_name = 'diffusion_ViT_UNet_32_full_cosine_1_parameter_test'
+    #config.test_name = 'swin_NVAE_V2_1_parameter_test3'
     config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "60.pth")
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "3980.pth")
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
     config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
-    config.num_samples = 25
-    config.device = 'cuda:0'
+    config.num_samples = 100
+    config.device = 'cuda:1'
 
     config.inter_extrapolation_test = False
-    config.raf30_test = False
-    config.sampling_speed_test = True
+    config.raf30_test = True
+    config.sampling_speed_test = False
     config.parameter_comparison_test = False
 
 

@@ -67,22 +67,22 @@ class Swinv2EncoderOutput(ModelOutput):
     Swinv2 encoder's outputs, with potential hidden states and attentions.
 
     Args:
-        last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+        last_hidden_state (`torch.FloatTensor` of shape `(num_samples, sequence_length, hidden_size)`):
             Sequence of hidden-states at the output of the last layer of the model.
         hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, sequence_length, hidden_size)`.
+            shape `(num_samples, sequence_length, hidden_size)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs.
         attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
-            Tuple of `torch.FloatTensor` (one for each stage) of shape `(batch_size, num_heads, sequence_length,
+            Tuple of `torch.FloatTensor` (one for each stage) of shape `(num_samples, num_heads, sequence_length,
             sequence_length)`.
 
             Attentions weights after the attention softmax, used to compute the weighted average in the self-attention
             heads.
         reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, hidden_size, height, width)`.
+            shape `(num_samples, hidden_size, height, width)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs reshaped to
             include the spatial dimensions.
@@ -101,24 +101,24 @@ class Swinv2ModelOutput(ModelOutput):
     Swinv2 model's outputs that also contains a pooling of the last hidden states.
 
     Args:
-        last_hidden_state (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`):
+        last_hidden_state (`torch.FloatTensor` of shape `(num_samples, sequence_length, hidden_size)`):
             Sequence of hidden-states at the output of the last layer of the model.
-        pooler_output (`torch.FloatTensor` of shape `(batch_size, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
+        pooler_output (`torch.FloatTensor` of shape `(num_samples, hidden_size)`, *optional*, returned when `add_pooling_layer=True` is passed):
             Average pooling of the last layer hidden-state.
         hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, sequence_length, hidden_size)`.
+            shape `(num_samples, sequence_length, hidden_size)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs.
         attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
-            Tuple of `torch.FloatTensor` (one for each stage) of shape `(batch_size, num_heads, sequence_length,
+            Tuple of `torch.FloatTensor` (one for each stage) of shape `(num_samples, num_heads, sequence_length,
             sequence_length)`.
 
             Attentions weights after the attention softmax, used to compute the weighted average in the self-attention
             heads.
         reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, hidden_size, height, width)`.
+            shape `(num_samples, hidden_size, height, width)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs reshaped to
             include the spatial dimensions.
@@ -140,22 +140,22 @@ class Swinv2MaskedImageModelingOutput(ModelOutput):
     Args:
         loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `bool_masked_pos` is provided):
             Masked image modeling (MLM) loss.
-        reconstruction (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
+        reconstruction (`torch.FloatTensor` of shape `(num_samples, num_channels, height, width)`):
             Reconstructed pixel values.
         hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, sequence_length, hidden_size)`.
+            shape `(num_samples, sequence_length, hidden_size)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs.
         attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
-            Tuple of `torch.FloatTensor` (one for each stage) of shape `(batch_size, num_heads, sequence_length,
+            Tuple of `torch.FloatTensor` (one for each stage) of shape `(num_samples, num_heads, sequence_length,
             sequence_length)`.
 
             Attentions weights after the attention softmax, used to compute the weighted average in the self-attention
             heads.
         reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, hidden_size, height, width)`.
+            shape `(num_samples, hidden_size, height, width)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs reshaped to
             include the spatial dimensions.
@@ -186,22 +186,22 @@ class Swinv2ImageClassifierOutput(ModelOutput):
     Args:
         loss (`torch.FloatTensor` of shape `(1,)`, *optional*, returned when `labels` is provided):
             Classification (or regression if config.num_labels==1) loss.
-        logits (`torch.FloatTensor` of shape `(batch_size, config.num_labels)`):
+        logits (`torch.FloatTensor` of shape `(num_samples, config.num_labels)`):
             Classification (or regression if config.num_labels==1) scores (before SoftMax).
         hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, sequence_length, hidden_size)`.
+            shape `(num_samples, sequence_length, hidden_size)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs.
         attentions (`tuple(torch.FloatTensor)`, *optional*, returned when `output_attentions=True` is passed or when `config.output_attentions=True`):
-            Tuple of `torch.FloatTensor` (one for each stage) of shape `(batch_size, num_heads, sequence_length,
+            Tuple of `torch.FloatTensor` (one for each stage) of shape `(num_samples, num_heads, sequence_length,
             sequence_length)`.
 
             Attentions weights after the attention softmax, used to compute the weighted average in the self-attention
             heads.
         reshaped_hidden_states (`tuple(torch.FloatTensor)`, *optional*, returned when `output_hidden_states=True` is passed or when `config.output_hidden_states=True`):
             Tuple of `torch.FloatTensor` (one for the output of the embeddings + one for the output of each stage) of
-            shape `(batch_size, hidden_size, height, width)`.
+            shape `(num_samples, hidden_size, height, width)`.
 
             Hidden-states of the model at the output of each layer plus the initial embedding outputs reshaped to
             include the spatial dimensions.
@@ -359,8 +359,8 @@ class Swinv2Embeddings(nn.Module):
 # Copied from transformers.models.swin.modeling_swin.SwinPatchEmbeddings with Swin->Swinv2
 class Swinv2PatchEmbeddings(nn.Module):
     """
-    This class turns `pixel_values` of shape `(batch_size, num_channels, height, width)` into the initial
-    `hidden_states` (patch embeddings) of shape `(batch_size, seq_length, hidden_size)` to be consumed by a
+    This class turns `pixel_values` of shape `(num_samples, num_channels, height, width)` into the initial
+    `hidden_states` (patch embeddings) of shape `(num_samples, seq_length, hidden_size)` to be consumed by a
     Transformer.
     """
 
@@ -436,17 +436,17 @@ class Swinv2PatchMerging(nn.Module):
         input_feature = input_feature.view(batch_size, height, width, num_channels)
         # pad input to be disible by width and height, if needed
         input_feature = self.maybe_pad(input_feature, height, width)
-        # [batch_size, height/2, width/2, num_channels]
+        # [num_samples, height/2, width/2, num_channels]
         input_feature_0 = input_feature[:, 0::2, 0::2, :]
-        # [batch_size, height/2, width/2, num_channels]
+        # [num_samples, height/2, width/2, num_channels]
         input_feature_1 = input_feature[:, 1::2, 0::2, :]
-        # [batch_size, height/2, width/2, num_channels]
+        # [num_samples, height/2, width/2, num_channels]
         input_feature_2 = input_feature[:, 0::2, 1::2, :]
-        # [batch_size, height/2, width/2, num_channels]
+        # [num_samples, height/2, width/2, num_channels]
         input_feature_3 = input_feature[:, 1::2, 1::2, :]
-        # [batch_size, height/2 * width/2, 4*num_channels]
+        # [num_samples, height/2 * width/2, 4*num_channels]
         input_feature = torch.cat([input_feature_0, input_feature_1, input_feature_2, input_feature_3], -1)
-        input_feature = input_feature.view(batch_size, -1, 4 * num_channels)  # [batch_size, height/2 * width/2, 4*C]
+        input_feature = input_feature.view(batch_size, -1, 4 * num_channels)  # [num_samples, height/2 * width/2, 4*C]
 
         input_feature = self.reduction(input_feature)
         input_feature = self.norm(input_feature)
@@ -1007,7 +1007,7 @@ SWINV2_START_DOCSTRING = r"""
 
 SWINV2_INPUTS_DOCSTRING = r"""
     Args:
-        pixel_values (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
+        pixel_values (`torch.FloatTensor` of shape `(num_samples, num_channels, height, width)`):
             Pixel values. Pixel values can be obtained using [`AutoImageProcessor`]. See [`ViTImageProcessor.__call__`]
             for details.
         head_mask (`torch.FloatTensor` of shape `(num_heads,)` or `(num_layers, num_heads)`, *optional*):
@@ -1081,7 +1081,7 @@ class Swinv2Model(Swinv2PreTrainedModel):
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, Swinv2ModelOutput]:
         r"""
-        bool_masked_pos (`torch.BoolTensor` of shape `(batch_size, num_patches)`, *optional*):
+        bool_masked_pos (`torch.BoolTensor` of shape `(num_samples, num_patches)`, *optional*):
             Boolean masked positions. Indicates which patches are masked (1) and which aren't (0).
         """
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -1180,7 +1180,7 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, Swinv2MaskedImageModelingOutput]:
         r"""
-        bool_masked_pos (`torch.BoolTensor` of shape `(batch_size, num_patches)`):
+        bool_masked_pos (`torch.BoolTensor` of shape `(num_samples, num_patches)`):
             Boolean masked positions. Indicates which patches are masked (1) and which aren't (0).
 
         Returns:
@@ -1200,7 +1200,7 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
 
         >>> num_patches = (model.config.image_size // model.config.patch_size) ** 2
         >>> pixel_values = image_processor(images=image, return_tensors="pt").pixel_values
-        >>> # create random boolean mask of shape (batch_size, num_patches)
+        >>> # create random boolean mask of shape (num_samples, num_patches)
         >>> bool_masked_pos = torch.randint(low=0, high=2, size=(1, num_patches)).bool()
 
         >>> outputs = model(pixel_values, bool_masked_pos=bool_masked_pos)
@@ -1221,7 +1221,7 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
         )
 
         sequence_output = outputs[0]
-        # Reshape to (batch_size, num_channels, height, width)
+        # Reshape to (num_samples, num_channels, height, width)
         sequence_output = sequence_output.transpose(1, 2)
         batch_size, num_channels, sequence_length = sequence_output.shape
         height = width = math.floor(sequence_length**0.5)
@@ -1305,7 +1305,7 @@ class Swinv2ForImageClassification(Swinv2PreTrainedModel):
         return_dict: Optional[bool] = None,
     ) -> Union[Tuple, Swinv2ImageClassifierOutput]:
         r"""
-        labels (`torch.LongTensor` of shape `(batch_size,)`, *optional*):
+        labels (`torch.LongTensor` of shape `(num_samples,)`, *optional*):
             Labels for computing the image classification/regression loss. Indices should be in `[0, ...,
             config.num_labels - 1]`. If `config.num_labels == 1` a regression loss is computed (Mean-Square loss), If
             `config.num_labels > 1` a classification loss is computed (Cross-Entropy).

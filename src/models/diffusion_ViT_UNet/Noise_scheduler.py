@@ -1,21 +1,26 @@
 import torch
+import torch.nn as nn
 import numpy as np
 
 #TODO introduce a parent class Scheduler
-#TODO look into start_beta and end_beta which needs to be bigger??????
 
 
-class LinearNoiseScheduler:
+class LinearNoiseScheduler(nn.Module):
     def __init__(self, config):
+        super().__init__()
         self.start_beta = config.start_beta
         self.end_beta = config.end_beta
-        self.timesteps = config.timesteps
-        self.betas = torch.linspace(self.start_beta, self.end_beta, self.timesteps)
+        self.steps = config.timesteps
+        self.device = config.device
+        self.betas = torch.linspace(self.start_beta, self.end_beta, self.steps)
+        self.betas = self.betas.view(self.steps, 1, 1, 1)
+        self.betas = self.betas.to(self.device)
         self.alphas = 1.0 - self.betas
-        self.alpha_bar = torch.cumprod(self.alphas, dim=0)
-
-    def get_alpha_bar(self, t):
-        return self.alpha_bar[t]
+        self.alphas_bar = torch.cumprod(self.alphas, dim=0)
+        self.one_minus_alphas_bar = 1 - self.alphas_bar
+        self.sqrt_alphas = torch.sqrt(self.alphas)
+        self.sqrt_alphas_bar = torch.sqrt(self.alphas_bar)
+        self.sqrt_one_minus_alphas_bar = torch.sqrt(self.one_minus_alphas_bar)
 
 class CosineNoiseScheduler:
     def __init__(self, config, s=0.008):

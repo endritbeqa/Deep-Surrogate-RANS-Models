@@ -1,35 +1,13 @@
 import torch.nn as nn
-from einops import rearrange
-from src.models.diffusion_ViT_UNet.layers import ViTBlock
+from src.models.diffusion_ViT_UNet.layers import ViTBlock, PatchMerging, PatchEmbedding, Conv_layer
 
-class PatchMerging(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super().__init__()
-        self.proj = nn.Linear(input_dim, output_dim)
-
-    def forward(self, x):
-        b, l, c = x.shape
-        x = x.view(b, l // 4, 4, c)
-        x = x.flatten(2)
-        x = self.proj(x)
-        return x
-
-class PatchEmbedding(nn.Module):
-    def __init__(self, in_channels, embed_dim, patch_size=4):
-        super().__init__()
-        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
-
-    def forward(self, x):
-        x = self.proj(x)
-        x = x.flatten(2)
-        x = x.permute(0, 2, 1) #turn into B, L, C
-        return x
 
 class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
+        self.conv_layer = Conv_layer(config.input_dim, config.conv_output_dim, (config.image_size, config.image_size))
         self.num_blocks = len(config.depths)
-        self.input_dim = config.input_dim
+        self.input_dim = config.conv_output_dim
         self.init_dim = config.init_dim
         self.depths = config.depths
         self.num_heads = config.num_heads
@@ -49,8 +27,10 @@ class Encoder(nn.Module):
             self.layers.append(blocks)
 
     def forward(self, x, t):
-        x = self.patch_embed(x)
         skip_connections = []
+        x = self.conv_layer(x, t, reshape=False)
+        skip_connections.append(x)
+        x = self.patch_embed(x)
         for layer in self.layers:
             vit_blocks = layer[:-1]
             downsample = layer[-1]
@@ -59,4 +39,5 @@ class Encoder(nn.Module):
             skip_connections.append(x)
             if downsample is not None:
                 x = downsample(x)
+
         return x, skip_connections

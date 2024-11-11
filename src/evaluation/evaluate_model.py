@@ -21,13 +21,11 @@ class Inter_Extrapolation_Test(object):
         self.config = config
         self.device = config.device
         self.checkpoint = torch.load(config.checkpoint)
-        self.train_config = self.checkpoint['train_config']
-        self.model_config = self.checkpoint['model_config']
         self.num_samples = config.num_samples
-        self.model_name = self.train_config.model_name
-        self.model_config.device = self.device
-        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
-        self.model = self.model.to(self.device)
+        self.model = self.checkpoint['model']
+        self.model.device = self.device
+        self.model.load_state_dict(self.checkpoint['model_params'])
+        self.model.move_to_device()
         self.interpolation_dataset = dataset.Test_Dataset(self.config, 'interpolation')
         self.extrapolation_dataset = dataset.Test_Dataset(self.config, 'extrapolation')
         self.interpolation_dataloader = DataLoader(self.interpolation_dataset, batch_size=None, shuffle=False)
@@ -73,15 +71,15 @@ class Inter_Extrapolation_Test(object):
 
         statistics = {}
 
-        target_means_low_mask = target_means_data[:, 5] < 5e-3
+        target_means_low_mask = target_means_data[:, 3:6] < 5e-3
         target_means_low_mask = np.tile(target_means_low_mask, 6).reshape((-1, 6))
 
-        statistics['Uy_std_MSE_all'] = np.mean(mse_data[:, 5])
-        statistics['Uy_mean_MSE_all'] = np.mean(mse_data[:, 2])
-        statistics['Uy_std_MSE_low'] = np.mean(mse_data[:, 5][target_means_low_mask[:, 5]])
-        statistics['Uy_mean_MSE_low'] = np.mean(mse_data[:, 2][target_means_low_mask[:, 2]])
-        statistics['Uy_std_MSE_high'] = np.mean(mse_data[:, 5][~target_means_low_mask[:, 5]])
-        statistics['Uy_mean_MSE_high'] = np.mean(mse_data[:, 2][~target_means_low_mask[:, 2]])
+        statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6])
+        statistics['mean_MSE_all'] = np.mean(mse_data[:, 0:3])
+        statistics['std_MSE_low'] = np.mean(mse_data[:, 3:6][target_means_low_mask[:, 3:6]])
+        statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]])
+        statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]])
+        statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]])
 
         with open(os.path.join(output_dir, "test_statistics.json"), "w") as file:
             json.dump(statistics, file, indent=4, cls=utils.NumpyEncoder)
@@ -123,7 +121,7 @@ class Inter_Extrapolation_Test(object):
         samples_dir = os.path.join(output_dir, "Samples", label)
         os.makedirs(samples_dir, exist_ok=True)
         comparison_dir = os.path.join(output_dir, "Comparison")
-        utils.save_samples(samples, samples_dir)
+        #utils.save_samples(samples, samples_dir)
         utils.plot_comparison(target, prediction, comparison_dir, label)
 
     def evaluate(self):
@@ -146,24 +144,23 @@ class Raf30_test(object):
         self.config = config
         self.device = config.device
         self.checkpoint = torch.load(config.checkpoint)
-        self.train_config = self.checkpoint['train_config']
-        self.model_config = self.checkpoint['model_config']
         self.num_samples = config.num_samples
-        self.model_name = self.train_config.model_name
-        self.model_config.device = self.device
-        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
+        self.model = self.checkpoint['model']
+        self.model.device = self.device
+        self.model.load_state_dict(self.checkpoint['model_params'])
+        self.model.move_to_device()
         self.output_dir = os.path.join(config.output_dir,"1_parameter_test")
         self.dataset = dataset.Test_Dataset(self.config, '1_parameter')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
         self.model = self.model.to(self.device)
 
         for dir in [self.output_dir,
-                    os.path.join(self.output_dir, "Sample"),
+                    os.path.join(self.output_dir, "Prediction"),
                     os.path.join(self.output_dir, "Target")
                     ]:
             os.makedirs(dir, exist_ok=True)
 
-    def calculate_moments(self, condition, targets):
+    def calculate_moments(self, condition, targets, label):
         samples = self.model.sample(condition, self.num_samples)
 
         sample_mean = samples.mean(dim=0)
@@ -174,11 +171,15 @@ class Raf30_test(object):
         sample_moments = torch.cat([sample_mean, sample_std], dim=0)
         target_moments = torch.cat([target_mean, target_std], dim=0)
 
+        #samples_dir = os.path.join(self.output_dir, "Samples", label)
+        #os.makedirs(samples_dir, exist_ok=True)
+        #utils.save_samples(samples, samples_dir)
+
         return sample_moments, target_moments
 
     def plot_std_prediction(self, sample, target):
-        sample_std = [torch.mean(value[5, :, :]).item() for key, value in sorted(sample.items())]
-        target_std = [torch.mean(value[5, :, :]).item() for key, value in sorted(target.items())]
+        sample_std = [torch.mean(value[3:6, :, :]).item() for key, value in sorted(sample.items())]
+        target_std = [torch.mean(value[3:6, :, :]).item() for key, value in sorted(target.items())]
         x_values = [key/10 for key, value in sorted(target.items())]
 
         labels = ['Model', 'Ground Truth']
@@ -202,7 +203,7 @@ class Raf30_test(object):
                 airfoil_name, RE, angle = label.split('_')
                 RE = float(RE)/100
                 angle = math.radians(float(angle)/100)
-                sample_moments, target_moments = self.calculate_moments(conditions, targets)
+                sample_moments, target_moments = self.calculate_moments(conditions, targets, label)
                 sample[RE] = sample_moments
                 target[RE] = target_moments
 
@@ -219,7 +220,7 @@ class Raf30_test(object):
         sample = torch.unsqueeze(sample, dim=1)
         target = torch.unsqueeze(target, dim=1)
 
-        utils.save_parameter_comparison(sample, params, os.path.join(self.output_dir, "Sample"))
+        utils.save_parameter_comparison(sample, params, os.path.join(self.output_dir, "Prediction"))
         utils.save_parameter_comparison(target, params, os.path.join(self.output_dir, "Target"))
 
 
@@ -228,12 +229,11 @@ class Parameter_Comparison_Test(object):
         self.config = config
         self.device = config.device
         self.checkpoint = torch.load(config.checkpoint)
-        self.train_config = self.checkpoint['train_config']
-        self.model_config = self.checkpoint['model_config']
         self.num_samples = config.num_samples
-        self.model_name = self.train_config.model_name
-        self.model_config.device = self.device
-        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
+        self.model = self.checkpoint['model']
+        self.model.device = self.device
+        self.model.load_state_dict(self.checkpoint['model_params'])
+        self.model.move_to_device()
         self.output_dir = os.path.join(config.output_dir, "parameter_comparison")
         self.dataset = dataset.Comparison_Dataset(self.config, mode='mask_only')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
@@ -276,12 +276,11 @@ class Sampling_Speed_Test(object):
         self.config = config
         self.device = config.device
         self.checkpoint = torch.load(config.checkpoint)
-        self.train_config = self.checkpoint['train_config']
-        self.model_config = self.checkpoint['model_config']
-        self.num_samples = config.sampling_speed.num_samples
-        self.model_name = self.train_config.model_name
-        self.model_config.device = self.device
-        self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
+        self.num_samples = config.num_samples
+        self.model = self.checkpoint['model']
+        self.model.device = self.device
+        self.model.load_state_dict(self.checkpoint['model_params'])
+        self.model.move_to_device()
         self.output_dir = os.path.join(config.output_dir, "Sampling_speed_test")
         self.dataset = dataset.Test_Dataset(self.config, 'interpolation')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
@@ -293,7 +292,9 @@ class Sampling_Speed_Test(object):
         self.model.eval()
         with torch.no_grad():
             sampling_times = {}
+            sampling_times['device'] = self.device
             sampling_times_statistics = {}
+            sampling_times_statistics['device'] = self.device
             for num_samples in self.num_samples:
                 for idx, (conditions, targets, label) in tqdm(enumerate(self.dataloader), total=len(self.dataloader)):
                     condition = conditions[0].squeeze(dim=0)

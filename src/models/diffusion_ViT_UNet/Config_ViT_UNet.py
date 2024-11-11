@@ -11,10 +11,12 @@ def get_config():
 
     config.image_size = 32
     config.input_dim = 6
-    config.patch_size = 4
-    config.init_dim = 128
-    config.depths = [2, 2, 2]  # Number of ViT blocks per stage
-    config.num_heads = [4, 8, 16]  # Number of attention heads per stage
+    config.conv_output_dim = 16
+    config.output_dim = 3
+    config.patch_size = 2
+    config.init_dim = 32
+    config.depths = [2, 2, 4]  # Number of ViT blocks per stage
+    config.num_heads = [2, 4, 8]  # Number of attention heads per stage
     config.mlp_ratio = 4.0
 
 

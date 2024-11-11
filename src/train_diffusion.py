@@ -2,9 +2,12 @@ import json
 import math
 import os
 from datetime import datetime
+import random
 
+import numpy as np
 import torch
-from torch.optim.lr_scheduler import CosineAnnealingLR
+import torch.nn.utils as nn_utils
+from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 
@@ -12,12 +15,15 @@ from src.models import model_select
 from src.data import dataset
 from src import config, utils
 
+seed = 42
+torch.manual_seed(seed)
+random.seed(seed)
+np.random.seed(seed)
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters())
 
-
-
+#TODO refactor this with the new checkpoint format
 def load_training(trainer,checkpoint_path):
     checkpoint = torch.load(checkpoint_path)
     train_config = checkpoint['train_config']
@@ -38,10 +44,12 @@ class DiffusionTrainer(object):
         self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=train_config.lr, weight_decay=train_config.weight_decay)
-        self.scheduler = CosineAnnealingLR(self.optimizer, T_max=30)
+        #self.scheduler = CosineAnnealingLR(self.optimizer, T_max=train_config.cosine_anneling_TMax)
+        self.scheduler = LambdaLR(self.optimizer, lr_lambda=self.linear_schedule(initial_lr=train_config.lr, final_lr=train_config.final_lr, total_steps=train_config.num_epochs))
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
         self.model = self.model.to(self.device)
         self.num_model_parameters = sum(p.numel() for p in self.model.parameters())
+        self.gradient_clip_norm = train_config.gradient_clip_norm
         self.start_epoch = 0
         print("Model: {}, Num parameters: {}".format(self.config.model_name, self.num_model_parameters))
         os.makedirs(self.output_dir, exist_ok=True)
@@ -50,8 +58,11 @@ class DiffusionTrainer(object):
                     os.path.join(self.output_dir, "configs")]:
             os.makedirs(dir, exist_ok=True)
 
+    def linear_schedule(self, initial_lr, final_lr, total_steps):
+        def lr_lambda(current_step):
+            return 1 - (current_step / total_steps) * (1 - final_lr / initial_lr)
 
-
+        return lr_lambda
 
     def train(self):
         with open("{}/configs/config.json".format(self.output_dir), '+w') as json_file:
@@ -78,10 +89,12 @@ class DiffusionTrainer(object):
                 targets = targets.to(self.device)
 
                 t = torch.randint(0, self.model_config.timesteps, (targets.size(0),))
+                #uniform_samples = torch.rand(B)
+                #cosine_samples = (1 + torch.cos(uniform_samples * math.pi)) / 2
+                #t = (cosine_samples * (self.model_config.timesteps - 1)).long()
 
                 noisy_data, noise = self.model.noise_step(targets, t)
                 t_emb = self.model.sinusoidal_embedding(t, 100)
-                #t_emb = t_emb.view(B, *self.model_config.time_embedding_shape)
 
                 predicted_noise = self.model(conditions, noisy_data, t_emb)
                 loss = F.mse_loss(predicted_noise, noise)
@@ -89,8 +102,10 @@ class DiffusionTrainer(object):
 
                 self.optimizer.zero_grad()
                 loss.backward()
+                if not (self.gradient_clip_norm is None):
+                    nn_utils.clip_grad_norm_(self.model.parameters(), self.gradient_clip_norm)
                 self.optimizer.step()
-
+            self.scheduler.step()
 
             self.model.eval()
             val_loss = 0
@@ -120,7 +135,6 @@ class DiffusionTrainer(object):
             train_curve.append(train_loss)
             val_curve.append(val_loss)
 
-            #self.scheduler.step()
 
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
                 file.write("{},{}\n".format(str(train_loss), str(val_loss)))
@@ -131,8 +145,9 @@ class DiffusionTrainer(object):
                     'epoch': epoch,
                     'train_config': self.config,
                     'model_config': self.model_config,
-                    'model': self.model.state_dict(),
+                    'model_params': self.model.state_dict(),
                     'optimizer': self.optimizer.state_dict(),
+                    'model': self.model,
                 }
                 torch.save(checkpoint, "{}/checkpoints/{}.pth".format(self.output_dir, epoch))
 

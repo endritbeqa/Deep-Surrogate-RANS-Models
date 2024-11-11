@@ -5,18 +5,18 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/test/1_parameter"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/test/1_parameter"
-TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split/train"
-VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split/validation"
-MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/masks"
+SRC_DIR = "/home/blin/endrit/dataset/uncertainty/1_parameter"
+PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/1_parameter/case_split"
+TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/1_parameter/train_val_split/train"
+VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/1_parameter/train_val_split/validation"
+MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/masks"
 
 
 removePOffset = True
 makeDimLess = True
 fixedAirfoilNormalization = True
 epsilon = 1e-8
-res = 64
+res = 32
 percentage = 1
 train_val_split = 0.95
 
@@ -186,5 +186,5 @@ def save_masks():
 
 if __name__ == '__main__':
     preprocess_files()
-    #split_train_val()
+    split_train_val()
     #save_masks()
