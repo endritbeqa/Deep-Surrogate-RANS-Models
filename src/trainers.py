@@ -12,8 +12,6 @@ from datetime import datetime
 from src.models import model_select
 from src.data import dataset
 from src import utils
-from src import loss
-
 
 
 
@@ -26,7 +24,7 @@ class Base_Trainer(object):
         self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
         self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
         self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2, prefetch_factor=2, pin_memory=True)
-        self.loss_func = loss.get_loss_function(self.config.loss_function)
+        self.loss_func = utils.get_loss_function(self.config.loss_function)
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=train_config.lr, weight_decay=train_config.weight_decay)
         self.scheduler = self.scheduler_select(train_config)
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")

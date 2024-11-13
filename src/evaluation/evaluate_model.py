@@ -10,7 +10,6 @@ from ml_collections import ConfigDict
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.models import model_select
 from src.data import dataset
 from src import utils
 from src.evaluation import evaluation_config

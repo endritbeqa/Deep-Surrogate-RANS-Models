@@ -17,7 +17,7 @@ def get_config():
     config.encoder = config_dict.ConfigDict()
     config.encoder.image_size = config.image_size
     config.encoder.num_channels = 6
-    config.encoder.embed_dim = 16
+    config.encoder.embed_dim = 8
     config.encoder.patch_size = 2
     config.encoder.depths = [2, 2, 2]
     config.encoder.num_heads = [2, 4, 8]
@@ -53,7 +53,7 @@ def get_config():
 
 
     config.gaussian_prior = config_dict.ConfigDict()
-    config.gaussian_prior.latent_dim = [64, 128, 256, 512]
+    config.gaussian_prior.latent_dim = [16, 32, 64, 128]
     config.gaussian_prior.hidden_dim = [math.prod(skip) for skip in config.decoder.skip_connection_shape]
 
     config.gmm_prior = config_dict.ConfigDict()

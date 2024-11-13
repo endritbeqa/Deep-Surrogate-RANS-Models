@@ -1,3 +1,4 @@
+import os
 from ml_collections import config_dict
 
 
@@ -7,16 +8,16 @@ def get_config():
     config.load_training = False
     config.checkpoint_path = ""
 
-    config.trainer = "diffusion"  # diffusion or VAE
-    config.study_name = 'diffusion_swin_UNet_32_1parameter_test'
-    config.model_name = "diffusion_swin_UNet"
+    config.trainer = "VAE"  # diffusion or VAE
+    #config.study_name = 'diffusion_swin_UNet_32_1parameter_test'
+    #config.model_name = "diffusion_swin_UNet"
     #config.study_name = 'diffusion_ViT_UNet_32_1parameter_test'
     #config.model_name = "diffusion_ViT_UNet"
-    #config.study_name = 'swin_NVAE_1parameter_test_sssss'
-    #config.model_name = "swin_NVAE"
+    config.study_name = 'swin_NVAE_1parameter_test'
+    config.model_name = "swin_NVAE"
     #config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/full/train_val_split'
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/1_parameter/train_val_split'
-    config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
+    config.output_dir = os.path.join('/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}', config.study_name)
     config.device = 'cuda:0'
     config.num_epochs = 25000
     config.batch_size = 15
