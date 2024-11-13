@@ -1,5 +1,5 @@
 import torch.nn as nn
-from src.models.diffusion_swin_UNet_V2_0.layers import Swin_Encoder, Conv_layer, Swinv2PatchEmbeddings
+from src.models.diffusion_swin_UNet.layers import Swin_Encoder, Conv_layer, Swinv2PatchEmbeddings
 
 
 class Encoder(nn.Module):

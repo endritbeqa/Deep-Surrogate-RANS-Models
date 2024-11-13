@@ -1,4 +1,4 @@
-from src.models.swin_NVAE_V2 import Z_cell, Z_cell_GMM #, Z_cell_VampPrior
+from src.models.swin_NVAE import Z_cell, Z_cell_GMM #, Z_cell_VampPrior
 
 
 def get_Z_Cell(config):

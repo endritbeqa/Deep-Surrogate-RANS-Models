@@ -5,9 +5,9 @@ from src.models.diffusion_ViT_UNet.layers import ViTBlock, PatchMerging, PatchEm
 class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.conv_layer = Conv_layer(config.input_dim, config.conv_output_dim, (config.image_size, config.image_size))
+        #self.conv_layer = Conv_layer(config.input_dim, config.conv_output_dim, (config.image_size, config.image_size))
         self.num_blocks = len(config.depths)
-        self.input_dim = config.conv_output_dim
+        self.input_dim = config.input_dim
         self.init_dim = config.init_dim
         self.depths = config.depths
         self.num_heads = config.num_heads
@@ -28,8 +28,6 @@ class Encoder(nn.Module):
 
     def forward(self, x, t):
         skip_connections = []
-        x = self.conv_layer(x, t, reshape=False)
-        skip_connections.append(x)
         x = self.patch_embed(x)
         for layer in self.layers:
             vit_blocks = layer[:-1]

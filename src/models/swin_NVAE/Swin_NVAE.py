@@ -2,8 +2,8 @@ import copy
 
 import torch
 import torch.nn as nn
-from src.models.swin_NVAE_V2 import Encoder, prior_select
-from src.models.swin_NVAE_V2.layers import Swin_Decoder
+from src.models.swin_NVAE import Encoder, prior_select
+from src.models.swin_NVAE.layers import Swin_Decoder
 
 
 class U_NET_Swin(nn.Module):
@@ -26,7 +26,7 @@ class U_NET_Swin(nn.Module):
         self.to(self.device)
 
     def forward(self, condition, target):
-        B, _,_,_ = target.shape
+        B, _, _, _ = target.shape
         KLDs = []
 
         input = torch.cat([condition, target], dim=1)

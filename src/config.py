@@ -7,28 +7,27 @@ def get_config():
     config.load_training = False
     config.checkpoint_path = ""
 
-
-    config.study_name = 'diffusion_swin_UNet_V2_32_full_cosine_1_parameter_test'
-    config.model_name = "diffusion_swin_UNet_V2"
-    #config.study_name = 'diffusion_ViT_UNet_32_full_cosine_1_parameter_test2'
+    config.trainer = "diffusion"  # diffusion or VAE
+    config.study_name = 'diffusion_swin_UNet_32_1parameter_test'
+    config.model_name = "diffusion_swin_UNet"
+    #config.study_name = 'diffusion_ViT_UNet_32_1parameter_test'
     #config.model_name = "diffusion_ViT_UNet"
-    #config.study_name = 'swin_NVAE_V2_1_parameter_test3'
-    #config.model_name = "swin_NVAE_V2"
+    #config.study_name = 'swin_NVAE_1parameter_test_sssss'
+    #config.model_name = "swin_NVAE"
     #config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/full/train_val_split'
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/1_parameter/train_val_split'
     config.output_dir = '/media/blin/VOL REC Blin/endrit/tests/uncertainty/{}'.format(config.study_name)
     config.device = 'cuda:0'
-    config.num_epochs = 50000
-    config.batch_size = 20
-    config.optimizer = 'adamW' # TODO doesnt do anything right now (AdamW is used)
+    config.num_epochs = 25000
+    config.batch_size = 15
+    config.optimizer = 'adamW'  # TODO doesnt do anything right now (AdamW is used)
+    config.scheduler = 'cosine'  # cosine or lambda
+    config.cosine_anneling_TMax = 1000
     config.lr = 1e-4
     config.final_lr = 0
     config.weight_decay = 1e-4
-    config.gradient_clip_norm = None # None to turn off
-    config.cosine_anneling_TMax = 2500
-    config.scheduler_restart_epochs = int(config.num_epochs/4)#  TODO   currently does nothing
+    config.gradient_clip_norm = None  # None to turn off
     config.loss_function = 'mse' # TODO currently does nothing # available losses: mse, mae, hubber_loss, mrl, con_of_mass, beta_KLD
-    config.KLD_beta = 0.01
     config.checkpoint_every = 20
 
     config.data_preprocessing = config_dict.ConfigDict()

@@ -11,7 +11,6 @@ def get_config():
 
     config.image_size = 32
     config.input_dim = 6
-    config.conv_output_dim = 16
     config.output_dim = 3
     config.patch_size = 2
     config.init_dim = 32

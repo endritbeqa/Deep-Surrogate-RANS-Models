@@ -1,5 +1,5 @@
 import torch.nn as nn
-from src.models.diffusion_swin_UNet_V2_0.layers import Swinv2Stage
+from src.models.diffusion_swin_UNet.layers import Swinv2Stage
 from src.models.Time_embedding import TimeEmbedding
 
 class Middle_Block(nn.Module):

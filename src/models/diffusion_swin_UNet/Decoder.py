@@ -2,7 +2,7 @@ import math
 
 import torch
 import torch.nn as nn
-from src.models.diffusion_swin_UNet_V2_0.layers import Swin_Decoder, Conv_layer
+from src.models.diffusion_swin_UNet.layers import Swin_Decoder, Conv_layer
 
 class Decoder(nn.Module):
 

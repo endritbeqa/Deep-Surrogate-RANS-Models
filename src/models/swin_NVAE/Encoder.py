@@ -1,5 +1,5 @@
 import torch.nn as nn
-from src.models.swin_NVAE_V2.layers import Swin_Encoder, Conv_layer
+from src.models.swin_NVAE.layers import Swin_Encoder, Conv_layer
 from src.models.modeling_swinV2 import Swinv2PatchEmbeddings
 
 

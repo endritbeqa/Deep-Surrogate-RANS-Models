@@ -9,8 +9,7 @@ from src.models.diffusion_ViT_UNet.layers import ViTBlock, Upsample, Conv_layer
 class Decoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.second_last_layer = Conv_layer(config.init_dim//2, config.init_dim//2, (config.image_size, config.image_size))
-        self.last_layer = Conv_layer(config.init_dim//2+ config.conv_output_dim, config.output_dim, (config.image_size, config.image_size))
+        self.last_layer = Conv_layer(config.init_dim//2, config.output_dim, (config.image_size, config.image_size))
         self.num_blocks = len(config.depths)
         self.depths = config.depths
         self.num_heads = config.num_heads
@@ -35,8 +34,5 @@ class Decoder(nn.Module):
             x = upsample(x)
             for block in vit_blocks:
                 x = block(x, t)
-        x = self.second_last_layer(x, t)
-        last_skip = skip_connections[-1]
-        x = torch.cat([x, last_skip], dim=1)
-        x = self.last_layer(x, t, reshape=False)
+        x = self.last_layer(x, t)
         return x

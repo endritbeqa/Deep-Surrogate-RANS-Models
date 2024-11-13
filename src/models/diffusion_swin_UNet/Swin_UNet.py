@@ -3,10 +3,10 @@ import math
 import torch
 import torch.nn as nn
 
-from src.models.diffusion_swin_UNet_V2_0 import Noise_scheduler
-from src.models.diffusion_swin_UNet_V2_0.Encoder import Encoder
-from src.models.diffusion_swin_UNet_V2_0.Decoder import Decoder
-from src.models.diffusion_swin_UNet_V2_0.Middle_Block import Middle_Block
+from src.models.diffusion_swin_UNet import Noise_scheduler
+from src.models.diffusion_swin_UNet.Encoder import Encoder
+from src.models.diffusion_swin_UNet.Decoder import Decoder
+from src.models.diffusion_swin_UNet.Middle_Block import Middle_Block
 
 
 class Swin_UNet(nn.Module):
