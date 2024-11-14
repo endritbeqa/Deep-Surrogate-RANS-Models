@@ -1,8 +1,6 @@
+import os
 import json
 import math
-
-import numpy as np
-import os
 
 import torch
 import torch.nn.functional as F
@@ -11,6 +9,7 @@ from matplotlib import cm
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import numpy as np
 
 def to_numpy(data):
     if isinstance(data, torch.Tensor):
@@ -228,31 +227,6 @@ def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
     plt.title('Model sample/ground truth mean std comparison')
     plt.legend(loc="upper left")
     plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
-
-def get_loss_function(loss: str):
-    def mean_relative_loss_function(input, target):
-        epsilon = 1e-6
-        absolute_difference = torch.abs(input - target)
-        absolute_target = torch.abs(target)
-        relative_difference = absolute_difference / torch.max(absolute_target, torch.tensor(epsilon, dtype=target.dtype,
-                                                                                            device=target.device))
-        loss = torch.mean(relative_difference)
-        return loss
-
-    loss_functions = {
-        'mse': F.mse_loss,
-        'mae': F.l1_loss,
-        'huber_loss': F.smooth_l1_loss,
-        'mrl': mean_relative_loss_function,
-    }
-
-    if loss not in loss_functions:
-        raise ValueError(f"Loss function '{loss}' not supported. Supported losses are:\n"
-                             f"Mean squared error, Mean absolute error, Huber loss, Mean relative loss, Conservation of mass loss, KL Divergence with following names.\n"
-                             f"mse, mae, hubber_loss, mrl")
-
-
-    return loss_functions[loss]
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):

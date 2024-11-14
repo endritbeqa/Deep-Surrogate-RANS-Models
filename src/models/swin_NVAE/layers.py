@@ -1,5 +1,5 @@
 import math
-from typing import Tuple, Optional, Union, List
+from typing import Tuple, List
 
 import torch
 import torch.nn as nn
@@ -66,11 +66,11 @@ class Upsample(nn.Module):
 
         x = self.upsample(x)
         x = self.conv1(x)
-        x = self.non_linearity(x)
-        x = self.norm1(x)
+        #x = self.non_linearity(x)
+        #x = self.norm1(x)
         x = self.conv2(x)
         x = x.flatten(2)
-        x = x.permute(0,2,1)
+        x = x.permute(0, 2, 1)
 
         return x
 
@@ -129,58 +129,6 @@ class Swinv2Stage(nn.Module):
         stage_outputs = (hidden_states, hidden_states_before_downsampling, output_dimensions)
 
         return stage_outputs
-
-
-
-'''  old stage design
-class Swinv2Stage(nn.Module):
-    def __init__(
-        self, config, dim, input_resolution, depth, num_heads, downsample):
-        super().__init__()
-        self.config = config
-        self.dim = dim
-        blocks = []
-        for i in range(depth):
-            block = Swinv2Layer(
-                config=config,
-                dim=dim,
-                input_resolution=input_resolution,
-                num_heads=num_heads,
-                shift_size=0 if (i % 2 == 0) else config.window_size // 2,
-            )
-            blocks.append(block)
-        self.blocks = nn.ModuleList(blocks)
-
-        if downsample is not None:
-            self.downsample = downsample(input_resolution, dim=dim, norm_layer=nn.LayerNorm)
-        else:
-            self.downsample = None
-
-    def forward(
-        self,
-        hidden_states: torch.Tensor,
-        input_dimensions: Tuple[int, int],
-    ) -> Tuple[torch.Tensor]:
-        height, width = input_dimensions
-
-        for i, layer_module in enumerate(self.blocks):
-            layer_outputs = layer_module(hidden_states, input_dimensions)
-            hidden_states = layer_outputs[0]
-
-        hidden_states_before_downsampling = hidden_states
-        if self.downsample is not None:
-            height_downsampled, width_downsampled = (height + 1) // 2, (width + 1) // 2
-            output_dimensions = (height, width, height_downsampled, width_downsampled)
-            hidden_states = self.downsample(hidden_states_before_downsampling, input_dimensions)
-        else:
-            output_dimensions = (height, width, height, width)
-
-        stage_outputs = (hidden_states, hidden_states_before_downsampling, output_dimensions)
-
-        return stage_outputs
-
-
-'''
 
 
 class Swin_Encoder(nn.Module):

@@ -170,9 +170,9 @@ class Raf30_test(object):
         sample_moments = torch.cat([sample_mean, sample_std], dim=0)
         target_moments = torch.cat([target_mean, target_std], dim=0)
 
-        #samples_dir = os.path.join(self.output_dir, "Samples", label)
-        #os.makedirs(samples_dir, exist_ok=True)
-        #utils.save_samples(samples, samples_dir)
+        samples_dir = os.path.join(self.output_dir, "Samples", label)
+        os.makedirs(samples_dir, exist_ok=True)
+        utils.save_samples(samples, samples_dir)
 
         return sample_moments, target_moments
 

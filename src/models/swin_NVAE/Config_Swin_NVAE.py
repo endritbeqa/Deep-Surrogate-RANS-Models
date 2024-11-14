@@ -19,7 +19,7 @@ def get_config():
     config.encoder.num_channels = 6
     config.encoder.embed_dim = 8
     config.encoder.patch_size = 2
-    config.encoder.depths = [2, 2, 2]
+    config.encoder.depths = [2, 4, 4]
     config.encoder.num_heads = [2, 4, 8]
     config.encoder.window_size = 4
     config.encoder.qkv_bias = True

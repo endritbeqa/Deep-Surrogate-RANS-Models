@@ -187,4 +187,4 @@ def save_masks():
 if __name__ == '__main__':
     preprocess_files()
     split_train_val()
-    #save_masks()
+    save_masks()

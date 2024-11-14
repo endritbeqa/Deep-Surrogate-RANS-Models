@@ -21,7 +21,6 @@ class Swin_UNet(nn.Module):
         self.noise_scheduler = Noise_scheduler.get_noise_scheduler(self.config)
         self.noise_scheduler = self.noise_scheduler.to(self.device)
 
-
     def move_to_device(self):
         self.to(self.device)
         for attr_name, attr_value in self.noise_scheduler.__dict__.items():
@@ -54,14 +53,10 @@ class Swin_UNet(nn.Module):
 
         return x
 
-
-    def sample(self, condition, num_samples,eta=1.0):
+    def sample(self, condition, num_samples, eta=1.0):
         condition = condition.unsqueeze(0).repeat(num_samples, 1, 1, 1)
-
-        B, C, H, W = condition.shape
         x_t = torch.randn_like(condition).to(self.device)
-        time_steps = torch.linspace(self.config.timesteps-1, 1, self.config.timesteps-1).long()
-
+        time_steps = torch.linspace(self.config.timesteps - 1, 100, self.config.timesteps - 100).long()
         t = torch.tensor([self.noise_scheduler.steps], device=self.device).repeat(x_t.shape[0])
         t_pre = t - 1
 
@@ -72,11 +67,11 @@ class Swin_UNet(nn.Module):
 
             coef1 = 1 / self.noise_scheduler.sqrt_alphas[t]
             coef2 = self.noise_scheduler.betas[t] / self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
-            sig = torch.sqrt(self.noise_scheduler.betas[t]) * self.noise_scheduler.sqrt_one_minus_alphas_bar[t_pre] / self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
+            sig = torch.sqrt(self.noise_scheduler.betas[t]) * self.noise_scheduler.sqrt_one_minus_alphas_bar[t_pre] / \
+                  self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
             x_t = coef1 * (x_t - coef2 * noise_pred) + sig * torch.randn_like(x_t)
 
             t = t_pre
             t_pre = t_pre - 1
-
 
         return x_t
