@@ -36,6 +36,7 @@ class CosineNoiseScheduler(nn.Module):
         self.beta_source = 1 - (temp1 / temp2)
         self.beta_source[self.beta_source > 0.999] = 0.999
         self.betas = torch.cat((torch.tensor([0]), self.beta_source), dim=0)
+        self.betas = self.betas * config.end_beta
         self.betas = self.betas.to(self.device)
         self.betas = self.betas.view(self.steps + 1, 1, 1, 1)
         self.alphas = 1 - self.betas

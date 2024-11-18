@@ -11,7 +11,8 @@ from src.models.modeling_swinV2 import Swinv2PatchMerging
 class Conv_layer(nn.Module):
     def __init__(self, input_channels, output_channels, output_size):
         super().__init__()
-        self.upsample = nn.Upsample(size=output_size, mode='bilinear', align_corners=False)
+        #self.upsample = nn.Upsample(size=output_size, mode='bilinear')
+        self.upsample = nn.Upsample(size=output_size, mode='bicubic')
         hidden_dim = input_channels//2
         self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
@@ -50,7 +51,7 @@ class Conv_layer(nn.Module):
 class Upsample(nn.Module):
     def __init__(self, input_resolution, dim, norm_layer):
         super().__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bicubic')
         hidden_dim = dim // 2
         self.conv1 = nn.Conv2d(dim, hidden_dim, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(hidden_dim, dim // 4, kernel_size=3, padding=1)
@@ -66,8 +67,8 @@ class Upsample(nn.Module):
 
         x = self.upsample(x)
         x = self.conv1(x)
-        #x = self.non_linearity(x)
-        #x = self.norm1(x)
+        x = self.non_linearity(x)
+        x = self.norm1(x)
         x = self.conv2(x)
         x = x.flatten(2)
         x = x.permute(0, 2, 1)

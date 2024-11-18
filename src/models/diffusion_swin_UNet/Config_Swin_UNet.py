@@ -6,10 +6,10 @@ def get_config():
     config = config_dict.ConfigDict()
 
     config.device = 'cuda:0'
-    config.noise_scheduler = 'linear'
+    config.noise_scheduler = 'cosine'
     config.timesteps = 200
-    config.start_beta = 1e-4
-    config.end_beta = 0.02
+    config.start_beta = 1e-6
+    config.end_beta = 0.1
 
     config.image_size = 32
     config.input_res_skip = False

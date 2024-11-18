@@ -2,6 +2,7 @@ import json
 import math
 import os
 import time
+from collections import OrderedDict
 
 import numpy as np
 import torch
@@ -69,6 +70,7 @@ class Inter_Extrapolation_Test(object):
         target_means_data = ((np.genfromtxt(target_moment_log, delimiter=',', skip_header=1))[:, 1:]).astype(np.float32)
 
         statistics = {}
+        ratio_statistics = {}
 
         target_means_low_mask = target_means_data[:, 3:6] < 5e-3
         target_means_low_mask = np.tile(target_means_low_mask, 6).reshape((-1, 6))
@@ -79,6 +81,19 @@ class Inter_Extrapolation_Test(object):
         statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]])
         statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]])
         statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]])
+
+        ratio_statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6], axis=1)
+        ratio_statistics['mean_MSE_all'] = np.mean(mse_data[:, 0:3], axis=1)
+        ratio_statistics['std_MSE_low'] = np.mean(mse_data[:, 3:6][target_means_low_mask[:, 3:6]], axis=1)
+        ratio_statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]], axis=1)
+        ratio_statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]], axis=1)
+        ratio_statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]], axis=1)
+
+        mean_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['mean_MSE_all', 'mean_MSE_low', 'mean_MSE_high'])
+        std_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['std_MSE_all', 'std_MSE_low', 'std_MSE_high'])
+
+        utils.plot_multiple_mse_ratios(mean_ratios, "MU ratio comparison", output_dir)
+        utils.plot_multiple_mse_ratios(std_ratios, "std ratio comparison", output_dir)
 
         with open(os.path.join(output_dir, "test_statistics.json"), "w") as file:
             json.dump(statistics, file, indent=4, cls=utils.NumpyEncoder)
@@ -159,7 +174,7 @@ class Raf30_test(object):
                     ]:
             os.makedirs(dir, exist_ok=True)
 
-    def calculate_moments(self, condition, targets, label):
+    def calculate_moments(self, condition, targets, label, save_samples = True):
         samples = self.model.sample(condition, self.num_samples)
 
         sample_mean = samples.mean(dim=0)
@@ -170,28 +185,48 @@ class Raf30_test(object):
         sample_moments = torch.cat([sample_mean, sample_std], dim=0)
         target_moments = torch.cat([target_mean, target_std], dim=0)
 
-        samples_dir = os.path.join(self.output_dir, "Samples", label)
-        os.makedirs(samples_dir, exist_ok=True)
-        utils.save_samples(samples, samples_dir)
+        if save_samples:
+            samples_dir = os.path.join(self.output_dir, "Samples", label)
+            os.makedirs(samples_dir, exist_ok=True)
+            utils.save_samples(samples, samples_dir)
 
         return sample_moments, target_moments
 
-    def plot_std_prediction(self, sample, target):
-        sample_std = [torch.mean(value[3:6, :, :]).item() for key, value in sorted(sample.items())]
-        target_std = [torch.mean(value[3:6, :, :]).item() for key, value in sorted(target.items())]
-        x_values = [key/10 for key, value in sorted(target.items())]
+    def plot_std_prediction(self):
+        sample_std_statistics = {}
+        target_std_statistics = {}
+        self.model.eval()
+        with torch.no_grad():
+            for i in range(self.config.single_parameter.num_runs):
+                for idx, (conditions, targets, label) in enumerate(self.dataloader):
+                    conditions = conditions[0].squeeze(dim=0)
+                    conditions, targets = conditions.to(self.device), targets.to(self.device)
+                    airfoil_name, RE, angle = label.split('_')
+                    sample_moments, target_moments = self.calculate_moments(conditions, targets, label, False)
+                    sample_std_statistics.setdefault(float(RE), []).append(torch.mean(sample_moments[3:6, :, :]).item())
+                    target_std_statistics.setdefault(float(RE), []).append(torch.mean(target_moments[3:6, :, :]).item())
 
-        labels = ['Model', 'Ground Truth']
-        lines = [sample_std, target_std]
-        raf_30_curves = {"Model":sample_std, "Ground Truth":target_std}
+        sample_std_statistics = OrderedDict(sorted(sample_std_statistics.items()))
+        target_std_statistics = OrderedDict(sorted(target_std_statistics.items()))
+
         with open(os.path.join(self.output_dir, "average_std_comparison.json"), 'w') as file:
-            json.dump(raf_30_curves, file, indent=4)
-        utils.plot_std_curves(lines, x_values, labels, 1, 9, self.output_dir)
+            json.dump({"model": sample_std_statistics, 'ground_truth': target_std_statistics}, file, indent=4)
+
+        x_values = [key/1000.0 for key, _ in target_std_statistics.items()]
+        lines = {"model": sample_std_statistics, 'ground_truth': target_std_statistics}
+
+        for label, line in lines.items():
+            for re, stds in line.items():
+                line[re] = [min(stds), max(stds), sum(stds)/len(stds)]
+
+        utils.plot_std_curves(lines, x_values, self.output_dir)
 
 
     def evaluate(self):
         sample = {}
         target = {}
+
+        self.plot_std_prediction()
 
         self.model.eval()
         with torch.no_grad():
@@ -208,19 +243,13 @@ class Raf30_test(object):
 
         params = [[[key, angle]] for key, value in sorted(sample.items())]
         params = np.array(params)
-
-        self.plot_std_prediction(sample, target)
-
         sample = [value for key, value in sorted(sample.items())]
         target = [value for key, value in sorted(target.items())]
-
-        sample = torch.stack(sample)
-        target = torch.stack(target)
-        sample = torch.unsqueeze(sample, dim=1)
-        target = torch.unsqueeze(target, dim=1)
-
+        sample = torch.unsqueeze(torch.stack(sample), dim=1)
+        target = torch.unsqueeze(torch.stack(target), dim=1)
         utils.save_parameter_comparison(sample, params, os.path.join(self.output_dir, "Prediction"))
         utils.save_parameter_comparison(target, params, os.path.join(self.output_dir, "Target"))
+
 
 
 class Parameter_Comparison_Test(object):

@@ -208,25 +208,60 @@ def save_parameter_comparison(predictions, parameters, output_dir):
         plt.close()
 
 
-def plot_std_curves(lines, x, labels, x_low, x_high, output_dir):
+def plot_std_curves(lines, x, output_dir):
     colors = ['blue', 'red', 'pink', 'orange', 'yellow']
     line_styles = ['-', '--', '-.', ':', 'solid']
 
     plt.figure(figsize=(10, 6))
     plt.xlim(min(x)-0.5, max(x)+0.5)
 
-    for i,line in enumerate(lines):
-        plt.plot(x, line, label=labels[i], color=colors[i], linestyle=line_styles[i])
+    for i, (label, line) in enumerate(lines.items()):
+        means = []
+        for re, (min_val, max_val, mean) in line.items():
+            re = re/1000.0
+            means.append(mean)
+            plt.plot([re, re], [min_val, max_val], color=colors[i], linestyle='--')
+            plt.plot([re - 0.01, re + 0.01], [min_val, min_val], color=colors[i], linestyle='solid')
+            plt.plot([re - 0.01, re + 0.01], [max_val, max_val], color=colors[i], linestyle='solid')
+
+        plt.plot(x, means, label=label, color=colors[i], linestyle=line_styles[i])
 
 
-    plt.axvspan(xmin=min(x)-0.5, xmax=x_low, color='gray', alpha=0.5)
-    plt.axvspan(xmin=x_high, xmax=max(x)+0.5, color='gray', alpha=0.5)
+    plt.axvspan(xmin=min(x)-0.5, xmax=min(x)+0.5, color='gray', alpha=0.5)
+    plt.axvspan(xmin=max(x)-0.5, xmax=max(x)+0.5, color='gray', alpha=0.5)
 
     plt.xlabel('Re_number 10\u2075')
     plt.ylabel('std')
     plt.title('Model sample/ground truth mean std comparison')
     plt.legend(loc="upper left")
     plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
+
+
+def plot_multiple_mse_ratios(mse_dict, plot_label, output_dir):
+    if not mse_dict:
+        raise ValueError("The MSE dictionary cannot be empty.")
+    colors = ['blue', 'red', 'pink', 'orange', 'yellow']
+    line_styles = ['-', '--', '-.', ':', 'solid']
+
+    plt.figure(figsize=(10, 8))
+    for i, (label, mse_list) in enumerate(sorted(mse_dict.items())):
+        if not mse_list:
+            raise ValueError(f"The MSE list for '{label}' cannot be empty.")
+
+        length = len(mse_list)
+        ratios = [i / length for i in range(length)]
+        plt.plot(mse_list, ratios, color=colors[i], linestyle=line_styles[i], label=label)
+
+    plt.xlabel("Mean Squared Error (MSE)", fontsize=12)
+    plt.ylabel("Ratio", fontsize=12)
+    plt.title(plot_label, fontsize=14)
+    plt.grid(True, linestyle='solid', alpha=0.6)
+    plt.legend(fontsize=10)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, f"MSE_ratio{plot_label}.png"))
+
+
+
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):

@@ -5,7 +5,7 @@ from src.models.diffusion_ViT_UNet.layers import ViTBlock, PatchMerging, PatchEm
 class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        #self.conv_layer = Conv_layer(config.input_dim, config.conv_output_dim, (config.image_size, config.image_size))
+        #self.conv_layer = Conv_layer(train_config.input_dim, train_config.conv_output_dim, (train_config.image_size, train_config.image_size))
         self.num_blocks = len(config.depths)
         self.input_dim = config.input_dim
         self.init_dim = config.init_dim

@@ -56,7 +56,8 @@ class Swinv2PatchEmbeddings(nn.Module):
 class Upsample(nn.Module):
     def __init__(self, input_resolution, dim, norm_layer):
         super().__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bicubic')
+        #self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
         self.conv1 = nn.Conv2d(dim, dim // 2, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(dim // 2, dim // 4, kernel_size=3, padding=1)
         self.norm1 = nn.GroupNorm(num_groups=dim//(2*4), num_channels=dim//2)
@@ -84,7 +85,8 @@ class Conv_layer(nn.Module):
     def __init__(self, input_channels, hidden_dim,output_channels, output_size):
         super().__init__()
         self.time_embedding = TimeEmbedding(100, input_channels)
-        self.upsample = nn.Upsample(size=output_size, mode='bilinear', align_corners=False)
+        #self.upsample = nn.Upsample(size=output_size, mode='bilinear')
+        self.upsample = nn.Upsample(size=output_size, mode='bicubic')
         self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(hidden_dim, output_channels, kernel_size=1)

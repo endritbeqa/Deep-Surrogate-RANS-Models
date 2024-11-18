@@ -1,8 +1,6 @@
 import math
-
 import torch
 import torch.nn as nn
-
 from src.models.diffusion_swin_UNet import Noise_scheduler
 from src.models.diffusion_swin_UNet.Encoder import Encoder
 from src.models.diffusion_swin_UNet.Decoder import Decoder
@@ -56,7 +54,7 @@ class Swin_UNet(nn.Module):
     def sample(self, condition, num_samples, eta=1.0):
         condition = condition.unsqueeze(0).repeat(num_samples, 1, 1, 1)
         x_t = torch.randn_like(condition).to(self.device)
-        time_steps = torch.linspace(self.config.timesteps - 1, 100, self.config.timesteps - 100).long()
+        time_steps = torch.linspace(self.config.timesteps - 1, 1, self.config.timesteps - 1).long()
         t = torch.tensor([self.noise_scheduler.steps], device=self.device).repeat(x_t.shape[0])
         t_pre = t - 1
 
