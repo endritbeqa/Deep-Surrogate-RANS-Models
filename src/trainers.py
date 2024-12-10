@@ -40,9 +40,9 @@ class Base_Trainer(object):
                     os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
                     os.path.join(self.output_dir, "configs"),
-                    os.path.join(self.output_dir, "images"),
-                    os.path.join(self.output_dir, "images/predictions"),
-                    os.path.join(self.output_dir, "images/targets")]:
+                    os.path.join(self.output_dir, "samples"),
+                    os.path.join(self.output_dir, "samples/predictions"),
+                    os.path.join(self.output_dir, "samples/targets")]:
             os.makedirs(dir, exist_ok=True)
 
     def optimizer_select(self, train_config):
@@ -88,12 +88,15 @@ class Base_Trainer(object):
         self.start_epoch = checkpoint['epoch'] + 1
         self.model_config = checkpoint['model_config']
         self.model = checkpoint['model']
-        self.model.load_state_dict([checkpoint['model_params']])
+        self.model.load_state_dict(checkpoint['model_params'])
         self.model = self.model.to(self.device)
         self.optimizer = self.optimizer_select(train_config)
         self.scheduler = self.scheduler_select(train_config)
         self.optimizer.load_state_dict(checkpoint['optimizer_params'])
         self.scheduler.load_state_dict(checkpoint['scheduler_params'])
+        self.output_dir = train_config.output_dir
+        self.gradient_clip_norm = train_config.gradient_clip_norm
+
 
     def save_configs(self):
         with open("{}/configs/train_config.json".format(self.output_dir), '+w') as json_file:
@@ -108,13 +111,13 @@ class Base_Trainer(object):
         with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
             file.write("train_loss, val_loss\n")
 
-    def save_checkpoint(self, epoch, train_curve, val_curve):
+    def save_checkpoint(self, epoch):
 
         checkpoints = [(checkpoint, os.path.getctime(os.path.join(self.output_dir, "checkpoints", checkpoint)))
                        for checkpoint in os.listdir(os.path.join(self.output_dir, "checkpoints"))]
 
         if len(checkpoints) > 20:
-            checkpoints.sort(key=lambda x: x[1], reverse=True)
+            checkpoints.sort(key=lambda x: x[1])
             last_checkpoint = os.path.join(self.output_dir, "checkpoints", checkpoints[0][0])
             os.remove(last_checkpoint)
 
@@ -127,8 +130,9 @@ class Base_Trainer(object):
             'scheduler_params': self.scheduler.state_dict(),
             'model': self.model,
         }
-        torch.save(checkpoint, os.path.join(self.output_dir, 'checkpoints', str(epoch)))
+        torch.save(checkpoint, os.path.join(self.output_dir, 'checkpoints', f"{epoch}.pth"))
 
+    def plot_loss_curve(self, train_curve, val_curve):
         loss_plot = utils.plot_losses(train_curve, val_curve)
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
@@ -222,7 +226,8 @@ class VAE_Trainer(Base_Trainer):
                                                   str(val_reconstruction_loss), str(val_KLD_loss)))
 
             if epoch % self.train_config.checkpoint_every == 0:
-                self.save_checkpoint(epoch, train_curve, val_curve)
+                self.save_checkpoint(epoch)
+                self.plot_loss_curve(train_curve, val_curve)
                 utils.save_images(predictions, self.output_dir, "predictions", epoch)
                 utils.save_images(targets, self.output_dir, "targets", epoch)
                 loss_plot = utils.plot_recon_vs_KLD(train_reconstruction_curve, train_KLD_curve,
@@ -288,6 +293,8 @@ class DiffusionTrainer(Base_Trainer):
             with open("{}/logs/curves.txt".format(self.output_dir), "+a") as file:
                 file.write("{},{}\n".format(str(train_loss), str(val_loss)))
 
-            self.save_checkpoint(epoch, train_curve, val_curve)
+            if epoch % self.train_config.checkpoint_every == 0:
+                self.save_checkpoint(epoch)
+            self.plot_loss_curve(train_curve, val_curve)
 
         return val_curve[-1]

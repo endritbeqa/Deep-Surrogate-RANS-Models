@@ -22,10 +22,9 @@ from typing import Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
-from functorch.einops import rearrange
 from torch import Tensor, nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
-from src.models.Time_embedding import TimeEmbedding
+from src.models.diffusion.Time_embedding import TimeEmbedding
 
 from transformers.activations import ACT2FN
 from transformers.modeling_outputs import BackboneOutput
@@ -299,7 +298,7 @@ class Swinv2Embeddings(nn.Module):
     def interpolate_pos_encoding(self, embeddings: torch.Tensor, height: int, width: int) -> torch.Tensor:
         """
         This method allows to interpolate the pre-trained position encodings, to be able to use the model on higher
-        resolution images.
+        resolution samples.
 
         Source:
         https://github.com/facebookresearch/dino/blob/de9ee3df6cf39fac952ab558447af1fa1365362a/vision_transformer.py#L174
@@ -1199,7 +1198,7 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
         >>> model = Swinv2ForMaskedImageModeling.from_pretrained("microsoft/swinv2-tiny-patch4-window8-256")
 
         >>> num_patches = (model.train_config.image_size // model.train_config.patch_size) ** 2
-        >>> pixel_values = image_processor(images=image, return_tensors="pt").pixel_values
+        >>> pixel_values = image_processor(samples=image, return_tensors="pt").pixel_values
         >>> # create random boolean mask of shape (num_samples, num_patches)
         >>> bool_masked_pos = torch.randint(low=0, high=2, size=(1, num_patches)).bool()
 
@@ -1263,7 +1262,7 @@ class Swinv2ForMaskedImageModeling(Swinv2PreTrainedModel):
 
     <Tip>
 
-        Note that it's possible to fine-tune SwinV2 on higher resolution images than the ones it has been trained on, by
+        Note that it's possible to fine-tune SwinV2 on higher resolution samples than the ones it has been trained on, by
         setting `interpolate_pos_encoding` to `True` in the forward of the model. This will interpolate the pre-trained
         position embeddings to the higher resolution.
 

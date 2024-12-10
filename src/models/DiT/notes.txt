@@ -1,1 +1,0 @@
-try ChatGPT to generate the code nad also look into huggingface if it is easier to just use that instead

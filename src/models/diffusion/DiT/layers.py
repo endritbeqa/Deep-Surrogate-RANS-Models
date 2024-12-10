@@ -1,6 +1,7 @@
 import math
+import torch
 import torch.nn as nn
-from src.models.Time_embedding import TimeEmbedding
+from src.models.diffusion.Time_embedding import TimeEmbedding
 
 class ViTBlock(nn.Module):
     def __init__(self, dim, num_heads, mlp_ratio=4.0):
@@ -23,11 +24,10 @@ class ViTBlock(nn.Module):
 
 
 class Conv_layer(nn.Module):
-    def __init__(self, input_channels, output_channels, output_size):
+    def __init__(self, input_channels, hidden_dim, output_channels, output_size):
         super().__init__()
         self.time_embedding = TimeEmbedding(100, input_channels)
         self.upsample = nn.Upsample(size=output_size, mode='bilinear', align_corners=False)
-        hidden_dim = input_channels //2
         self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(hidden_dim, output_channels, kernel_size=1)
@@ -68,34 +68,24 @@ class Upsample(nn.Module):
         self.conv2 = nn.Conv2d(dim // 2, dim // 4, kernel_size=3, padding=1)
         self.norm1 = nn.GroupNorm(num_groups=dim//(2*4), num_channels=dim//2)
 
-
-    def forward(self, x):
-        b, l, c = x.shape
-        h = w = int(math.sqrt(l))
-        x = x.permute(0, 2, 1)
-        x = x.view(b, c, h, w)
+    def forward(self, x, reshape=True):
+        if reshape:
+            b, l, c = x.shape
+            h = w = int(math.sqrt(l))
+            x = x.permute(0, 2, 1)
+            x = x.view(b, c, h, w)
 
         x = self.upsample(x)
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.conv2(x)
-        x = x.flatten(2)
-        x = x.permute(0, 2, 1)
+
+        if reshape:
+            x = x.flatten(2)
+            x = x.permute(0, 2, 1)
 
         return x
 
-
-class PatchMerging(nn.Module):
-    def __init__(self, input_dim, output_dim):
-        super().__init__()
-        self.proj = nn.Linear(input_dim, output_dim)
-
-    def forward(self, x):
-        b, l, c = x.shape
-        x = x.view(b, l // 4, 4, c)
-        x = x.flatten(2)
-        x = self.proj(x)
-        return x
 
 class PatchEmbedding(nn.Module):
     def __init__(self, in_channels, embed_dim, patch_size=4):
@@ -107,3 +97,24 @@ class PatchEmbedding(nn.Module):
         x = x.flatten(2)
         x = x.permute(0, 2, 1) #turn into B, L, C
         return x
+
+
+
+'''
+class PatchEmbedding(nn.Module):
+    def __init__(self, in_channels, embed_dim, patch_size=4):
+        super().__init__()
+        self.time_embedding = TimeEmbedding(100, 3)
+        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
+
+    def forward(self, x):
+        condition = x[:, 0:3, :, :]
+        y = x[:, 3:6, :, :]
+        y = self.time_embedding(y)
+
+        x = torch.cat([condition, y], dim=1)
+        x = self.proj(x)
+        x = x.flatten(2)
+        x = x.permute(0, 2, 1) #turn into B, L, C
+        return x
+'''

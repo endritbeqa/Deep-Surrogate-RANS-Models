@@ -62,8 +62,8 @@ def save_images(outputs, output_dir, mode , epoch):
     except:
         print()
 
-    os.makedirs("{}/images".format(output_dir),exist_ok=True)
-    os.makedirs("{}/images/{}/{}".format(output_dir,mode , epoch))
+    os.makedirs("{}/samples".format(output_dir),exist_ok=True)
+    os.makedirs("{}/samples/{}/{}".format(output_dir,mode , epoch))
 
     b, c, h, w = outputs.shape
     labels = ['pressure', "vel_x", "vel_y"]
@@ -80,7 +80,7 @@ def save_images(outputs, output_dir, mode , epoch):
 
             im = Image.fromarray(cm.magma(field, bytes=True))
             im = im.resize((h, w))
-            file_path = "{}/images/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
+            file_path = "{}/samples/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
             im.save(file_path)
 
 
@@ -102,6 +102,22 @@ def save_samples(samples, output_dir):
         plt.savefig(file_path)
         plt.close()
 
+
+
+def plot_samples(samples, title, output_dir):
+    samples = to_numpy(samples)
+    samples = np.rot90(samples, axes=(1, 2))
+    fig, axes = plt.subplots(1, 5, figsize=(15, 5))
+
+    for i in range(5):
+        im = axes[i].imshow(samples[i], cmap=cm.magma)
+        axes[i].axis('off')
+
+    fig.colorbar(im, ax=axes, orientation='vertical', fraction=0.02, pad=0.04)
+
+    file_path = os.path.join(output_dir, title)
+    plt.savefig(file_path)
+    plt.close()
 
 
 
@@ -209,7 +225,7 @@ def save_parameter_comparison(predictions, parameters, output_dir):
 
 
 def plot_std_curves(lines, x, output_dir):
-    colors = ['blue', 'red', 'pink', 'orange', 'yellow']
+    colors = ['blue', 'red', 'pink', 'black', 'orange', 'yellow']
     line_styles = ['-', '--', '-.', ':', 'solid']
 
     plt.figure(figsize=(10, 6))

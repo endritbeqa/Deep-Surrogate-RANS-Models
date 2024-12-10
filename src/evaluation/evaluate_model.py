@@ -16,6 +16,15 @@ from src import utils
 from src.evaluation import evaluation_config
 
 
+def replace_outliers(data):
+    flat_data = data.flatten(1)
+    outlier_indexes = (torch.max(flat_data, 1)[0] > torch.tensor(1.0)) | (torch.min(flat_data, 1)[0] < torch.tensor(-1.0))
+    mean = torch.mean(data[~outlier_indexes], dim=0)
+    data[outlier_indexes] = mean
+    return data
+
+
+
 class Inter_Extrapolation_Test(object):
     def __init__(self, config: ConfigDict):
         self.config = config
@@ -26,6 +35,7 @@ class Inter_Extrapolation_Test(object):
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
         self.model.move_to_device()
+        self.eta = config.eta
         self.interpolation_dataset = dataset.Test_Dataset(self.config, 'interpolation')
         self.extrapolation_dataset = dataset.Test_Dataset(self.config, 'extrapolation')
         self.interpolation_dataloader = DataLoader(self.interpolation_dataset, batch_size=None, shuffle=False)
@@ -72,7 +82,7 @@ class Inter_Extrapolation_Test(object):
         statistics = {}
         ratio_statistics = {}
 
-        target_means_low_mask = target_means_data[:, 3:6] < 5e-3
+        target_means_low_mask = np.mean(target_means_data[:, 3:6], axis=1) < 5e-3
         target_means_low_mask = np.tile(target_means_low_mask, 6).reshape((-1, 6))
 
         statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6])
@@ -82,18 +92,18 @@ class Inter_Extrapolation_Test(object):
         statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]])
         statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]])
 
-        ratio_statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6], axis=1)
-        ratio_statistics['mean_MSE_all'] = np.mean(mse_data[:, 0:3], axis=1)
-        ratio_statistics['std_MSE_low'] = np.mean(mse_data[:, 3:6][target_means_low_mask[:, 3:6]], axis=1)
-        ratio_statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]], axis=1)
-        ratio_statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]], axis=1)
-        ratio_statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]], axis=1)
+        #ratio_statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6], axis=1)
+        #ratio_statistics['mean_MSE_all'] = np.mean(mse_data[:, 0:3], axis=1)
+        #ratio_statistics['std_MSE_low'] = np.mean(mse_data[:, 3:6][target_means_low_mask[:, 3:6]], axis=1)
+        #ratio_statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]], axis=1)
+        #ratio_statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]], axis=1)
+        #ratio_statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]], axis=1)
 
-        mean_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['mean_MSE_all', 'mean_MSE_low', 'mean_MSE_high'])
-        std_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['std_MSE_all', 'std_MSE_low', 'std_MSE_high'])
-
-        utils.plot_multiple_mse_ratios(mean_ratios, "MU ratio comparison", output_dir)
-        utils.plot_multiple_mse_ratios(std_ratios, "std ratio comparison", output_dir)
+        #mean_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['mean_MSE_all', 'mean_MSE_low', 'mean_MSE_high'])
+        #std_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['std_MSE_all', 'std_MSE_low', 'std_MSE_high'])
+        #
+        #utils.plot_multiple_mse_ratios(mean_ratios, "MU ratio comparison", output_dir)
+        #utils.plot_multiple_mse_ratios(std_ratios, "std ratio comparison", output_dir)
 
         with open(os.path.join(output_dir, "test_statistics.json"), "w") as file:
             json.dump(statistics, file, indent=4, cls=utils.NumpyEncoder)
@@ -110,7 +120,8 @@ class Inter_Extrapolation_Test(object):
             mse_log = self.extrapolation_mse_log
             target_mean_log = self.extrapolation_target_moment_log
 
-        samples = self.model.sample(condition, self.num_samples)
+        samples = self.model.sample(condition, self.num_samples, self.eta)
+        samples = replace_outliers(samples)
 
         sample_mean = samples.mean(dim=0)
         sample_std = samples.std(dim=0)
@@ -163,6 +174,7 @@ class Raf30_test(object):
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
         self.model.move_to_device()
+        self.eta = config.eta
         self.output_dir = os.path.join(config.output_dir,"1_parameter_test")
         self.dataset = dataset.Test_Dataset(self.config, '1_parameter')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
@@ -174,8 +186,9 @@ class Raf30_test(object):
                     ]:
             os.makedirs(dir, exist_ok=True)
 
-    def calculate_moments(self, condition, targets, label, save_samples = True):
-        samples = self.model.sample(condition, self.num_samples)
+    def calculate_moments(self, condition, targets, label, save_samples=True):
+        samples = self.model.sample(condition, self.num_samples, self.eta)
+        samples = replace_outliers(samples)
 
         sample_mean = samples.mean(dim=0)
         sample_std = samples.std(dim=0)
@@ -226,7 +239,7 @@ class Raf30_test(object):
         sample = {}
         target = {}
 
-        self.plot_std_prediction()
+        #self.plot_std_prediction()
 
         self.model.eval()
         with torch.no_grad():
@@ -240,6 +253,17 @@ class Raf30_test(object):
                 sample_moments, target_moments = self.calculate_moments(conditions, targets, label)
                 sample[RE] = sample_moments
                 target[RE] = target_moments
+
+                # TODO refactor this dirty code(this is to plot some samples)
+                os.makedirs(os.path.join(self.output_dir, "Channel_samples"), exist_ok=True)
+                samples = self.model.sample(conditions, self.num_samples, self.eta)
+                p_samples = samples[0:5, 0, :, :]
+                x_samples = samples[0:5, 1, :, :]
+                y_samples = samples[0:5, 2, :, :]
+                utils.plot_samples(p_samples.squeeze(), "Pressure_{}.png".format(RE), os.path.join(self.output_dir, "Channel_samples"))
+                utils.plot_samples(x_samples.squeeze(), "U_x_{}.png".format(RE), os.path.join(self.output_dir, "Channel_samples"))
+                utils.plot_samples(y_samples.squeeze(), "U_y_{}.png".format(RE), os.path.join(self.output_dir, "Channel_samples"))
+
 
         params = [[[key, angle]] for key, value in sorted(sample.items())]
         params = np.array(params)
@@ -262,6 +286,7 @@ class Parameter_Comparison_Test(object):
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
         self.model.move_to_device()
+        self.eta = config.eta
         self.output_dir = os.path.join(config.output_dir, "parameter_comparison")
         self.dataset = dataset.Comparison_Dataset(self.config, mode='mask_only')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
@@ -288,7 +313,7 @@ class Parameter_Comparison_Test(object):
                     for j in range(num_angles):
                         condition = conditions[i, j]
                         condition = torch.tile(condition, (self.config.comparison.num_samples, 1, 1, 1))
-                        samples = self.model.sample(condition, self.num_samples)
+                        samples = self.model.sample(condition, self.num_samples, self.eta)
                         samples[i, j] = samples
 
                 sample_means = samples.mean(dim=2)
@@ -304,11 +329,12 @@ class Sampling_Speed_Test(object):
         self.config = config
         self.device = config.device
         self.checkpoint = torch.load(config.checkpoint)
-        self.num_samples = config.num_samples
+        self.num_samples = config.sampling_speed.num_samples
         self.model = self.checkpoint['model']
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
         self.model.move_to_device()
+        self.eta = config.eta
         self.output_dir = os.path.join(config.output_dir, "Sampling_speed_test")
         self.dataset = dataset.Test_Dataset(self.config, 'interpolation')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
@@ -328,7 +354,7 @@ class Sampling_Speed_Test(object):
                     condition = conditions[0].squeeze(dim=0)
                     condition = condition.to(self.device)
                     start_time = time.time()
-                    samples = self.model.sample(condition, num_samples)
+                    samples = self.model.sample(condition, num_samples, self.eta)
                     end_time = time.time()
                     time_elapsed = end_time-start_time
                     sampling_times.setdefault(num_samples, []).append(time_elapsed)

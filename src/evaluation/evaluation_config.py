@@ -6,16 +6,15 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = 'diffusion_swin_UNet_32_1parameter_cosine_l1'
-    #train_config.test_name = 'diffusion_ViT_UNet_1parameter_test'
-    #train_config.test_name = 'swin_NVAE_1parameter_test_bicubic_interpolation'
-    config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "30000.pth")
+    config.test_name = 'Swin_UNet_test'
+    config.model_folder = os.path.join("/home/blin/endrit/tests/uncertainty", config.test_name)
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "39900.pth")
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
-    config.output_dir = os.path.join(config.model_folder, "evaluation")
+    config.output_dir = os.path.join(config.model_folder, "evaluation4")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
-    config.num_samples = 100
+    config.num_samples = 5
     config.device = 'cuda:0'
+    config.eta = 1.1
 
     config.inter_extrapolation_test = False
     config.raf30_test = True
@@ -44,12 +43,12 @@ def get_config():
 
 
 
-def get_config(experiment:str):
+def get_config_parametrized(experiment:str):
 
     config = config_dict.ConfigDict()
     config.test_name = experiment
-    config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "30000.pth")
+    config.model_folder = os.path.join("/home/blin/endrit/tests/uncertainty/run_all", config.test_name)
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "39")
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
     config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??

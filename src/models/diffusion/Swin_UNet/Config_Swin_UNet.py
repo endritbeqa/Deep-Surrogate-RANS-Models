@@ -9,7 +9,7 @@ def get_config():
     config.noise_scheduler = 'cosine'
     config.timesteps = 200
     config.start_beta = 1e-6
-    config.end_beta = 0.1
+    config.end_beta = 1
 
     config.image_size = 32
     config.input_res_skip = False

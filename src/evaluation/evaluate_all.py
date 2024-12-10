@@ -1,17 +1,16 @@
-import evaluate_model
-import evaluation_config
 import os
-
+from src.evaluation import evaluate_model
+from src.evaluation import evaluation_config
 
 def run_evaluations():
     experiments = [
-          "diffusion_ViT_UNet_32_1parameter_test_cosine_l1"
-        , "diffusion_ViT_UNet_32_1parameter_test_cosine_mse"
-        , "diffusion_ViT_UNet_32_1parameter_test_linear_l1"
-        , "diffusion_ViT_UNet_32_1parameter_test_linear_mse"]
+          "diffusion_ViT_UNet_res_32_l1"
+        , "diffusion_ViT_UNet_res_32_mse"
+        , "diffusion_swin_UNet_res_32_l1"
+        , "diffusion_swin_UNet_res_32_mse"]
 
     for ex in experiments:
-        config = evaluation_config.get_config(experiment=ex)
+        config = evaluation_config.get_config_parametrized(experiment=ex)
         os.makedirs(config.output_dir, exist_ok=True)
         if config.inter_extrapolation_test:
             inter_extra_test = evaluate_model.Inter_Extrapolation_Test(config)

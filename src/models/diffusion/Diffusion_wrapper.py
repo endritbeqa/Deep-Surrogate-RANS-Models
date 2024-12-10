@@ -1,25 +1,13 @@
 import math
-
 import torch
 import torch.nn as nn
+from src.models.diffusion import Noise_scheduler
 
-from src.models.diffusion_ViT_UNet import Noise_scheduler
-from src.models.diffusion_ViT_UNet.layers import ViTBlock
-from src.models.diffusion_ViT_UNet.ViT_Encoder import Encoder
-from src.models.diffusion_ViT_UNet.ViT_Decoder import Decoder
-
-
-
-
-
-
-class DiffusionUNet(nn.Module):
-    def __init__(self, config):
+class Diffuser(nn.Module):
+    def __init__(self, config, model):
         super().__init__()
         self.config = config
-        self.encoder = Encoder(config)
-        self.middle_block = ViTBlock(config.init_dim * (2 ** (len(config.depths)-1)), config.num_heads[-1], config.mlp_ratio)
-        self.decoder = Decoder(config)
+        self.model = model
         self.noise_scheduler = Noise_scheduler.get_noise_scheduler(self.config)
         self.device = torch.device(self.config.device if torch.cuda.is_available() else "cpu")
 
@@ -48,28 +36,16 @@ class DiffusionUNet(nn.Module):
         return embeddings
 
     def forward(self, x, condition, t):
+        return self.model(x, condition, t)
 
-        x = torch.cat([condition, x], dim=1)
-
-        x, skip_connections = self.encoder(x, t)
-        skip_connections = list(reversed(skip_connections))
-        x = self.middle_block(x, t)
-        x = self.decoder(x, t, skip_connections)
-        return x
-
-
-    def sample(self, condition, num_samples,eta=1.0):
+    def sample(self, condition, num_samples, eta=1.0):
         condition = condition.unsqueeze(0).repeat(num_samples, 1, 1, 1)
-
-        B, C, H, W = condition.shape
         x_t = torch.randn_like(condition).to(self.device)
-        time_steps = torch.linspace(self.config.timesteps - 1, 1, self.config.timesteps-1).long()
-
-        t = torch.tensor([self.noise_scheduler.steps], device=self.device).repeat(x_t.shape[0])
+        time_steps = torch.linspace(self.config.timesteps-1, 0, self.config.timesteps).long()
+        t = torch.tensor([self.config.timesteps-1], device=self.device).repeat(x_t.shape[0])
         t_pre = t - 1
 
         for t in time_steps:
-            #print(t)
             t_batch = torch.full((x_t.size(0),), t)
             t_emb = self.sinusoidal_embedding(t_batch, 100)
             noise_pred = self.forward(condition, x_t, t_emb)
@@ -77,10 +53,11 @@ class DiffusionUNet(nn.Module):
             coef1 = 1 / self.noise_scheduler.sqrt_alphas[t]
             coef2 = self.noise_scheduler.betas[t] / self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
             sig = torch.sqrt(self.noise_scheduler.betas[t]) * self.noise_scheduler.sqrt_one_minus_alphas_bar[t_pre] / self.noise_scheduler.sqrt_one_minus_alphas_bar[t]
-            x_t = coef1 * (x_t - coef2 * noise_pred) + sig * torch.randn_like(x_t)
 
-            t = t_pre
+            if t == 0:
+                sig = 0
+
+            x_t = coef1 * (x_t - coef2 * noise_pred) + eta * sig * torch.randn_like(x_t)
             t_pre = t_pre - 1
-
 
         return x_t

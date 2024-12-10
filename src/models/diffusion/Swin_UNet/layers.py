@@ -1,10 +1,10 @@
 import collections
 import math
-from typing import Tuple, Optional, Union, List
+from typing import Tuple, Optional, List
 
 import torch
 import torch.nn as nn
-from src.models.Time_embedding import TimeEmbedding
+from src.models.diffusion.Time_embedding import TimeEmbedding
 from src.models.modeling_swinV2 import Swinv2Layer, Swinv2PatchMerging
 
 

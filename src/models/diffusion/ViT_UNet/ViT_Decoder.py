@@ -1,8 +1,6 @@
-import math
-
 import torch
 import torch.nn as nn
-from src.models.diffusion_ViT_UNet.layers import ViTBlock, Upsample, Conv_layer
+from src.models.diffusion.ViT_UNet.layers import ViTBlock, Upsample, Conv_layer
 
 
 
