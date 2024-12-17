@@ -3,7 +3,6 @@ import json
 import math
 
 import torch
-import torch.nn.functional as F
 from PIL import Image
 from matplotlib import cm
 import matplotlib
@@ -22,106 +21,44 @@ def to_numpy(data):
         raise TypeError("Input must be a PyTorch tensor or a NumPy array.")
 
 
-def plot_losses(train_loss, validation_loss, xlabel='Epoch', ylabel='Loss', title='Train/Val loss curves',
-                label1='Training loss', label2='Validation loss'):
-    if len(train_loss) != len(validation_loss):
-        raise ValueError("The two arrays must have the same length.")
+def plot_losses(curves, x_label, y_label, title='Train/Val loss curves'):
+    colors = ['blue', 'red', 'pink', 'black', 'orange', 'yellow']
 
-    x_values = np.arange(len(train_loss))
-    plt.plot(x_values, train_loss, label=label1, color='blue')
-    plt.plot(x_values, validation_loss, label=label2, color='orange')
+    for idx, (label, values) in enumerate(curves.items()):
+        x_values = np.arange(len(values))
+        plt.plot(x_values, values, label=label, color=colors[idx])
+
     plt.yscale('log')
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
     plt.title(title)
     plt.legend()
-    return plt
 
-def plot_recon_vs_KLD(train_recon, train_KLD,val_recon,val_KLD, xlabel='Epoch', ylabel='Loss', title='Train/Val loss curves',
-                label1='Training Reconstruction', label2='Training KLD', label3='Validation Reconstruction', label4='Validation KLD'):
-
-    x_values = np.arange(len(train_recon))
-    plt.plot(x_values, train_recon, label=label1, color='blue')
-    plt.plot(x_values, train_KLD, label=label2, color='pink')
-    plt.plot(x_values, val_recon, label=label3, color='orange')
-    plt.plot(x_values, val_KLD, label=label4, color='red')
-    plt.yscale('log')
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.title(title)
-    plt.legend()
     return plt
 
 
-
-def save_images(outputs, output_dir, mode , epoch):
-    try:
-        if outputs.is_cuda:
-            outputs = outputs.cpu()
-            outputs = outputs.numpy()
-    except:
-        print()
-
-    os.makedirs("{}/samples".format(output_dir),exist_ok=True)
-    os.makedirs("{}/samples/{}/{}".format(output_dir,mode , epoch))
-
-    b, c, h, w = outputs.shape
-    labels = ['pressure', "vel_x", "vel_y"]
-    for i in range(min(40,b)):
-        for j in range(c):
-            field = np.copy(outputs[i, j])
-            field = np.flipud(field.transpose())
-
-            min_value = np.min(field)
-            max_value = np.max(field)
-            field -= min_value
-            max_value -= min_value
-            field /= max_value
-
-            im = Image.fromarray(cm.magma(field, bytes=True))
-            im = im.resize((h, w))
-            file_path = "{}/samples/{}/{}/{}_{}.png".format(output_dir, mode,epoch, labels[j], i)
-            im.save(file_path)
-
-
-def save_samples(samples, output_dir):
+def plot_samples(samples, output_dir):
     samples = to_numpy(samples)
     samples = np.rot90(samples, axes=(2, 3))
-    b, c, h, w = samples.shape
-    channel_labels = ['P', 'Ux', 'Uy']
 
-    for i, sample in enumerate(samples):
-        fig, axes = plt.subplots(1, c, figsize=(12, 8))
-        for channel in range(c):
-            im = axes[channel].imshow(sample[channel], cmap=cm.magma)
-            axes[channel].set_title(channel_labels[channel])
-            fig.colorbar(im, ax=axes[channel])
+    B, C, W, H, = samples.shape
 
-        file_path = os.path.join(output_dir, "sample_{}.png".format(i))
-        plt.tight_layout()
-        plt.savefig(file_path)
+
+    column_labels = ['P', 'Ux', 'Uy']
+    for i in range(B):
+        fig, axes = plt.subplots(1, C, figsize=(5, 5))
+        for col in range(C):
+            im = axes[col].imshow(samples[i, col], cmap=cm.magma)
+            axes[col].set_title(column_labels[col])
+            cbar = fig.colorbar(im, ax=axes[col], orientation='horizontal', pad=0.1)
+
+        save_path = os.path.join(output_dir, "sample_{}.png".format(i))
+        plt.savefig(save_path)
         plt.close()
 
 
 
-def plot_samples(samples, title, output_dir):
-    samples = to_numpy(samples)
-    samples = np.rot90(samples, axes=(1, 2))
-    fig, axes = plt.subplots(1, 5, figsize=(15, 5))
-
-    for i in range(5):
-        im = axes[i].imshow(samples[i], cmap=cm.magma)
-        axes[i].axis('off')
-
-    fig.colorbar(im, ax=axes, orientation='vertical', fraction=0.02, pad=0.04)
-
-    file_path = os.path.join(output_dir, title)
-    plt.savefig(file_path)
-    plt.close()
-
-
-
-def plot_comparison(targets, predictions, output_dir, file_name):
+def plot_moment_comparison(targets, predictions, file_name, output_dir, plot_delta=True):
     targets = to_numpy(targets)
     predictions = to_numpy(predictions)
     if targets.shape != predictions.shape:
@@ -129,9 +66,13 @@ def plot_comparison(targets, predictions, output_dir, file_name):
 
     targets = np.rot90(targets, axes=(1,2))
     predictions = np.rot90(predictions, axes=(1, 2))
-    delta = targets - predictions
-
-    data = np.stack([targets, predictions], axis=0)
+    
+    if plot_delta:
+        delta = targets - predictions
+        data = np.stack([targets, predictions, delta], axis=0)
+    else:
+        data = np.stack([targets, predictions], axis=0)
+    
     rows, C, H, W = data.shape
 
     fig, axes = plt.subplots(rows, C, figsize=(12, 8))
@@ -263,10 +204,14 @@ def plot_multiple_mse_ratios(mse_dict, plot_label, output_dir):
     for i, (label, mse_list) in enumerate(sorted(mse_dict.items())):
         if not mse_list:
             raise ValueError(f"The MSE list for '{label}' cannot be empty.")
+        mean_curve = mse_list[0]
+        min_curve = mse_list[1]
+        max_curve = mse_list[2]
 
-        length = len(mse_list)
-        ratios = [i / length for i in range(length)]
-        plt.plot(mse_list, ratios, color=colors[i], linestyle=line_styles[i], label=label)
+        length = len(mean_curve)
+        ratios = [idx / length for idx in range(length)]
+        plt.plot(ratios, mean_curve, color=colors[i], linestyle=line_styles[i], label=label)
+        plt.fill_between(ratios, min_curve, max_curve, color=colors[i], alpha=0.3, label=label)
 
     plt.xlabel("Mean Squared Error (MSE)", fontsize=12)
     plt.ylabel("Ratio", fontsize=12)

@@ -4,10 +4,9 @@ from src.evaluation import evaluation_config
 
 def run_evaluations():
     experiments = [
-          "diffusion_ViT_UNet_res_32_l1"
-        , "diffusion_ViT_UNet_res_32_mse"
-        , "diffusion_swin_UNet_res_32_l1"
-        , "diffusion_swin_UNet_res_32_mse"]
+          "FactFormer_test"
+        , "DiT_test"
+        , "Swin_UNet_test"]
 
     for ex in experiments:
         config = evaluation_config.get_config_parametrized(experiment=ex)

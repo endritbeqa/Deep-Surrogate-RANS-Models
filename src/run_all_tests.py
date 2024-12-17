@@ -4,7 +4,7 @@ from src.train_config import get_config_parametrized
 
 def run():
     output_dir = '/home/blin/endrit/tests/uncertainty/run_all'
-    models = ["Swin_UNet", "ViT_UNet"]
+    models = ["Swin_UNet", "ViT_"]
     loss_functions = ['l1', 'mse']
     datasets_res = ['res_32']  #, 'res_64', 'res_128']
 

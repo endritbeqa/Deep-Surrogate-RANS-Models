@@ -40,9 +40,7 @@ class Base_Trainer(object):
                     os.path.join(self.output_dir, "checkpoints"),
                     os.path.join(self.output_dir, "logs"),
                     os.path.join(self.output_dir, "configs"),
-                    os.path.join(self.output_dir, "samples"),
-                    os.path.join(self.output_dir, "samples/predictions"),
-                    os.path.join(self.output_dir, "samples/targets")]:
+                    os.path.join(self.output_dir, "samples")]:
             os.makedirs(dir, exist_ok=True)
 
     def optimizer_select(self, train_config):
@@ -133,7 +131,8 @@ class Base_Trainer(object):
         torch.save(checkpoint, os.path.join(self.output_dir, 'checkpoints', f"{epoch}.pth"))
 
     def plot_loss_curve(self, train_curve, val_curve):
-        loss_plot = utils.plot_losses(train_curve, val_curve)
+        curves = {"Train loss": train_curve, "Validation Loss": val_curve}
+        loss_plot = utils.plot_losses(curves, "Epoch", "{} loss".format(self.train_config.loss_function))
         loss_plot.savefig("{}/logs/loss_curves.png".format(self.output_dir))
         loss_plot.close()
 
@@ -227,14 +226,24 @@ class VAE_Trainer(Base_Trainer):
 
             if epoch % self.train_config.checkpoint_every == 0:
                 self.save_checkpoint(epoch)
-                self.plot_loss_curve(train_curve, val_curve)
-                utils.save_images(predictions, self.output_dir, "predictions", epoch)
-                utils.save_images(targets, self.output_dir, "targets", epoch)
-                loss_plot = utils.plot_recon_vs_KLD(train_reconstruction_curve, train_KLD_curve,
-                                                    val_reconstruction_curve, val_KLD_curve)
-                loss_plot.savefig("{}/logs/recon_vs_KLD.png".format(self.output_dir))
-                loss_plot.close()
+                target_output_dir = os.path.join(self.output_dir,"samples", "target", epoch)
+                prediction_output_dir = os.path.join(self.output_dir,"samples", "prediction", epoch)
+                utils.plot_samples(targets, target_output_dir)
+                utils.plot_samples(predictions, prediction_output_dir)
 
+            self.plot_loss_curve(train_curve, val_curve)
+
+            curves = {"Train recon": train_reconstruction_curve,
+                      "Train KLD": train_KLD_curve,
+                      "Validation recon": val_reconstruction_curve,
+                      "Validation KLD": val_KLD_curve
+                      }
+
+            loss_plot = utils.plot_losses(curves, "Epoch", "{} loss".format(self.train_config.loss_function))
+            loss_plot.savefig("{}/logs/recon_vs_KLD.png".format(self.output_dir))
+            loss_plot.close()
+
+        self.save_checkpoint("Final")
         return val_curve[-1]
 
 
@@ -297,4 +306,5 @@ class DiffusionTrainer(Base_Trainer):
                 self.save_checkpoint(epoch)
             self.plot_loss_curve(train_curve, val_curve)
 
+        self.save_checkpoint("Final")
         return val_curve[-1]

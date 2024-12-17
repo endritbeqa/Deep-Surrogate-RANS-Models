@@ -98,7 +98,7 @@ class Inter_Extrapolation_Test(object):
         #ratio_statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]], axis=1)
         #ratio_statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]], axis=1)
         #ratio_statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]], axis=1)
-
+        #
         #mean_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['mean_MSE_all', 'mean_MSE_low', 'mean_MSE_high'])
         #std_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['std_MSE_all', 'std_MSE_low', 'std_MSE_high'])
         #
@@ -136,6 +136,14 @@ class Inter_Extrapolation_Test(object):
         full_MSE = torch.mean(SE)
         means = torch.mean(target, dim=(1,2))
 
+        if self.config.inter_extra.plot_samples:
+            samples_dir = os.path.join(output_dir, "Samples", label)
+            os.makedirs(samples_dir, exist_ok=True)
+            utils.plot_samples(samples, samples_dir)
+
+        if self.config.inter_extra.plot_moment_comparison:
+            comparison_dir = os.path.join(output_dir, "Comparison")
+            utils.plot_moment_comparison(target, prediction, label, comparison_dir, plot_delta=True)
 
         with open(mse_log, "a") as file:
             file.write("{},{},{},{},{},{},{},{}\n".format(label, *MSE, full_MSE))
@@ -143,11 +151,7 @@ class Inter_Extrapolation_Test(object):
         with open(target_mean_log, "a") as file:
             file.write("{},{},{},{},{},{},{}\n".format(label, *means))
 
-        samples_dir = os.path.join(output_dir, "Samples", label)
-        os.makedirs(samples_dir, exist_ok=True)
-        comparison_dir = os.path.join(output_dir, "Comparison")
-        #utils.save_samples(samples, samples_dir)
-        utils.plot_comparison(target, prediction, comparison_dir, label)
+
 
     def evaluate(self):
         self.model.eval()
@@ -201,7 +205,7 @@ class Raf30_test(object):
         if save_samples:
             samples_dir = os.path.join(self.output_dir, "Samples", label)
             os.makedirs(samples_dir, exist_ok=True)
-            utils.save_samples(samples, samples_dir)
+            utils.plot_samples(samples,samples_dir)
 
         return sample_moments, target_moments
 
@@ -234,13 +238,11 @@ class Raf30_test(object):
 
         utils.plot_std_curves(lines, x_values, self.output_dir)
 
-
     def evaluate(self):
         sample = {}
         target = {}
 
-        #self.plot_std_prediction()
-
+        self.plot_std_prediction()
         self.model.eval()
         with torch.no_grad():
             for idx, (conditions, targets, label) in tqdm(enumerate(self.dataloader), total=len(self.dataloader)):

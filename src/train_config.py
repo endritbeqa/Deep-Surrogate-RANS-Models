@@ -9,13 +9,13 @@ def get_config():
     config.checkpoint_path = ""
 
     config.trainer = "diffusion"  # diffusion or VAE
-    config.study_name = 'Swin_UNet_test'
-    config.model_name = "Swin_UNet"
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/full/train_val_split'
+    config.study_name = 'DiT_big'
+    config.model_name = "DiT"
+    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/full/train_val_split'
     #config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/1_parameter/train_val_split'
-    config.output_dir = os.path.join('/home/blin/endrit/tests/uncertainty/res32', config.study_name)
+    config.output_dir = os.path.join('/home/blin/endrit/tests/uncertainty/res128/full', config.study_name)
     config.device = 'cuda:0'
-    config.num_epochs = 150
+    config.num_epochs = 201
     config.batch_size = 20
     config.optimizer = 'AdamW'  # available are AdamW, Adam
     config.scheduler = 'lambda'  # cosine or lambda
