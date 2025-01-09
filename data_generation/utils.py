@@ -70,7 +70,7 @@ def write_control_dict(file_path: str, config: config_dict):
             continue
         new_contents.append(line)
 
-    with open('./OpenFOAM/system/controlDict', 'w') as file:
+    with open('OpenFOAM/system/controlDict', 'w') as file:
         file.writelines(new_contents)
 
 
@@ -98,7 +98,7 @@ def write_point_coordinates(file_path: str, res: int):
             continue
         new_contents.append(line)
 
-    with open('./OpenFOAM/system/internalCloud', 'w') as file:
+    with open('OpenFOAM/system/internalCloud', 'w') as file:
         file.writelines(new_contents)
 
 

@@ -4,7 +4,7 @@ from functorch.einops import rearrange
 
 class TimeEmbedding(nn.Module):
 
-    def __init__(self, dim_encoded_time=None,dim_input= None, trainable=True):
+    def __init__(self, dim_encoded_time=None, dim_input=None, trainable=True):
         super().__init__()
         if trainable:
             if dim_input is None or dim_encoded_time is None:

@@ -1,6 +1,6 @@
 import math
 import torch.nn as nn
-from src.models.Time_embedding import TimeEmbedding
+from src.models.diffusion.Time_embedding import TimeEmbedding
 
 class ViTBlock(nn.Module):
     def __init__(self, dim, num_heads, mlp_ratio=4.0):

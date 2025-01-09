@@ -7,7 +7,7 @@ class Encoder(nn.Module):
 
     def __init__(self, config):
         super().__init__()
-        #self.conv_layer = Conv_layer(config.input_dim, config.conv_output_dim, (config.image_size, config.image_size))
+        #self.conv_layer = Conv_layer(train_config.input_dim, train_config.conv_output_dim, (train_config.image_size, train_config.image_size))
         self.patch_embedding = Swinv2PatchEmbeddings(config)
         self.swin_encoder = Swin_Encoder(config)
 

@@ -30,13 +30,13 @@ for res, res_params in (config.res_params):
     k, m = divmod(len(samples), config.num_workers)
     parts = [samples[i * k + min(i, m):(i + 1) * k + min(i + 1, m)] for i in range(config.num_workers)]
 
-    utils.write_point_coordinates('./OpenFOAM/system/internalCloud_template', config.res)
-    utils.write_control_dict('./OpenFOAM/system/controlDict_template', config)
+    utils.write_point_coordinates('OpenFOAM/system/internalCloud_template', config.res)
+    utils.write_control_dict('OpenFOAM/system/controlDict_template', config)
 
     for idx in range(config.num_workers):
         os.mkdir("{}/worker_{}".format(res_dir, idx))
         shutil.copytree(config.airfoil_database, "{}/worker_{}/airfoil_database".format(res_dir, idx))
-        shutil.copytree("./OpenFOAM", "{}/worker_{}/OpenFOAM".format(res_dir, idx))
+        shutil.copytree("OpenFOAM", "{}/worker_{}/OpenFOAM".format(res_dir, idx))
         p = multiprocessing.Process(target=work,
                                     args=(config, parts[idx], "{}/{}/worker_{}".format(work_dir, res_dir, idx)))
         jobs.append(p)

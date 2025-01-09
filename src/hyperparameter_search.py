@@ -1,7 +1,7 @@
 import os
 import optuna
 from src import trainers
-from src import config
+from src import train_config
 from sqlalchemy import create_engine
 
 

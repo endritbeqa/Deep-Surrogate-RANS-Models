@@ -6,19 +6,18 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    #config.test_name = 'diffusion_swin_UNet_32_1parameter_test'
-    #config.test_name = 'diffusion_ViT_UNet_1parameter_test'
-    config.test_name = 'swin_NVAE_1parameter_test'
-    config.model_folder = os.path.join("/media/blin/VOL REC Blin/endrit/tests/uncertainty", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "2000.pth")
+    config.test_name = 'DiT_big_Decoder'
+    config.model_folder = os.path.join("/home/blin/endrit/tests/uncertainty/res32", config.test_name)
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
-    config.output_dir = os.path.join(config.model_folder, "evaluation")
+    config.output_dir = os.path.join(config.model_folder, "evaluation5")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
     config.num_samples = 100
     config.device = 'cuda:1'
+    config.eta = 1.0
 
-    config.inter_extrapolation_test = False
-    config.raf30_test = True
+    config.inter_extrapolation_test = True
+    config.raf30_test = False
     config.sampling_speed_test = False
     config.parameter_comparison_test = False
 
@@ -28,6 +27,13 @@ def get_config():
     config.data_preprocessing.makeDimLess = False
     config.data_preprocessing.removePOffset = False
 
+    config.inter_extra = config_dict.ConfigDict()
+    config.inter_extra.plot_samples = False
+    config.inter_extra.plot_moment_comparison = True
+
+    config.single_parameter = config_dict.ConfigDict()
+    config.single_parameter.num_runs = 5
+
     config.sampling_speed = config_dict.ConfigDict()
     config.sampling_speed.num_samples = [1, 10, 25, 50, 100]
 
@@ -35,5 +41,47 @@ def get_config():
     config.comparison.freestream_velocities = [10, 40, 80, 100]
     config.comparison.angles = [math.radians(-10), math.radians(5), math.radians(10), math.radians(20)]
 
+
+    return config
+
+
+
+
+def get_config_parametrized(experiment:str):
+
+    config = config_dict.ConfigDict()
+    config.test_name = experiment
+    config.model_folder = os.path.join("/home/blin/endrit/tests/uncertainty/res32", config.test_name)
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
+    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
+    config.output_dir = os.path.join(config.model_folder, "evaluation")
+    config.batch_size = 1  # TODO this is only needed for the dataset __init__. Maybe can get rid of it??
+    config.num_samples = 100
+    config.device = 'cuda:0'
+    config.eta = 1
+
+    config.inter_extrapolation_test = True
+    config.raf30_test = False
+    config.sampling_speed_test = True
+    config.parameter_comparison_test = False
+
+    config.data_preprocessing = config_dict.ConfigDict()
+    config.data_preprocessing.fixedAirfoilNormalization = False
+    config.data_preprocessing.makeDimLess = False
+    config.data_preprocessing.removePOffset = False
+
+    config.inter_extra = config_dict.ConfigDict()
+    config.inter_extra.plot_samples = False
+    config.inter_extra.plot_moment_comparison = True
+
+    config.single_parameter = config_dict.ConfigDict()
+    config.single_parameter.num_runs = 5
+
+    config.sampling_speed = config_dict.ConfigDict()
+    config.sampling_speed.num_samples = [1, 5, 10, 25, 50, 100]
+
+    config.comparison = config_dict.ConfigDict()
+    config.comparison.freestream_velocities = [10, 40, 80, 100]
+    config.comparison.angles = [math.radians(-10), math.radians(5), math.radians(10), math.radians(20)]
 
     return config

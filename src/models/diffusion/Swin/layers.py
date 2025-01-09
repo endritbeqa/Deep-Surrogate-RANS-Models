@@ -1,10 +1,10 @@
 import collections
 import math
-from typing import Tuple, Optional, Union, List
+from typing import Tuple, Optional, List
 
 import torch
 import torch.nn as nn
-from src.models.Time_embedding import TimeEmbedding
+from src.models.diffusion.Time_embedding import TimeEmbedding
 from src.models.modeling_swinV2 import Swinv2Layer, Swinv2PatchMerging
 
 
@@ -56,7 +56,8 @@ class Swinv2PatchEmbeddings(nn.Module):
 class Upsample(nn.Module):
     def __init__(self, input_resolution, dim, norm_layer):
         super().__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bicubic')
+        #self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
         self.conv1 = nn.Conv2d(dim, dim // 2, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(dim // 2, dim // 4, kernel_size=3, padding=1)
         self.norm1 = nn.GroupNorm(num_groups=dim//(2*4), num_channels=dim//2)
@@ -84,7 +85,8 @@ class Conv_layer(nn.Module):
     def __init__(self, input_channels, hidden_dim,output_channels, output_size):
         super().__init__()
         self.time_embedding = TimeEmbedding(100, input_channels)
-        self.upsample = nn.Upsample(size=output_size, mode='bilinear', align_corners=False)
+        #self.upsample = nn.Upsample(size=output_size, mode='bilinear')
+        self.upsample = nn.Upsample(size=output_size, mode='bicubic')
         self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=3, padding=1)
         self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
         self.conv3 = nn.Conv2d(hidden_dim, output_channels, kernel_size=1)
@@ -200,8 +202,8 @@ class Swin_Encoder(nn.Module):
                 input_resolution=(self.grid_size[0] // (2 ** i_layer), self.grid_size[1] // (2 ** i_layer)),
                 depth=config.depths[i_layer],
                 num_heads=config.num_heads[i_layer],
-                downsample=Swinv2PatchMerging, #if (i_layer < self.num_layers - 1) else None
-                isDownsample=True
+                downsample= None,  #Swinv2PatchMerging, #if (i_layer < self.num_layers - 1) else None
+                isDownsample=False
             )
             layers.append(stage)
         self.layers = nn.ModuleList(layers)
@@ -221,39 +223,3 @@ class Swin_Encoder(nn.Module):
         return all_hidden_states
 
 
-
-class Swin_Decoder(nn.Module):
-
-    def __init__(self, config):
-        super().__init__()
-        self.config = config
-        self.num_layers = len(config.depths)
-        self.grid_size = (int(config.image_size/config.patch_size),int(config.image_size/config.patch_size))
-        self.grid_size = (self.grid_size[0] // (2 ** (self.num_layers-1)),self.grid_size[0] // (2 ** (self.num_layers-1)))
-        layers = []
-        for i_layer in range(self.num_layers):
-            stage = Swinv2Stage(
-                config=config,
-                dim=int(config.embed_dim * 2 ** (self.num_layers - i_layer - 1)),
-                input_resolution=(self.grid_size[0] * (2 ** (i_layer+1)), self.grid_size[1] * (2 ** (i_layer+1))),
-                depth=config.depths[i_layer],
-                num_heads=config.num_heads[i_layer],
-                downsample=Upsample,#if (i_layer < self.num_layers - 1) else None,
-                isDownsample= False
-            )
-            layers.append(stage)
-        self.layers = nn.ModuleList(layers)
-
-    def forward(self, hidden_states: torch.Tensor, skip_connections, timestep, input_dimensions: Tuple[int, int]):
-
-        batch_size, _, hidden_size = hidden_states.shape
-
-        for i in range(len(self.layers)+1):
-            hidden_states = torch.cat([hidden_states, skip_connections[i]], dim=2) #TODO check dim
-            if i == len(self.layers):
-                continue
-            layer_outputs = self.layers[i](hidden_states, timestep, input_dimensions)
-            hidden_states = layer_outputs[0]
-            input_dimensions = (input_dimensions[0]*2, input_dimensions[1]*2)
-
-        return hidden_states

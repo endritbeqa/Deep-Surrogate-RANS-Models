@@ -1,6 +1,6 @@
 import torch.nn as nn
-from src.models.diffusion_swin_UNet.layers import Swinv2Stage
-from src.models.Time_embedding import TimeEmbedding
+from src.models.diffusion.Swin_UNet.layers import Swinv2Stage
+
 
 class Middle_Block(nn.Module):
     def __init__(self, config):

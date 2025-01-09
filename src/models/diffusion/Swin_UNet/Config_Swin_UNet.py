@@ -8,8 +8,8 @@ def get_config():
     config.device = 'cuda:0'
     config.noise_scheduler = 'cosine'
     config.timesteps = 200
-    config.start_beta = 1e-4
-    config.end_beta = 0.02
+    config.start_beta = 1e-6
+    config.end_beta = 1
 
     config.image_size = 32
     config.input_res_skip = False
@@ -18,7 +18,7 @@ def get_config():
     config.encoder.input_res_skip = config.input_res_skip
     config.encoder.image_size = config.image_size
     config.encoder.conv_input_dim = 6
-    config.encoder.conv_output_dim = 12
+    config.encoder.conv_output_dim = 16
     config.encoder.num_channels = config.encoder.conv_output_dim if config.encoder.input_res_skip else config.encoder.conv_input_dim
     config.encoder.embed_dim = 32
     config.encoder.patch_size = 2
