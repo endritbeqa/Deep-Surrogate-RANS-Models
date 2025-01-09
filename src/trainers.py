@@ -1,7 +1,9 @@
 import os
 import json
 from abc import abstractmethod
+import random
 
+import numpy as np
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
 from torch.utils.data import DataLoader
@@ -17,6 +19,7 @@ from src import utils
 class Base_Trainer(object):
     def __init__(self, train_config):
         self.train_config = train_config
+        self.seed_everything(train_config.seed)
         self.model_config, self.model = model_select.get_model(train_config)
         self.output_dir = train_config.output_dir
         self.train_dataset = dataset.Airfoil_Dataset(train_config, mode='train')
@@ -42,6 +45,14 @@ class Base_Trainer(object):
                     os.path.join(self.output_dir, "configs"),
                     os.path.join(self.output_dir, "samples")]:
             os.makedirs(dir, exist_ok=True)
+
+    def seed_everything(self, seed=42):
+        random.seed(seed)
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     def optimizer_select(self, train_config):
         if train_config.optimizer == "AdamW":

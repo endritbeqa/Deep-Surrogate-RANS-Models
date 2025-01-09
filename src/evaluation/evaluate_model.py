@@ -16,10 +16,15 @@ from src import utils
 from src.evaluation import evaluation_config
 
 
-def replace_outliers(data):
+def replace_outliers(data, label, output_dir):
     flat_data = data.flatten(1)
     outlier_indexes = (torch.max(flat_data, 1)[0] > torch.tensor(1.0)) | (torch.min(flat_data, 1)[0] < torch.tensor(-1.0))
     mean = torch.mean(data[~outlier_indexes], dim=0)
+    if any(outlier_indexes):
+        outliers = data[outlier_indexes]
+        outlier_dir = os.path.join(output_dir, "Outliers", label)
+        os.makedirs(outlier_dir, exist_ok=True)
+        utils.plot_samples(outliers, outlier_dir)
     data[outlier_indexes] = mean
     return data
 
@@ -53,8 +58,10 @@ class Inter_Extrapolation_Test(object):
                     self.extrapolation_output_dir,
                     os.path.join(self.interpolation_output_dir, "Samples"),
                     os.path.join(self.interpolation_output_dir, "Comparison"),
+                    os.path.join(self.interpolation_output_dir, "Outliers"),
                     os.path.join(self.extrapolation_output_dir, "Samples"),
-                    os.path.join(self.extrapolation_output_dir, "Comparison")
+                    os.path.join(self.extrapolation_output_dir, "Comparison"),
+                    os.path.join(self.extrapolation_output_dir, "Outliers"),
                     ]:
             os.makedirs(dir, exist_ok=True)
 
@@ -80,10 +87,10 @@ class Inter_Extrapolation_Test(object):
         target_means_data = ((np.genfromtxt(target_moment_log, delimiter=',', skip_header=1))[:, 1:]).astype(np.float32)
 
         statistics = {}
-        ratio_statistics = {}
+        statistics_raw = {}
 
         target_means_low_mask = np.mean(target_means_data[:, 3:6], axis=1) < 5e-3
-        target_means_low_mask = np.tile(target_means_low_mask, 6).reshape((-1, 6))
+        target_means_low_mask = np.tile(target_means_low_mask[:, np.newaxis], (1, 6))
 
         statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6])
         statistics['mean_MSE_all'] = np.mean(mse_data[:, 0:3])
@@ -92,21 +99,26 @@ class Inter_Extrapolation_Test(object):
         statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]])
         statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]])
 
-        #ratio_statistics['std_MSE_all'] = np.mean(mse_data[:, 3:6], axis=1)
-        #ratio_statistics['mean_MSE_all'] = np.mean(mse_data[:, 0:3], axis=1)
-        #ratio_statistics['std_MSE_low'] = np.mean(mse_data[:, 3:6][target_means_low_mask[:, 3:6]], axis=1)
-        #ratio_statistics['mean_MSE_low'] = np.mean(mse_data[:, 0:3][target_means_low_mask[:, 0:3]], axis=1)
-        #ratio_statistics['std_MSE_high'] = np.mean(mse_data[:, 3:6][~target_means_low_mask[:, 3:6]], axis=1)
-        #ratio_statistics['mean_MSE_high'] = np.mean(mse_data[:, 0:3][~target_means_low_mask[:, 0:3]], axis=1)
-        #
-        #mean_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['mean_MSE_all', 'mean_MSE_low', 'mean_MSE_high'])
-        #std_ratios = dict((key, value) for key, value in ratio_statistics.items() if key in ['std_MSE_all', 'std_MSE_low', 'std_MSE_high'])
-        #
-        #utils.plot_multiple_mse_ratios(mean_ratios, "MU ratio comparison", output_dir)
-        #utils.plot_multiple_mse_ratios(std_ratios, "std ratio comparison", output_dir)
+        statistics_raw['std_MSE_all'] = np.mean(mse_data[:, 3:6], axis=1)
+        statistics_raw['mean_MSE_all'] = np.mean(mse_data[:, 0:3], axis=1)
+
+        #TODO fix this work around to deal with the boolen mask
+        std_low_values = mse_data[:, 3:6][target_means_low_mask[:, 3:6]].reshape(-1, 3)
+        mean_low_values = mse_data[:, 0:3][target_means_low_mask[:, 0:3]].reshape(-1, 3)
+        std_high_values = mse_data[:, 3:6][~target_means_low_mask[:, 3:6]].reshape(-1, 3)
+        mean_high_values = mse_data[:, 0:3][~target_means_low_mask[:, 0:3]].reshape(-1, 3)
+
+        statistics_raw['std_MSE_low'] = np.mean(std_low_values, axis=1)
+        statistics_raw['mean_MSE_low'] = np.mean(mean_low_values, axis=1)
+        statistics_raw['std_MSE_high'] = np.mean(std_high_values, axis=1)
+        statistics_raw['mean_MSE_high'] = np.mean(mean_high_values, axis=1)
+
 
         with open(os.path.join(output_dir, "test_statistics.json"), "w") as file:
             json.dump(statistics, file, indent=4, cls=utils.NumpyEncoder)
+
+        with open(os.path.join(output_dir, "test_statistics_raw.json"), "w") as file:
+            json.dump(statistics_raw, file, indent=4, cls=utils.NumpyEncoder)
 
 
 
@@ -121,7 +133,7 @@ class Inter_Extrapolation_Test(object):
             target_mean_log = self.extrapolation_target_moment_log
 
         samples = self.model.sample(condition, self.num_samples, self.eta)
-        samples = replace_outliers(samples)
+        samples = replace_outliers(samples, label, output_dir)
 
         sample_mean = samples.mean(dim=0)
         sample_std = samples.std(dim=0)
@@ -365,6 +377,8 @@ class Sampling_Speed_Test(object):
                 json.dump(sampling_times, file, indent=4)
 
             for key, item in sampling_times.items():
+                if key == "device":
+                    continue
                 item = np.array(item)
                 sampling_times_statistics[key] = {"mean": float(np.mean(item)),
                                                   "std": float(np.std(item))}

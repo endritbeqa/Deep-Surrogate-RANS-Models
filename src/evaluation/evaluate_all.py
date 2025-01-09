@@ -2,11 +2,18 @@ import os
 from src.evaluation import evaluate_model
 from src.evaluation import evaluation_config
 
+
 def run_evaluations():
     experiments = [
-          "FactFormer_test"
-        , "DiT_test"
-        , "Swin_UNet_test"]
+        "DiT_test/run_1",
+        "DiT_test/run_2",
+        "DiT_test/run_3",
+        "FactFormer_test/run_1",
+        "FactFormer_test/run_2",
+        "FactFormer_test/run_3",
+        "Swin_UNet_test/run_1",
+        "Swin_UNet_test/run_2",
+        "Swin_UNet_test/run_3", ]
 
     for ex in experiments:
         config = evaluation_config.get_config_parametrized(experiment=ex)

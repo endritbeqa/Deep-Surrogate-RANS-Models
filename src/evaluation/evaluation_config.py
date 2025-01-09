@@ -6,15 +6,15 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = 'FactFormer_test'
+    config.test_name = 'DiT_big_Decoder'
     config.model_folder = os.path.join("/home/blin/endrit/tests/uncertainty/res32", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "145.pth")
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
-    config.output_dir = os.path.join(config.model_folder, "evaluation")
+    config.output_dir = os.path.join(config.model_folder, "evaluation5")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
-    config.num_samples = 50
-    config.device = 'cuda:0'
-    config.eta = 1
+    config.num_samples = 100
+    config.device = 'cuda:1'
+    config.eta = 1.0
 
     config.inter_extrapolation_test = True
     config.raf30_test = False
@@ -28,7 +28,7 @@ def get_config():
     config.data_preprocessing.removePOffset = False
 
     config.inter_extra = config_dict.ConfigDict()
-    config.inter_extra.plot_samples = True
+    config.inter_extra.plot_samples = False
     config.inter_extra.plot_moment_comparison = True
 
     config.single_parameter = config_dict.ConfigDict()
@@ -78,7 +78,7 @@ def get_config_parametrized(experiment:str):
     config.single_parameter.num_runs = 5
 
     config.sampling_speed = config_dict.ConfigDict()
-    config.sampling_speed.num_samples = [1, 10, 25, 50, 100]
+    config.sampling_speed.num_samples = [1, 5, 10, 25, 50, 100]
 
     config.comparison = config_dict.ConfigDict()
     config.comparison.freestream_velocities = [10, 40, 80, 100]

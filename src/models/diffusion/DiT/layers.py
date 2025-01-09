@@ -24,26 +24,18 @@ class ViTBlock(nn.Module):
 
 
 class Conv_layer(nn.Module):
-    def __init__(self, input_channels, hidden_dim, output_channels, output_size):
+    def __init__(self, input_channels, kernel_size, hidden_dim, output_channels):
         super().__init__()
         self.time_embedding = TimeEmbedding(100, input_channels)
-        self.upsample = nn.Upsample(size=output_size, mode='bilinear', align_corners=False)
-        self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(input_channels, hidden_dim, kernel_size=kernel_size, padding=kernel_size//2)
+        self.conv2 = nn.Conv2d(hidden_dim, hidden_dim, kernel_size=kernel_size, padding=kernel_size//2)
         self.conv3 = nn.Conv2d(hidden_dim, output_channels, kernel_size=1)
         self.skip_conv = nn.Conv2d(input_channels, output_channels, kernel_size=1)
         self.non_linearity = nn.GELU()
         self.norm1 = nn.GroupNorm(num_groups=hidden_dim // 4, num_channels=hidden_dim)
         self.norm2 = nn.GroupNorm(num_groups=hidden_dim // 4, num_channels=hidden_dim)
 
-    def forward(self, x, t, reshape=True):
-        if reshape:
-            b, l, c = x.shape
-            h = w = int(math.sqrt(l))
-            x = x.permute(0, 2, 1)
-            x = x.view(b, c, h, w)
-
-        x = self.upsample(x)
+    def forward(self, x, t):
         x_initial = x
         x = self.time_embedding(x, t)
         x = self.conv1(x)
@@ -61,12 +53,12 @@ class Conv_layer(nn.Module):
 
 
 class Upsample(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, output_res):
         super().__init__()
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False)
-        self.conv1 = nn.Conv2d(dim, dim // 2, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(dim // 2, dim // 4, kernel_size=3, padding=1)
-        self.norm1 = nn.GroupNorm(num_groups=dim//(2*4), num_channels=dim//2)
+        self.upsample = nn.Upsample(size=output_res, mode='bilinear', align_corners=False)
+        self.conv1 = nn.Conv2d(dim, dim, kernel_size=3, padding=1)
+        self.conv2 = nn.Conv2d(dim, dim, kernel_size=3, padding=1)
+        self.norm1 = nn.GroupNorm(num_groups=dim//4, num_channels=dim)
 
     def forward(self, x, reshape=True):
         if reshape:
@@ -79,11 +71,6 @@ class Upsample(nn.Module):
         x = self.conv1(x)
         x = self.norm1(x)
         x = self.conv2(x)
-
-        if reshape:
-            x = x.flatten(2)
-            x = x.permute(0, 2, 1)
-
         return x
 
 

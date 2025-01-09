@@ -198,20 +198,20 @@ def plot_multiple_mse_ratios(mse_dict, plot_label, output_dir):
     if not mse_dict:
         raise ValueError("The MSE dictionary cannot be empty.")
     colors = ['blue', 'red', 'pink', 'orange', 'yellow']
-    line_styles = ['-', '--', '-.', ':', 'solid']
+    line_styles = ['--', '-.', ':', 'solid']
 
     plt.figure(figsize=(10, 8))
     for i, (label, mse_list) in enumerate(sorted(mse_dict.items())):
         if not mse_list:
             raise ValueError(f"The MSE list for '{label}' cannot be empty.")
-        mean_curve = mse_list[0]
-        min_curve = mse_list[1]
+        min_curve = mse_list[0]
+        mean_curve = mse_list[1]
         max_curve = mse_list[2]
 
         length = len(mean_curve)
-        ratios = [idx / length for idx in range(length)]
-        plt.plot(ratios, mean_curve, color=colors[i], linestyle=line_styles[i], label=label)
-        plt.fill_between(ratios, min_curve, max_curve, color=colors[i], alpha=0.3, label=label)
+        ratios = [idx / (length-1) for idx in range(length)]
+        plt.plot( mean_curve, ratios, color=colors[i], linestyle=line_styles[0], label=label)
+        plt.fill_betweenx(ratios, min_curve, max_curve, color=colors[i], alpha=0.3)
 
     plt.xlabel("Mean Squared Error (MSE)", fontsize=12)
     plt.ylabel("Ratio", fontsize=12)
@@ -219,6 +219,7 @@ def plot_multiple_mse_ratios(mse_dict, plot_label, output_dir):
     plt.grid(True, linestyle='solid', alpha=0.6)
     plt.legend(fontsize=10)
     plt.tight_layout()
+
     plt.savefig(os.path.join(output_dir, f"MSE_ratio{plot_label}.png"))
 
 
