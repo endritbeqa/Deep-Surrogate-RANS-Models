@@ -6,14 +6,14 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = 'DiT_big_Decoder'
-    config.model_folder = os.path.join("/home/blin/endrit/tests/uncertainty/res32", config.test_name)
+    config.test_name = 'FactFormer_test/run_1'
+    config.model_folder = os.path.join("/local/disk1/ebeqa/Thesis/results/res64", config.test_name)
     config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_32/test'
-    config.output_dir = os.path.join(config.model_folder, "evaluation5")
+    config.data_dir = '/local/disk1/ebeqa/Thesis/data/preprocessed/res_64/test'
+    config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
     config.num_samples = 100
-    config.device = 'cuda:1'
+    config.device = 'cuda:0'
     config.eta = 1.0
 
     config.inter_extrapolation_test = True

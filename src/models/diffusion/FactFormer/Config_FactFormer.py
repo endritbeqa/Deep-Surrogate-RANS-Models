@@ -11,7 +11,7 @@ def get_config():
     config.end_beta = 0.01
     config.decoder = "CNN"
 
-    config.patch_size = 2
+    config.patch_size = 4
     config.in_dim = 6
     config.out_dim = 3
     config.dim = 128
@@ -22,7 +22,7 @@ def get_config():
     config.pos_in_dim = 2
     config.pos_out_dim = 2
     config.positional_embedding = 'rotary'
-    config.resolution = 32
+    config.resolution = 64
 
 
 
