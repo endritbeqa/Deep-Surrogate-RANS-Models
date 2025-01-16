@@ -10,8 +10,8 @@ def get_config():
 
     config.seed = 66826386
     config.trainer = "diffusion"  # diffusion or VAE
-    config.study_name = 'DiT_test/run_1'
-    config.model_name = "DiT"
+    config.study_name = 'fact_test/run_1'
+    config.model_name = "FactFormer"
     config.data_dir = '/local/disk1/ebeqa/Thesis/data/preprocessed/res_64/full/train_val_split'
     config.output_dir = os.path.join('/local/disk1/ebeqa/Thesis/results/res64', config.study_name)
     config.device = 'cuda:1'

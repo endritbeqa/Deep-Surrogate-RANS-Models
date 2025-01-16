@@ -16,14 +16,13 @@ def get_config():
     config.out_dim = 3
     config.dim = 128
     config.heads = 12
-    config.depth = 4
+    config.depth = 8
     config.dim_head = 64
     config.kernel_multiplier = 2
     config.pos_in_dim = 2
     config.pos_out_dim = 2
     config.positional_embedding = 'rotary'
     config.resolution = 64
-
 
 
     config.MLP_decoder = ConfigDict()

@@ -10,10 +10,10 @@ def train_run(study, model_name, cuda, seed):
     trainer.train_model()
 
 def run():
-    study_name = ["DiT_test/run_1", "DiT_test/run_2", "DiT_test/run_3"]
-    model_name = ["DiT", "DiT", "DiT"]
-    seed = [95375464, 4627575, 6587468]
-    cuda = ["cuda:1", "cuda:2", "cuda:3"]
+    study_name = ["FactFormer_test/run_1", "FactFormer_test/run_2", "Swin_UNet_test/run_1", "Swin_UNet_test/run_2"]
+    model_name = ["FactFormer", "FactFormer", "Swin_UNet", "Swin_UNet"]
+    seed = [74363476, 9274257, 2123782, 12847847]
+    cuda = ["cuda:0", "cuda:1", "cuda:2", "cuda:3"]
 
     for i, study in enumerate(study_name):
         process = Process(target=train_run, args=(study, model_name[i], cuda[i], seed[i]))
