@@ -5,7 +5,7 @@ from src.models.diffusion.FactFormer.layers import Upsample, Conv_layer
 from src.models.diffusion.FactFormer.layers import TimeEmbedding
 
 
-
+'''
 class MLP_decoder(nn.Module):
 
     def __init__(self, config):
@@ -99,4 +99,4 @@ class CNN_decoder(nn.Module):
         x = self.conv_2(x, t, reshape=False)
 
         return x
-'''
+

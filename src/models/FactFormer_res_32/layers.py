@@ -3,7 +3,7 @@ import torch.nn as nn
 from src.models.diffusion.Time_embedding import TimeEmbedding
 
 
-
+'''
 class Conv_layer(nn.Module):
     def __init__(self, input_channels, kernel_size, hidden_dim, output_channels):
         super().__init__()
@@ -135,4 +135,16 @@ class Upsample(nn.Module):
 
         return x
 
-'''
+
+
+class PatchEmbedding(nn.Module):
+    def __init__(self, in_channels, embed_dim, patch_size=4):
+        super().__init__()
+        self.proj = nn.Conv2d(in_channels, embed_dim, kernel_size=patch_size, stride=patch_size)
+
+    def forward(self, x):
+        x = self.proj(x)
+        #x = x.flatten(2)
+        #x = x.permute(0, 2, 1) #turn into B, L, C
+        return x
+

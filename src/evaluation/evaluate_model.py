@@ -39,7 +39,8 @@ class Inter_Extrapolation_Test(object):
         self.model = self.checkpoint['model']
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
-        self.model.move_to_device()
+        self.model.device = self.device
+        self.model.move_to_device(self.device)
         self.eta = config.eta
         self.interpolation_dataset = dataset.Test_Dataset(self.config, 'interpolation')
         self.extrapolation_dataset = dataset.Test_Dataset(self.config, 'extrapolation')
@@ -189,12 +190,11 @@ class Raf30_test(object):
         self.model = self.checkpoint['model']
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
-        self.model.move_to_device()
+        self.model.move_to_device(self.device)
         self.eta = config.eta
         self.output_dir = os.path.join(config.output_dir,"1_parameter_test")
         self.dataset = dataset.Test_Dataset(self.config, '1_parameter')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
-        self.model = self.model.to(self.device)
 
         for dir in [self.output_dir,
                     os.path.join(self.output_dir, "Prediction"),
@@ -299,12 +299,11 @@ class Parameter_Comparison_Test(object):
         self.model = self.checkpoint['model']
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
-        self.model.move_to_device()
+        self.model.move_to_device(self.device)
         self.eta = config.eta
         self.output_dir = os.path.join(config.output_dir, "parameter_comparison")
         self.dataset = dataset.Comparison_Dataset(self.config, mode='mask_only')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
-        self.device = self.model.to(self.device)
 
         os.makedirs(self.output_dir, exist_ok=True)
 
@@ -347,12 +346,11 @@ class Sampling_Speed_Test(object):
         self.model = self.checkpoint['model']
         self.model.device = self.device
         self.model.load_state_dict(self.checkpoint['model_params'])
-        self.model.move_to_device()
+        self.model.move_to_device(self.device)
         self.eta = config.eta
         self.output_dir = os.path.join(config.output_dir, "Sampling_speed_test")
         self.dataset = dataset.Test_Dataset(self.config, 'interpolation')
         self.dataloader = DataLoader(self.dataset, batch_size=None, shuffle=False)
-        self.model = self.model.to(self.device)
         os.makedirs(self.output_dir, exist_ok=True)
 
     def evaluate(self):

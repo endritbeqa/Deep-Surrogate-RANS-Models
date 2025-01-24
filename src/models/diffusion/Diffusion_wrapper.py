@@ -3,6 +3,21 @@ import torch
 import torch.nn as nn
 from src.models.diffusion import Noise_scheduler
 
+#TODO this is ugly fix it
+def set_device(module, device):
+    if hasattr(module, "device"):
+        setattr(module, "device", device)
+
+    for attr_name in dir(module):
+        if attr_name.startswith("_"):
+            continue
+
+        attr_value = getattr(module, attr_name)
+
+        if isinstance(attr_value, nn.Module):
+            set_device(attr_value, device)
+
+
 class Diffuser(nn.Module):
     def __init__(self, config, model):
         super().__init__()
@@ -11,12 +26,13 @@ class Diffuser(nn.Module):
         self.noise_scheduler = Noise_scheduler.get_noise_scheduler(self.config)
         self.device = torch.device(self.config.device if torch.cuda.is_available() else "cpu")
 
-    def move_to_device(self):
+    def move_to_device(self, device):
+        set_device(self, device)
+        self.device = device
         self.to(self.device)
         for attr_name, attr_value in self.noise_scheduler.__dict__.items():
             if isinstance(attr_value, torch.Tensor):
                 setattr(self.noise_scheduler, attr_name, attr_value.to(self.device))
-
 
     def noise_step(self, x_0, t):
         noise = torch.randn_like(x_0).to(self.device)

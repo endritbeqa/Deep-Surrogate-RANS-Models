@@ -11,15 +11,15 @@ def get_config():
     config.start_beta = 1e-6
     config.end_beta = 1
     config.decoder = "CNN"
-    config.image_size = 32
+    config.image_size = 64
 
     config.encoder = config_dict.ConfigDict()
     config.encoder.image_size = config.image_size
     config.encoder.num_channels = 6
-    config.encoder.embed_dim = 128
-    config.encoder.patch_size = 2
-    config.encoder.depths = [24]
-    config.encoder.num_heads = [8]
+    config.encoder.embed_dim = 160
+    config.encoder.patch_size = 4
+    config.encoder.depths = [16]
+    config.encoder.num_heads = [16]
     config.encoder.window_size = 4
     config.encoder.qkv_bias = True
     config.encoder.attention_probs_dropout_prob = 0.0
@@ -36,9 +36,10 @@ def get_config():
     config.MLP_decoder.output_dim = (3, config.image_size, config.image_size)
 
     config.CNN_decoder = config_dict.ConfigDict()
-    config.CNN_decoder.input_size = (config.image_size // config.encoder.patch_size, config.image_size // config.encoder.patch_size)
-    config.CNN_decoder.input_dim = config.encoder.embed_dim
-    config.CNN_decoder.conv_1_output_dim = config.encoder.embed_dim // 2
-    config.CNN_decoder.output_dim = (3, config.image_size, config.image_size)
+    config.CNN_decoder.upsample_res = (config.image_size, config.image_size)
+    config.CNN_decoder.input_dim = [config.encoder.embed_dim, config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4]
+    config.CNN_decoder.hidden_dim = [config.encoder.embed_dim, config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4]
+    config.CNN_decoder.output_dim = [config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4, 3]
+    config.CNN_decoder.kernel_size = [7, 7, 3, 3]
 
     return config
