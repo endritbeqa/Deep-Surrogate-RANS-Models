@@ -134,7 +134,7 @@ class Base_Trainer(object):
         checkpoints = [(checkpoint, os.path.getctime(os.path.join(self.output_dir, "checkpoints", checkpoint)))
                        for checkpoint in os.listdir(os.path.join(self.output_dir, "checkpoints"))]
 
-        if len(checkpoints) > 20:
+        if len(checkpoints) > self.train_config.num_checkpoints_keep:
             checkpoints.sort(key=lambda x: x[1])
             last_checkpoint = os.path.join(self.output_dir, "checkpoints", checkpoints[0][0])
             os.remove(last_checkpoint)
@@ -264,6 +264,7 @@ class VAE_Trainer(Base_Trainer):
             loss_plot.close()
 
         self.save_checkpoint("Final")
+        print("Finished training")
         return val_curve[-1]
 
 
@@ -327,4 +328,5 @@ class DiffusionTrainer(Base_Trainer):
             self.plot_loss_curve(train_curve, val_curve)
 
         self.save_checkpoint("Final")
+        print("Finished training")
         return val_curve[-1]
