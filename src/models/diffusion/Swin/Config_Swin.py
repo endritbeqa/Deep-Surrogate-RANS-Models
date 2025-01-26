@@ -19,7 +19,7 @@ def get_config():
     config.encoder.embed_dim = 160
     config.encoder.patch_size = 4
     config.encoder.depths = [16]
-    config.encoder.num_heads = [16]
+    config.encoder.num_heads = [4]
     config.encoder.window_size = 4
     config.encoder.qkv_bias = True
     config.encoder.attention_probs_dropout_prob = 0.0

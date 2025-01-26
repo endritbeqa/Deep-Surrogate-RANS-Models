@@ -10,6 +10,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 def to_numpy(data):
     if isinstance(data, torch.Tensor):
         if data.is_cuda:
@@ -194,33 +195,34 @@ def plot_std_curves(lines, x, output_dir):
     plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
 
 
-def plot_multiple_mse_ratios(mse_dict, plot_label, output_dir):
-    if not mse_dict:
-        raise ValueError("The MSE dictionary cannot be empty.")
-    colors = ['blue', 'red', 'pink', 'orange', 'yellow']
-    line_styles = ['--', '-.', ':', 'solid']
+def plot_multiple_mse_ratios(mse_list, plot_label, output_dir):
+    if not mse_list:
+        raise ValueError("The MSE list cannot be empty.")
+    colors = ['red', 'red', 'green', 'green', 'orange', 'orange']
+    line_styles = ['solid', '--', 'solid', '--', 'solid', '--']
 
     plt.figure(figsize=(10, 8))
-    for i, (label, mse_list) in enumerate(sorted(mse_dict.items())):
-        if not mse_list:
-            raise ValueError(f"The MSE list for '{label}' cannot be empty.")
+
+    plt.xscale("log")
+
+    for i, (label, mse_list) in enumerate(mse_list):
         min_curve = mse_list[0]
         mean_curve = mse_list[1]
         max_curve = mse_list[2]
 
         length = len(mean_curve)
         ratios = [idx / (length-1) for idx in range(length)]
-        plt.plot( mean_curve, ratios, color=colors[i], linestyle=line_styles[0], label=label)
-        plt.fill_betweenx(ratios, min_curve, max_curve, color=colors[i], alpha=0.3)
+        plt.plot(mean_curve, ratios, color=colors[i], linestyle=line_styles[i], label=label, scaley="log")
+        plt.fill_betweenx(ratios, min_curve, max_curve, color=colors[i], alpha=0.1)
 
     plt.xlabel("Mean Squared Error (MSE)", fontsize=12)
     plt.ylabel("Ratio", fontsize=12)
     plt.title(plot_label, fontsize=14)
-    plt.grid(True, linestyle='solid', alpha=0.6)
+    plt.grid(True, linestyle='solid') #, alpha=1.0)
     plt.legend(fontsize=10)
     plt.tight_layout()
 
-    plt.savefig(os.path.join(output_dir, f"MSE_ratio{plot_label}.png"))
+    plt.savefig(os.path.join(output_dir, f"{plot_label}.png"))
 
 
 
