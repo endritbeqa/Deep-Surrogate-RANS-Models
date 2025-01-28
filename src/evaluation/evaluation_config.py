@@ -6,18 +6,19 @@ from ml_collections import config_dict
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = 'FactFormer_test/run_1'
-    config.model_folder = os.path.join("/local/disk1/ebeqa/Thesis/results/res64", config.test_name)
-    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "105.pth")
-    config.data_dir = '/local/disk1/ebeqa/Thesis/data/preprocessed/res_64/test'
-    config.output_dir = os.path.join(config.model_folder, "evaluation2")
+    config.test_name = 'DiT_test/run_1'
+    config.model_folder = os.path.join("/local/disk1/ebeqa/Thesis/results/res32", config.test_name)
+    config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
+    config.data_dir = '/local/disk1/ebeqa/Thesis/data/preprocessed/res_32/test'
+    config.output_dir = os.path.join(config.model_folder, "evaluation_test2")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
-    config.num_samples = 100
-    config.device = 'cuda:0'
+    config.num_samples = 25
+    config.device = 'cuda:2'
     config.eta = 1.0
 
-    config.inter_extrapolation_test = True
+    config.inter_extrapolation_test = False
     config.raf30_test = False
+    config.drag_coefficient_test = True
     config.sampling_speed_test = False
     config.parameter_comparison_test = False
 
@@ -36,6 +37,10 @@ def get_config():
 
     config.sampling_speed = config_dict.ConfigDict()
     config.sampling_speed.num_samples = [1, 5, 10, 25, 50]
+
+    config.drag_coefficient = config_dict.ConfigDict()
+    config.drag_coefficient.num_runs = 3
+    config.drag_coefficient.num_buckets = 10
 
     config.comparison = config_dict.ConfigDict()
     config.comparison.freestream_velocities = [10, 40, 80, 100]
@@ -60,8 +65,9 @@ def get_config_parametrized(experiment:str, device = "cuda:0"):
     config.device = device
     config.eta = 1
 
-    config.inter_extrapolation_test = True
+    config.inter_extrapolation_test = False
     config.raf30_test = False
+    config.drag_coefficient_test = True
     config.sampling_speed_test = False
     config.parameter_comparison_test = False
 
@@ -79,6 +85,9 @@ def get_config_parametrized(experiment:str, device = "cuda:0"):
 
     config.sampling_speed = config_dict.ConfigDict()
     config.sampling_speed.num_samples = [1, 5, 10, 25, 50]
+
+    config.drag_coefficient = config_dict.ConfigDict()
+    config.drag_coefficient.num_runs = 3
 
     config.comparison = config_dict.ConfigDict()
     config.comparison.freestream_velocities = [10, 40, 80, 100]

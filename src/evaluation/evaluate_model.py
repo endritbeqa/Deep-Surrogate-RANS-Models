@@ -14,6 +14,7 @@ from tqdm import tqdm
 from src.data import dataset
 from src import utils
 from src.evaluation import evaluation_config
+from src.evaluation import drag_coefficient_utils
 
 
 def replace_outliers(data, label, output_dir):
@@ -336,6 +337,76 @@ class Parameter_Comparison_Test(object):
                 utils.save_parameter_comparison(sample_moments, parameters, case_dir)
 
 
+class Drag_Coefficient_Test(object):
+    def __init__(self, config):
+        self.config = config
+        self.device = config.device
+        self.checkpoint = torch.load(config.checkpoint)
+        self.num_samples = config.num_samples
+        self.model = self.checkpoint['model']
+        self.model.device = self.device
+        self.model.load_state_dict(self.checkpoint['model_params'])
+        self.model.device = self.device
+        self.model.move_to_device(self.device)
+        self.eta = config.eta
+        self.num_runs = config.drag_coefficient.num_runs
+        self.num_buckets = config.drag_coefficient.num_buckets
+        self.num_samples = config.num_samples
+        self.interpolation_dataset = dataset.Test_Dataset(self.config, 'interpolation')
+        self.extrapolation_dataset = dataset.Test_Dataset(self.config, 'extrapolation')
+        self.interpolation_dataloader = DataLoader(self.interpolation_dataset, batch_size=None, shuffle=False)
+        self.extrapolation_dataloader = DataLoader(self.extrapolation_dataset, batch_size=None, shuffle=False)
+        self.output_dir = os.path.join(config.output_dir, "Drag_Coefficient")
+        self.interpolation_output_dir = os.path.join(self.output_dir, 'interpolation')
+        self.extrapolation_output_dir = os.path.join(self.output_dir, 'extrapolation')
+
+        for dir in [self.output_dir,
+                    self.interpolation_output_dir,
+                    self.extrapolation_output_dir,
+                    ]:
+            os.makedirs(dir, exist_ok=True)
+
+    def calculate_drag(self, airfoil_shape, samples, AoA, velocity, cell_length):
+        drag_coefficients = []
+        for sample in samples:
+            drag_coefficients.append(drag_coefficient_utils.get_lift_drag_coef(airfoil_shape, sample, AoA, velocity, cell_length=cell_length))
+        drag_coefficients = np.array(drag_coefficients)
+        return drag_coefficients
+
+
+    def evaluate(self):
+        self.model.eval()
+        with torch.no_grad():
+            for idx, (conditions, targets, label) in tqdm(enumerate(self.interpolation_dataloader), total=len(self.interpolation_dataloader)):
+                condition = conditions[0].squeeze(dim=0)
+                airfoil_shape = condition[2]
+                airfoil_name, AoA, velocity = label.split("_")
+                condition = condition.to(self.device)
+                dragCoeff_targets = self.calculate_drag(airfoil_shape, targets, float(AoA), float(velocity), cell_length=2/64)
+                dragCoeff_predictions = []
+                for i in range(self.num_runs):
+                    samples = self.model.sample(condition, self.num_samples, self.eta)
+                    samples = samples.detach().cpu()
+                    dragCoeff_predictions.append(self.calculate_drag(airfoil_shape, samples, float(AoA), float(velocity), cell_length=2/64))
+                utils.plot_drag_coefficient_distribution(label, dragCoeff_targets, dragCoeff_predictions, self.interpolation_output_dir, self.num_buckets)
+
+            for idx, (condition, targets, label) in tqdm(enumerate(self.extrapolation_dataloader), total=len(self.extrapolation_dataloader)):
+                condition = conditions[0].squeeze(dim=0)
+                airfoil_shape = condition[2]
+                airfoil_name, AoA, velocity = label.split("_")
+                condition = condition.to(self.device)
+                dragCoeff_targets = self.calculate_drag(airfoil_shape, targets, float(AoA), float(velocity),
+                                                        cell_length=2 / 64, num_buckets=self.num_buckets)
+                dragCoeff_predictions = []
+                for i in range(self.num_runs):
+                    samples = self.model.sample(condition, self.num_samples, self.eta)
+                    samples = samples.detach().cpu()
+                    dragCoeff_predictions.append(
+                        self.calculate_drag(airfoil_shape, samples, float(AoA), float(velocity), cell_length=2 / 64))
+                utils.plot_drag_coefficient_distribution(label, dragCoeff_targets, dragCoeff_predictions,
+                                                         self.interpolation_output_dir, num_buckets=self.num_buckets)
+
+
 class Sampling_Speed_Test(object):
 
     def __init__(self, config):
@@ -394,6 +465,9 @@ if __name__ == '__main__':
     if config.raf30_test:
         raf30_test = Raf30_test(config)
         raf30_test.evaluate()
+    if config.drag_coefficient_test:
+        drag_coefficient_test = Drag_Coefficient_Test(config)
+        drag_coefficient_test.evaluate()
     if config.sampling_speed_test:
         sampling_speed_test = Sampling_Speed_Test(config)
         sampling_speed_test.evaluate()

@@ -3,13 +3,17 @@ from src import trainers
 from src.train_config import get_config_parametrized
 
 MAX_WORKERS = 3
-MODE = 'train'  # train or restart
+MODE = 'restart'  # train or restart
+
+
+def train_run(study, model_name, cuda, seed):
+    train_config = get_config_parametrized(study, model_name, cuda, seed)
+    trainer = trainers.DiffusionTrainer(train_config)
+    trainer.train_model()
+
 
 def train():
-    def train_run(study, model_name, cuda, seed):
-        train_config = get_config_parametrized(study, model_name, cuda, seed)
-        trainer = trainers.DiffusionTrainer(train_config)
-        trainer.train_model()
+
 
     study_name = ["Swin_test/run_1", "Swin_test/run_2", "Swin_test/run_3"]
     model_name = ["Swin", "Swin", "Swin"]
@@ -21,20 +25,25 @@ def train():
             executor.submit(train_run, (study, model_name[i], cuda[i], seed[i]))
 
 
+def restart_train_run(checkpoint):
+    train_config = get_config_parametrized(checkpoint=checkpoint, load_training=True)
+    trainer = trainers.DiffusionTrainer(train_config)
+    trainer.train_model()
+
 def restart_training():
-    def restart_train_run(checkpoint):
-        train_config = get_config_parametrized(checkpoint=checkpoint, load_training=True)
-        trainer = trainers.DiffusionTrainer(train_config)
-        trainer.train_model()
 
 
-    checkpoints = ["/local/disk1/ebeqa/Thesis/results/res64/FactFormer_test/run_1/checkpoints/140.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res64/DiT_test/run_2/checkpoints/55.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res64/FactFormer_test/run_3/checkpoints/145.pth"]
+    checkpoints = ["/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_1/checkpoints/50.pth",
+                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_2/checkpoints/50.pth",
+                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_3/checkpoints/50.pth"]
+
+    futures = []
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        for checkpoint in enumerate(checkpoints):
-            executor.submit(restart_train_run, checkpoint)
+        for checkpoint in checkpoints:
+            future = executor.submit(restart_train_run, checkpoint)
+            futures.append(future)
+
 
 
 

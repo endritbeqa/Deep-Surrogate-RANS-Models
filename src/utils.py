@@ -6,6 +6,7 @@ import torch
 from PIL import Image
 from matplotlib import cm
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
@@ -44,7 +45,6 @@ def plot_samples(samples, output_dir):
 
     B, C, W, H, = samples.shape
 
-
     column_labels = ['P', 'Ux', 'Uy']
     for i in range(B):
         fig, axes = plt.subplots(1, C, figsize=(5, 5))
@@ -58,22 +58,21 @@ def plot_samples(samples, output_dir):
         plt.close()
 
 
-
 def plot_moment_comparison(targets, predictions, file_name, output_dir, plot_delta=True):
     targets = to_numpy(targets)
     predictions = to_numpy(predictions)
     if targets.shape != predictions.shape:
         raise ValueError("Input arrays must have same shape!")
 
-    targets = np.rot90(targets, axes=(1,2))
+    targets = np.rot90(targets, axes=(1, 2))
     predictions = np.rot90(predictions, axes=(1, 2))
-    
+
     if plot_delta:
         delta = targets - predictions
         data = np.stack([targets, predictions, delta], axis=0)
     else:
         data = np.stack([targets, predictions], axis=0)
-    
+
     rows, C, H, W = data.shape
 
     fig, axes = plt.subplots(rows, C, figsize=(12, 8))
@@ -86,26 +85,23 @@ def plot_moment_comparison(targets, predictions, file_name, output_dir, plot_del
         axes[0, col].set_title(column_labels[col])
         for row in range(rows):
             im = axes[row, col].imshow(data[row, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
-            #axes[row, col].axis('off')
+            # axes[row, col].axis('off')
         im = axes[0, col].imshow(data[0, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
         cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.1)
 
     for ax, row_label in zip(axes[:, 0], row_labels):
         ax.set_ylabel(row_label, size='medium')
 
-    save_path = os.path.join(output_dir,  file_name+".png")
+    save_path = os.path.join(output_dir, file_name + ".png")
     plt.savefig(save_path)
     plt.close()
-
-
-
 
 
 def plot_comparison_parameter_range(data, row_labels, table_label):
     data = to_numpy(data)
     rows, C, H, W = data.shape
 
-    fig, axes = plt.subplots(rows, C, squeeze=False, figsize=(10,10))
+    fig, axes = plt.subplots(rows, C, squeeze=False, figsize=(10, 10))
     column_labels = ['mean_P', 'mean_Ux', 'mean_Uy', 'std_P', 'std_Ux', 'std_Uy']
 
     for col in range(C):
@@ -113,17 +109,15 @@ def plot_comparison_parameter_range(data, row_labels, table_label):
         axes[0, col].set_title(column_labels[col])
         for row in range(rows):
             im = axes[row, col].imshow(data[row, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
-            #axes[row, col].axis('off')
+            # axes[row, col].axis('off')
         im = axes[0, col].imshow(data[0, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
         cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.1)
-
 
     for ax, row_label in zip(axes[:, 0], row_labels):
         ax.set_ylabel(row_label, size='medium')
 
     plt.suptitle(table_label)
     return plt
-
 
 
 def save_parameter_comparison(predictions, parameters, output_dir):
@@ -141,27 +135,27 @@ def save_parameter_comparison(predictions, parameters, output_dir):
         slice = predictions[:, i]
         re_nums = parameters[:, i, 0]
         angle = parameters[0, i, 1]
-        angle = round(math.degrees(angle.item()),ndigits=2)
+        angle = round(math.degrees(angle.item()), ndigits=2)
 
         re_nums_lables = ["Re:{}e-5".format(int(re.item())) for re in re_nums]
         angle_lable = "Angle of Attack:{} degrees".format(angle)
 
         plt = plot_comparison_parameter_range(slice, re_nums_lables, angle_lable)
-        save_path = os.path.join(reynolds_comparison_folder,"Reynolds_comparison_at_{}.png".format(angle))
+        save_path = os.path.join(reynolds_comparison_folder, "Reynolds_comparison_at_{}.png".format(angle))
         plt.savefig(save_path)
         plt.close()
 
     for i in range(num_REs):
         slice = predictions[i, :]
         angles = parameters[i, :, 1]
-        re = parameters[i,0,0]
-        angles = [round(math.degrees(angle.item()),ndigits=2) for angle in angles]
+        re = parameters[i, 0, 0]
+        angles = [round(math.degrees(angle.item()), ndigits=2) for angle in angles]
 
         angle_lables = ["Angle:{}".format(angle) for angle in angles]
         re_lable = "Re:{}e-5 ".format(int(re.item()))
 
         plt = plot_comparison_parameter_range(slice, angle_lables, re_lable)
-        save_path = os.path.join(angle_comparison_folder,"Angle_comparison_at_{}.png".format(re))
+        save_path = os.path.join(angle_comparison_folder, "Angle_comparison_at_{}.png".format(re))
         plt.savefig(save_path)
         plt.close()
 
@@ -171,12 +165,12 @@ def plot_std_curves(lines, x, output_dir):
     line_styles = ['-', '--', '-.', ':', 'solid']
 
     plt.figure(figsize=(10, 6))
-    plt.xlim(min(x)-0.5, max(x)+0.5)
+    plt.xlim(min(x) - 0.5, max(x) + 0.5)
 
     for i, (label, line) in enumerate(lines.items()):
         means = []
         for re, (min_val, max_val, mean) in line.items():
-            re = re/1000.0
+            re = re / 1000.0
             means.append(mean)
             plt.plot([re, re], [min_val, max_val], color=colors[i], linestyle='--')
             plt.plot([re - 0.01, re + 0.01], [min_val, min_val], color=colors[i], linestyle='solid')
@@ -184,9 +178,8 @@ def plot_std_curves(lines, x, output_dir):
 
         plt.plot(x, means, label=label, color=colors[i], linestyle=line_styles[i])
 
-
-    plt.axvspan(xmin=min(x)-0.5, xmax=min(x)+0.5, color='gray', alpha=0.5)
-    plt.axvspan(xmin=max(x)-0.5, xmax=max(x)+0.5, color='gray', alpha=0.5)
+    plt.axvspan(xmin=min(x) - 0.5, xmax=min(x) + 0.5, color='gray', alpha=0.5)
+    plt.axvspan(xmin=max(x) - 0.5, xmax=max(x) + 0.5, color='gray', alpha=0.5)
 
     plt.xlabel('Re_number 10\u2075')
     plt.ylabel('std')
@@ -211,19 +204,55 @@ def plot_multiple_mse_ratios(mse_list, plot_label, output_dir):
         max_curve = mse_list[2]
 
         length = len(mean_curve)
-        ratios = [idx / (length-1) for idx in range(length)]
+        ratios = [idx / (length - 1) for idx in range(length)]
         plt.plot(mean_curve, ratios, color=colors[i], linestyle=line_styles[i], label=label, scaley="log")
         plt.fill_betweenx(ratios, min_curve, max_curve, color=colors[i], alpha=0.1)
 
     plt.xlabel("Mean Squared Error (MSE)", fontsize=12)
     plt.ylabel("Ratio", fontsize=12)
     plt.title(plot_label, fontsize=14)
-    plt.grid(True, linestyle='solid') #, alpha=1.0)
+    plt.grid(True, linestyle='solid')  # , alpha=1.0)
     plt.legend(fontsize=10)
     plt.tight_layout()
 
     plt.savefig(os.path.join(output_dir, f"{plot_label}.png"))
 
+
+# TODO implement this
+def plot_drag_coefficient_distribution(label, targets, predictions, output_dir, num_buckets):
+    plt.figure(figsize=(10, 6))
+
+    max_val = np.max(np.array([np.max(targets), np.max(predictions)]))
+    min_val = np.min(np.array([np.min(targets), np.min(predictions)]))
+    step = (max_val-min_val)/num_buckets
+
+    x_vals = [min_val + x * step + 0.5 * step for x in range(num_buckets)]
+    intervals = [(min_val + x * step, min_val + (x + 1) * step) for x in range(num_buckets)]
+    target_counts = np.array([np.sum((targets >= low) & (targets < high)) for low, high in intervals])
+    target_counts = target_counts/np.sum(target_counts)
+    prediction_counts = [[np.sum((run > low) & (run <= high)) for low, high in intervals] for run in predictions]
+    prediction_counts = np.array(prediction_counts)
+    prediction_counts = prediction_counts/np.sum(prediction_counts, axis=1, keepdims=True)
+    prediction_counts_mins = np.min(prediction_counts, axis=0)
+    prediction_counts_mean = np.mean(prediction_counts, axis=0)
+    prediction_counts_maxs = np.max(prediction_counts, axis=0)
+
+
+    colors = ['red', 'red', 'green', 'green', 'orange', 'orange']
+    line_styles = ['solid', '--', 'solid', '--', 'solid']
+
+    plt.bar(x_vals, target_counts, color="white", edgecolor="black", width=step, label="Ground Truth")
+    plt.plot(x_vals, prediction_counts_mean, label=label, color=colors[0], linestyle=line_styles[0])
+
+    for i, x in enumerate(x_vals):
+        plt.plot([x, x], [prediction_counts_mins[i], prediction_counts_maxs[i]], color=colors[0], linestyle='--', label="Prediction")
+        plt.plot([x - step/100, x + step/100], [prediction_counts_mins[i], prediction_counts_mins[i]], color=colors[0], linestyle='solid')
+        plt.plot([x - step/100, x + step/100], [prediction_counts_maxs[i], prediction_counts_maxs[i]], color=colors[0], linestyle='solid')
+
+    plt.xlabel("Drag Coefficient", fontsize=12)
+    plt.ylabel("Ratio", fontsize=12)
+
+    plt.savefig(os.path.join(output_dir, "{}_drag_comparison.png".format(label)))
 
 
 
@@ -234,7 +263,3 @@ class NumpyEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
-
-
-
-
