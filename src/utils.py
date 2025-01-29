@@ -6,6 +6,7 @@ import torch
 from PIL import Image
 from matplotlib import cm
 import matplotlib
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -188,13 +189,13 @@ def plot_std_curves(lines, x, output_dir):
     plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
 
 
-def plot_multiple_mse_ratios(mse_list, plot_label, output_dir):
+def plot_mse_ratios(mse_list, plot_label, output_dir, save_plot=True):
     if not mse_list:
         raise ValueError("The MSE list cannot be empty.")
     colors = ['red', 'red', 'green', 'green', 'orange', 'orange']
     line_styles = ['solid', '--', 'solid', '--', 'solid', '--']
 
-    plt.figure(figsize=(10, 8))
+    fig = plt.figure(figsize=(10, 8))
 
     plt.xscale("log")
 
@@ -218,7 +219,6 @@ def plot_multiple_mse_ratios(mse_list, plot_label, output_dir):
     plt.savefig(os.path.join(output_dir, f"{plot_label}.png"))
 
 
-# TODO implement this
 def plot_drag_coefficient_distribution(label, targets, predictions, output_dir, num_buckets):
     plt.figure(figsize=(10, 6))
 
@@ -251,6 +251,7 @@ def plot_drag_coefficient_distribution(label, targets, predictions, output_dir, 
 
     plt.xlabel("Drag Coefficient", fontsize=12)
     plt.ylabel("Ratio", fontsize=12)
+    plt.title('Drag Coefficient distribution')
 
     plt.savefig(os.path.join(output_dir, "{}_drag_comparison.png".format(label)))
 

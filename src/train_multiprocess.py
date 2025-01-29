@@ -20,9 +20,14 @@ def train():
     seed = [12847847, 22763727, 89197372]
     cuda = ["cuda:0", "cuda:1", "cuda:2"]
 
+    futures = []
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for i, study in enumerate(study_name):
-            executor.submit(train_run, (study, model_name[i], cuda[i], seed[i]))
+            futures.append(executor.submit(train_run, (study, model_name[i], cuda[i], seed[i])))
+
+        for future in futures:
+            print(future.result())
 
 
 def restart_train_run(checkpoint):
@@ -33,16 +38,18 @@ def restart_train_run(checkpoint):
 def restart_training():
 
 
-    checkpoints = ["/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_1/checkpoints/50.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_2/checkpoints/50.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_3/checkpoints/50.pth"]
+    checkpoints = ["/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_1/checkpoints/65.pth",
+                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_2/checkpoints/65.pth",
+                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_3/checkpoints/60.pth"]
 
     futures = []
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
         for checkpoint in checkpoints:
-            future = executor.submit(restart_train_run, checkpoint)
-            futures.append(future)
+            futures.append(executor.submit(restart_train_run, checkpoint))
+
+        for future in futures:
+            print(future.result())
 
 
 

@@ -85,16 +85,17 @@ def plot_ratios(resolutions, model, mode, uncertainty_region, output_dir):
             line_label = "{} {}".format(moment, res)
             data.append((line_label, item))
 
-    utils.plot_multiple_mse_ratios(data, "{} {} {} uncertainty region".format(model, mode, uncertainty_region), output_dir)
-
     with open(os.path.join(output_dir, "{}_{}_RatioData.json".format(model, mode)), "w+") as fp:
         json.dump(data, fp, indent=4, cls=NumpyEncoder)
 
+    plot = utils.plot_mse_ratios(data, "{} {} {} uncertainty region".format(model, mode, uncertainty_region), output_dir)
+    return plot
+
+
+
+
 
 if __name__ == '__main__':
-
-
-
 
     OUTPUT_DIR = "/local/disk1/ebeqa/Thesis/results/Graphs"
     RESULT_DIR = "/local/disk1/ebeqa/Thesis/results"
@@ -110,16 +111,8 @@ if __name__ == '__main__':
     for model in models:
         output_dir = os.path.join(OUTPUT_DIR, model)
         os.makedirs(output_dir, exist_ok=True)
+        plots = []
         for mode in modes:
                 for region in uncertainty_regions:
-                    plot_ratios(resolutions, model, mode, region, output_dir)
-
-
-
-
-
-
-
-
-
+                    plots.append(plot_ratios(resolutions, model, mode, region, output_dir))
 
