@@ -1,14 +1,15 @@
 import os
 import json
-from abc import abstractmethod
 import random
+import torch
 
 import numpy as np
-import torch
-from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
-from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torch.nn.utils as nn_utils
+
+from abc import abstractmethod
+from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
+from torch.utils.data import DataLoader
 from datetime import datetime
 
 from src.models import model_select
@@ -19,7 +20,7 @@ from src import utils
 class Base_Trainer(object):
     def __init__(self, train_config):
         if train_config.load_training:
-            self.load_training(train_config.checkpoint_path)
+            self.load_training(train_config)
         else:
             self.train_config = train_config
             self.seed_everything(train_config.seed)
@@ -29,7 +30,7 @@ class Base_Trainer(object):
             self.val_dataset = dataset.Airfoil_Dataset(train_config, mode='validation')
             self.train_dataloader = DataLoader(self.train_dataset, train_config.batch_size, shuffle=True, num_workers=2,
                                                prefetch_factor=2, pin_memory=True)
-            self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers=2,
+            self.val_dataloader = DataLoader(self.val_dataset, train_config.batch_size, shuffle=True, num_workers= 2,
                                              prefetch_factor=2, pin_memory=True)
             self.loss_func = self.loss_select(self.train_config.loss_function)
             self.optimizer = self.optimizer_select(self.train_config)
@@ -47,6 +48,7 @@ class Base_Trainer(object):
                     os.path.join(self.output_dir, "configs"),
                     os.path.join(self.output_dir, "samples")]:
             os.makedirs(dir, exist_ok=True)
+
 
     def seed_everything(self, seed=42):
         random.seed(seed)
@@ -91,9 +93,15 @@ class Base_Trainer(object):
         else:
             raise ValueError(f"Unknown loss function: {loss}, available are mse, l1, mrl, huber.")
 
-    def load_training(self, checkpoint_path):
-        checkpoint = torch.load(checkpoint_path)
-        train_config = checkpoint['train_config']
+    def load_training(self, train_config):
+        checkpoint = torch.load(train_config.checkpoint_path, map_location=train_config.device)
+        checkpoint_config = checkpoint['train_config']
+
+        checkpoint_config.device = train_config.device
+        checkpoint_config.data_dir = train_config.data_dir
+        checkpoint_config.output_dir = os.path.join(train_config.output_dir, checkpoint_config.study_name)
+
+        train_config = checkpoint_config
         self.train_config = train_config
         self.start_epoch = checkpoint['epoch'] + 1
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")
@@ -102,6 +110,7 @@ class Base_Trainer(object):
         self.model = checkpoint['model']
         self.model.load_state_dict(checkpoint['model_params'])
         self.model = self.model.to(self.device)
+        self.model.move_to_device(self.device)
         self.optimizer = self.optimizer_select(train_config)
         self.scheduler = self.scheduler_select(train_config)
         self.optimizer.load_state_dict(checkpoint['optimizer_params'])
@@ -192,7 +201,6 @@ class VAE_Trainer(Base_Trainer):
 
             for conditions, targets, label in self.train_dataloader:
                 self.optimizer.zero_grad()
-
                 conditions = conditions.to(self.device)
                 targets = targets.to(self.device)
                 predictions, KLD_loss = self.model(conditions, targets)
@@ -282,12 +290,11 @@ class DiffusionTrainer(Base_Trainer):
         for epoch in range(self.start_epoch, self.train_config.num_epochs):
             print("Epoch:{}, Started at:{}".format(epoch, datetime.now()))
             train_loss = 0.0
-            val_loss = 0
+            val_loss = 0.0
 
             self.model.train()
             for conditions, targets, label in self.train_dataloader:
                 conditions, targets = conditions.to(self.device), targets.to(self.device)
-
                 t = torch.randint(0, self.model_config.timesteps, (targets.shape[0],))
                 noisy_data, noise = self.model.noise_step(targets, t)
                 t_emb = self.model.sinusoidal_embedding(t, 100)

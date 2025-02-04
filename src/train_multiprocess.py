@@ -1,6 +1,10 @@
 import concurrent.futures
+import multiprocessing
+import os
+import time
+
 from src import trainers
-from src.train_config import get_config_parametrized
+from src.train_config import get_config_parametrized, get_config_restart
 
 MAX_WORKERS = 3
 MODE = 'restart'  # train or restart
@@ -30,27 +34,32 @@ def train():
             print(future.result())
 
 
-def restart_train_run(checkpoint):
-    train_config = get_config_parametrized(checkpoint=checkpoint, load_training=True)
+def restart_train_run(checkpoint_path, device="", data_dir="", output_dir=""):
+    train_config = get_config_restart(checkpoint_path, device, data_dir, output_dir)
     trainer = trainers.DiffusionTrainer(train_config)
     trainer.train_model()
 
+
+
 def restart_training():
 
+    checkpoints = ["/home/blin/PycharmProjects/Thesis/results/res64/Swin_test/run_1/checkpoints/80.pth",
+                   "/home/blin/PycharmProjects/Thesis/results/res64/Swin_test/run_2/checkpoints/80.pth",
+                   "/home/blin/PycharmProjects/Thesis/results/res64/Swin_test/run_3/checkpoints/75.pth"]
 
-    checkpoints = ["/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_1/checkpoints/65.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_2/checkpoints/65.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res64/Swin_test/run_3/checkpoints/60.pth"]
+    data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'
+    output_dir = '/home/blin/PycharmProjects/Thesis/results/res64'
+
+    devices = ["cuda:0", "cuda:0", "cuda:0"]
 
     futures = []
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        for checkpoint in checkpoints:
-            futures.append(executor.submit(restart_train_run, checkpoint))
+        for i, checkpoint in enumerate(checkpoints):
+            futures.append(executor.submit(restart_train_run, checkpoint, devices[i], data_dir, output_dir))
 
         for future in futures:
             print(future.result())
-
 
 
 
