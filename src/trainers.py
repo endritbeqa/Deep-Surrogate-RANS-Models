@@ -100,8 +100,9 @@ class Base_Trainer(object):
         checkpoint_config.device = train_config.device
         checkpoint_config.data_dir = train_config.data_dir
         checkpoint_config.output_dir = os.path.join(train_config.output_dir, checkpoint_config.study_name)
-
+        checkpoint_config.num_checkpoints_keep = 10
         train_config = checkpoint_config
+
         self.train_config = train_config
         self.start_epoch = checkpoint['epoch'] + 1
         self.device = torch.device(train_config.device if torch.cuda.is_available() else "cpu")

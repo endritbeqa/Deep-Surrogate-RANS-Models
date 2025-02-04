@@ -10,8 +10,8 @@ def get_config():
 
     config.seed = 66826386
     config.trainer = "diffusion"  # diffusion or VAE
-    config.study_name = 'fact_test/run_1'
-    config.model_name = "Swin_UNet"
+    config.study_name = ""
+    config.model_name = "" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'
     config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res64', config.study_name)
     config.device = 'cuda:1'
@@ -19,7 +19,7 @@ def get_config():
     config.batch_size = 20
     config.optimizer = 'AdamW'  # available are AdamW, Adam
     config.scheduler = 'lambda'  # cosine or lambda
-    config.cosine_anneling_TMax = 1000
+    config.cosine_anneling_TMax = 0
     config.lr = 1e-4
     config.final_lr = 0
     config.weight_decay = 1e-4
@@ -36,8 +36,8 @@ def get_config():
     return config
 
 
-#TODO fix cuda assigment when loading from checkpoint
-def get_config_parametrized(study_name="", model_name="", cuda="", seed=42, checkpoint="", load_training=False):
+# config used to run several studies at oncewith a ProcessPoolExecuter in train_multiprocess file
+def get_config_parametrized(study_name="", model_name="", device="", seed=42, checkpoint="", load_training=False):
     config = config_dict.ConfigDict()
     config.load_training = load_training
     config.checkpoint_path = checkpoint
@@ -48,7 +48,7 @@ def get_config_parametrized(study_name="", model_name="", cuda="", seed=42, chec
     config.model_name = model_name
     config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'
     config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res64', config.study_name)
-    config.device = cuda
+    config.device = device
     config.num_epochs = 151
     config.batch_size = 20
     config.optimizer = 'AdamW'  # available are AdamW, Adam
@@ -70,6 +70,7 @@ def get_config_parametrized(study_name="", model_name="", cuda="", seed=42, chec
     return config
 
 
+#config to restart the training and rewriting the checkpoint config
 def get_config_restart(checkpoint_path, device, data_dir, output_dir):
 
     config = config_dict.ConfigDict()

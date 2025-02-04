@@ -8,18 +8,20 @@ This repository contains the code for training and testing different deep learni
 The Dataset consists of 5000 simulations of airfoils in the [UIUC database](https://m-selig.ae.illinois.edu/ads/coord_database.html). Each simulation has 25 random snapshot taken between timestep 2500 and 3500 of the simulation.
 The data contains input(`x-velocity`, `y-velocity`, `binary mask`) and target(`velocity field(x,y)`, `pressure field`).   
 
-## Model
+## Models
 
-1. **Hierarchical VAE:** U-net architecture using SwinV2 blocks in the encoder and decoder. 
-The hierarchical representation is created through the patch merging in the encoder and upsampling in the decoder.
-In order to sample a VAE bottleneck is introduced in each skip connection. 
+1. **Hierarchical VAE:** U-net architecture using SwinV2 blocks in the encoder and decoder.
 
-2. **Diffusion ViT:** U-net architecture using ViT
+2. **Diffusion ViT(DiT):** ViT encoder with a CNN or MLP decoder using diffusion process.
+
+3. **Diffusion SwinV2(Swin):** SwinV2 encoder with a CNN or MLP decoder using diffusion process.
+
+4. **Diffusion FactFormer(FactFormer):** FactFormer encoder with a CNN or MLP decoder using diffusion process.
 
 ## Installation 
 Create a pip virtual environment and install the packages in the requirements.txt file.
 ```shell
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -37,8 +39,10 @@ model name.
 In order to change the model structure itself, go to the config file of the model itself found in the models folder (e.g `src/models/swin/Config_Unet_Swin.py`).
 
 ### Train setup 
-To change the train setup itself(batch size, number of epoch, dataset etc.) edit the `src/config.py` file.
-Then run `python train.py` to start the training loop
+To change the train setup itself(batch size, number of epoch, dataset etc.) edit the `src/train_config.py` file.
+Then run `python train.py` to start the training loop. 
+
+To run multiple training runs simultaneously edit the `src/train_config.py` get_config_parametrized function
 
 ### Hyperparameter search
 To perform hyperparameter search run `python hyperparameter_search.py`.

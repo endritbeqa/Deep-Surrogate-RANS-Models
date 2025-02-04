@@ -3,6 +3,7 @@ import concurrent.futures
 from src.evaluation import evaluate_model
 from src.evaluation import evaluation_config
 
+MAX_WORKERS = 3
 
 def run_evaluation(config):
     if config.inter_extrapolation_test:
@@ -29,14 +30,14 @@ def run_evaluation(config):
 
 def evaluate_all():
 
-    MAX_WORKERS = 3
+
     experiments = [
         "Swin_test/run_1",
         "Swin_test/run_2",
         "Swin_test/run_3"
     ]
-    checkpoints = ["65.pth", "65.pth", "60.pth"]
-    devices = ["cuda:0", "cuda:1", "cuda:2"]
+    checkpoints = ["145.pth", "145.pth", "140.pth"]
+    devices = ["cuda:0", "cuda:0", "cuda:1"]
     futures = []
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:

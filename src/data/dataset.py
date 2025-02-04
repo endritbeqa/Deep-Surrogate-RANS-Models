@@ -6,7 +6,6 @@ from ml_collections import config_dict
 from torch.utils.data import Dataset
 
 
-
 class Base_Dataset(Dataset):
     def __init__(self, config: config_dict, mode: str):
         self.data_dir = os.path.join(config.data_dir, mode)
@@ -15,7 +14,6 @@ class Base_Dataset(Dataset):
         self.makeDimLess = config.data_preprocessing.makeDimLess
         self.removePOffset = config.data_preprocessing.removePOffset
         self.epsilon = 1e-8  # constant for numerical stability
-
 
     def preprocess_data(self, data) -> np.ndarray:
 
@@ -78,7 +76,6 @@ class Base_Dataset(Dataset):
         return data
 
 
-
 class Airfoil_Dataset(Base_Dataset):
     def __init__(self, config, mode):
         super().__init__(config, mode)
@@ -93,7 +90,6 @@ class Airfoil_Dataset(Base_Dataset):
         condition = data[0:3, :, :]
         target = data[3:, :, :]
         return (condition, target, self.file_names[idx])
-
 
 
 class Test_Dataset(Base_Dataset):
@@ -122,7 +118,6 @@ class Test_Dataset(Base_Dataset):
         return (conditions, targets, self.simulation_folders[idx])
 
 
-
 class Comparison_Dataset(Dataset):
 
     def __init__(self, config, mode):
@@ -133,7 +128,8 @@ class Comparison_Dataset(Dataset):
         self.removePOffset = config.data_preprocessing.removePOffset
         self.RE_numbers = config.comparison.freestream_velocities
         self.angles = config.comparison.angles
-        self.labels = np.array([[[np.float32(re), np.float32(angle)] for angle in self.angles] for re in self.RE_numbers])
+        self.labels = np.array(
+            [[[np.float32(re), np.float32(angle)] for angle in self.angles] for re in self.RE_numbers])
         self.epsilon = 1e-8  # constant for numerical stability
         self.airfoils = [f for f in os.listdir(self.data_dir)]
 
@@ -163,10 +159,9 @@ class Comparison_Dataset(Dataset):
         return airfoil, data, self.labels
 
     def preprocess_data(self, data) -> np.ndarray:
-        max_inputs_0 = 100.*100.
-        max_inputs_1 = 38.5*38.5
+        max_inputs_0 = 100. * 100.
+        max_inputs_1 = 38.5 * 38.5
         data[0] *= (1.0 / max_inputs_0)
         data[1] *= (1.0 / max_inputs_1)
-
 
         return data
