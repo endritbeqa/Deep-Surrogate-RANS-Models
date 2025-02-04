@@ -5,7 +5,7 @@ This repository contains the code for training and testing different deep learni
 
 ## Datasets 
 
-The Dataset consists of 5000 simulations of airfoils in the [UIUC database](https://m-selig.ae.illinois.edu/ads/coord_database.html). Each simulation has 25 random snapshot taken between timestep 2500 and 3500 of the simulation.
+The [Dataset](https://github.com/tum-pbs/Diffusion-based-Flow-Prediction?tab=readme-ov-file) consists of 5000 simulations of airfoils in the [UIUC database](https://m-selig.ae.illinois.edu/ads/coord_database.html). Each simulation has 25 random snapshot taken between timestep 2500 and 3500 of the simulation.
 The data contains input(`x-velocity`, `y-velocity`, `binary mask`) and target(`velocity field(x,y)`, `pressure field`).   
 
 ## Models
@@ -19,7 +19,7 @@ The data contains input(`x-velocity`, `y-velocity`, `binary mask`) and target(`v
 4. **Diffusion FactFormer(FactFormer):** FactFormer encoder with a CNN or MLP decoder using diffusion process.
 
 ## Installation 
-Create a pip virtual environment and install the packages in the requirements.txt file.
+Create a virtual environment and install the packages in the requirements.txt file. `Python3.9` is required. 
 ```shell
 python3 -m venv venv
 source venv/bin/activate
@@ -29,26 +29,38 @@ pip install -r requirements.txt
 ## Results
 
 
-
-
 ## Usage 
 
 ### Model Selection 
-To train the existing architectures in the models folder change the ***config.model*** field in the `src/config.py` file to the desired 
+To train the existing architectures in the models folder change the ***config.model_name*** field in the `src/train_config.py` file to the desired 
 model name.  
-In order to change the model structure itself, go to the config file of the model itself found in the models folder (e.g `src/models/swin/Config_Unet_Swin.py`).
+In order to change the model structure itself, go to the config file of the model itself found in the models folder (e.g `src/models/diffusion/Swin/Config_Swin.py`).
 
 ### Train setup 
 To change the train setup itself(batch size, number of epoch, dataset etc.) edit the `src/train_config.py` file.
-Then run `python train.py` to start the training loop. 
+Then run `python -m src.train.py` to start the training loop. 
 
-To run multiple training runs simultaneously edit the `src/train_config.py` get_config_parametrized function
+To run multiple training runs simultaneously in `src/train_config.py` edit `get_config_parametrized()` function to set hyperparameters for all training runs.
+In the `src/train_multiprocess.py` edit the study_name, model_name, seeds, devices list to run separate training runs.
+In the end run `python -m src.train_multiprocess`.
+
+To restart previous training runs edit the checkpoints, data_dir, output_dir, devices list to restart the training and set the global flag `MODE = 'restart'` in the `src/train_multiprocess.py` file.
+In the end run `python -m src.train_multiprocess`.
+
+### Evaluation 
+
+To run evaluation on a model edit the `src/evaluation/evaluation_config.py` file and then run `python -m src.evaluation.evaluate_model`.
+
+Currently there are 3 test: 
+1. Inter/Extrapolation
+2. Sampling Speed
+3. Coefficient of Drag 
 
 ### Hyperparameter search
 To perform hyperparameter search run `python hyperparameter_search.py`.
 
 ### Train your own model 
-To train your own model create a new folder in `src/models` and add it to the switch statement in the `src/models/`
+To train your own model create a new folder in `src/models` and add it to the switch statement in the `src/models/model_select`. If it is a Diffusion model don't forget to wrap it in the `src/models/Diffuser` class.
 
 ## Data Generation 
 
