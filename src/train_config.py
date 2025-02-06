@@ -10,10 +10,11 @@ def get_config():
 
     config.seed = 66826386
     config.trainer = "diffusion"  # diffusion or VAE
+    config.resolution = 64
     config.study_name = ""
     config.model_name = "" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'
-    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res64', config.study_name)
+    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_{}/full/train_val_split'.format(config.resolution)
+    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res{}'.format(config.resolution), config.study_name)
     config.device = 'cuda:1'
     config.num_epochs = 151
     config.batch_size = 20
@@ -44,10 +45,11 @@ def get_config_parametrized(study_name="", model_name="", device="", seed=42, ch
 
     config.seed = seed
     config.trainer = "diffusion"  # diffusion or VAE
+    config.resolution = 64
     config.study_name = study_name
     config.model_name = model_name
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'
-    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res64', config.study_name)
+    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'.format(config.resolution)
+    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res{}'.format(config.resolution),config.study_name)
     config.device = device
     config.num_epochs = 151
     config.batch_size = 20

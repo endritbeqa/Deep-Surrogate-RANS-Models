@@ -16,26 +16,31 @@ def get_model(config):
     elif config.model_name == 'Swin_UNet':
         model_config = Config_Swin_UNet.get_config()
         model_config.device = config.device
+        model_config.image_size = config.resolution
         model = Swin_UNet.Swin_UNet(model_config)
         model = Diffuser(model_config, model)
     elif config.model_name == 'DiT':
         model_config = Config_DiT.get_config()
         model_config.device = config.device
+        model_config.image_size = config.resolution
         model = DiT.DiT(model_config)
         model = Diffuser(model_config, model)
     elif config.model_name == 'Swin':
         model_config = Config_Swin.get_config()
         model_config.device = config.device
+        model_config.image_size = config.resolution
         model = Swin.Swin(model_config)
         model = Diffuser(model_config, model)
     elif config.model_name == 'FactFormer':
         model_config = Config_FactFormer.get_config()
         model_config.device = config.device
+        model_config.resolution = config.resolution
         model = FactFormer.FactFormer(model_config)
         model = Diffuser(model_config, model)
     elif config.model_name == 'ViT_UNet':
         model_config = Config_ViT_UNet.get_config()
         model_config.device = config.device
+        model_config.image_size = config.resolution
         model = ViT_UNet.DiffusionUNet(model_config)
         model = Diffuser(model_config, model)
     else:

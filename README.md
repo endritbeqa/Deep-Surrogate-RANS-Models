@@ -21,7 +21,7 @@ The data contains input(`x-velocity`, `y-velocity`, `binary mask`) and target(`v
 ## Installation 
 Create a virtual environment and install the packages in the requirements.txt file. `Python3.9` is required. 
 ```shell
-python3 -m venv venv
+python3 -m venv .venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
@@ -30,6 +30,11 @@ pip install -r requirements.txt
 
 
 ## Usage 
+
+### Data download
+
+The dataset and instructions can be found [here](https://mediatum.ub.tum.de/1731896). After download edit the flags in `src/data/preprocess_data.py`(beginning of the file) and run it. Afterwards edit the `train_config.data_dir` field in `train_config.py` to point to the train_val_split folder created.
+
 
 ### Model Selection 
 To train the existing architectures in the models folder change the ***config.model_name*** field in the `src/train_config.py` file to the desired 

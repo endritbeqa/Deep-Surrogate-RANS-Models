@@ -38,12 +38,5 @@ def get_config():
     config.CNN_decoder.output_dim = [config.dim, config.dim // 2, config.dim // 4, 3]
     config.CNN_decoder.kernel_size = [7, 7, 3, 3]
 
-    '''
-    config.CNN_decoder = ConfigDict()
-    config.CNN_decoder.input_size = (config.resolution, config.resolution)
-    config.CNN_decoder.input_dim = config.dim
-    #config.CNN_decoder.conv_1_output_dim = config.dim
-    config.CNN_decoder.output_dim = (3, config.resolution, config.resolution)
-'''
 
     return config

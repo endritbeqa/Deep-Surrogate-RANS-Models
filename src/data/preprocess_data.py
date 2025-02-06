@@ -5,12 +5,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train"
-PREPROCESS_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/full/case_split"
-TRAIN_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/full/train_val_split/train"
-VALIDATION_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/full/train_val_split/validation"
-MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/masks"
 
+
+SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train" #Directory where the dataset is downloaded
+DEST_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed" #Directory where the data should be moved when preprocessed
 
 removePOffset = True
 makeDimLess = True
@@ -19,6 +17,13 @@ epsilon = 1e-8
 res = 128
 percentage = 1
 train_val_split = 0.95
+
+
+PREPROCESS_DIR = "{}/res_{}/full/case_split".format(DEST_DIR, res)
+TRAIN_DIR = "{}/res_{}/full/train_val_split/train".format(DEST_DIR, res)
+VALIDATION_DIR = "{}/res_{}/full/train_val_split/validation".format(DEST_DIR, res)
+MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/masks".format(DEST_DIR, res)
+
 
 
 def split_train_val():
@@ -187,4 +192,5 @@ def save_masks():
 if __name__ == '__main__':
     preprocess_files()
     split_train_val()
+    os.rmdir(PREPROCESS_DIR) #remove the case split directory
     save_masks()
