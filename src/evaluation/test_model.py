@@ -1,15 +1,16 @@
 import math
 import os
 import torch
+import torch.nn.functional as F
 
 from ml_collections import ConfigDict
 from torch.utils.data import DataLoader
 
 from src.models import model_select
 from src.data import dataset
-from src import loss
 from src import utils
-from src import test_config
+from src.evaluation import test_config
+
 
 class Model_Test(object):
     def __init__(self, config: ConfigDict):
@@ -20,12 +21,29 @@ class Model_Test(object):
         self.model_name = self.train_config.model_name
         self.model = model_select.load_model(self.model_name, self.model_config, self.checkpoint)
         self.output_dir = config.output_dir
-        self.loss_func = loss.get_loss_function(config.loss)
+        self.loss_func = self.loss_select(config.loss)
         self.test_dataset = dataset.Airfoil_Dataset(self.config, mode='test')
         self.test_dataloader = DataLoader(self.test_dataset, config.batch_size, shuffle=False)
 
         os.makedirs(self.output_dir, exist_ok=True)
         os.makedirs(os.path.join(self.output_dir, "images"), exist_ok=True)
+
+    def loss_select(self, loss: str):
+        def mean_relative_loss_function(input, target):
+            epsilon = 1e-10
+            relative_difference = torch.abs(input - target) / torch.max(torch.abs(target), torch.tensor(epsilon, dtype=target.dtype, device=target.device))
+            return relative_difference.mean()
+
+        if loss == 'mse':
+            return F.mse_loss
+        elif loss == 'l1':
+            return F.l1_loss
+        elif loss == 'huber_loss':
+            return F.smooth_l1_loss
+        elif loss == 'mrl':
+            return mean_relative_loss_function
+        else:
+            raise ValueError(f"Unknown loss function: {loss}, available are mse, l1, mrl, huber.")
 
 
     def predict(self):
