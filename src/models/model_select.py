@@ -1,21 +1,54 @@
-import torch
-from src.models.swin import U_net_SwinV2, Config_UNet_Swin
+from src.models.Swin_UNet import Swin_UNet, Config_Swin_UNet
+from src.models.ViT_UNet import Config_ViT_UNet, ViT_UNet
+from src.models.Swin import Config_Swin, Swin
+from src.models.DiT import DiT, Config_DiT
+from src.models.FactFormer import Config_FactFormer, FactFormer
 
-def get_model(name: str):
 
-    if name == 'swin':
-        model_config = Config_UNet_Swin.get_config()
-        model = U_net_SwinV2.U_NET_Swin(model_config)
+def get_model(config):
+
+    if config.model_name == 'Swin_UNet':
+        model_config = Config_Swin_UNet.get_config()
+        model_config.device = config.device
+        model_config.image_size = config.resolution
+        model = Swin_UNet.Swin_UNet(model_config)
+    elif config.model_name == 'DiT':
+        model_config = Config_DiT.get_config()
+        model_config.device = config.device
+        model_config.image_size = config.resolution
+        model = DiT.DiT(model_config)
+    elif config.model_name == 'Swin':
+        model_config = Config_Swin.get_config()
+        model_config.device = config.device
+        model_config.image_size = config.resolution
+        model = Swin.Swin(model_config)
+    elif config.model_name == 'FactFormer':
+        model_config = Config_FactFormer.get_config()
+        model_config.device = config.device
+        model_config.resolution = config.resolution
+        model = FactFormer.FactFormer(model_config)
+    elif config.model_name == 'ViT_UNet':
+        model_config = Config_ViT_UNet.get_config()
+        model_config.device = config.device
+        model_config.image_size = config.resolution
+        model = ViT_UNet.DiffusionUNet(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")
 
     return model_config, model
 
-
 def load_model(name: str, model_config, checkpoint):
 
-    if name == 'swin':
-        model = U_net_SwinV2.U_NET_Swin(model_config)
+    if name == 'Swin_UNet':
+        model = Swin_UNet.Swin_UNet(model_config)
+    elif name == 'Swin':
+        model = Swin.Swin(model_config)
+    elif name == 'DiT':
+        model = DiT.DiT(model_config)
+    elif name == 'FactFormer':
+        model = FactFormer.FactFormer(model_config)
+    elif name == 'ViT_UNet':
+        model = ViT_UNet.DiffusionUNet(model_config)
     else:
         raise Exception("Model name not found.Check if model is implemented.")
 
