@@ -5,16 +5,16 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-SRC_DIR = "/home/blin/endrit/dataset/steady/original/train/combined"  # Directory where the dataset is downloaded
-DEST_DIR = "/home/blin/endrit/dataset/steady/preprocessed_small/combined"  # Directory where the data should be moved when preprocessed
+SRC_DIR = "/home/blin/endrit/dataset/steady/original/test"  # Directory where the dataset is downloaded
+DEST_DIR = "/home/blin/endrit/dataset/steady/preprocessed/test"  # Directory where the data should be moved when preprocessed
 
 removePOffset = True
 makeDimLess = True
 fixedAirfoilNormalization = True
 epsilon = 1e-8
 res = 128
-percentage = 0.05
-train_val_split = 0.95
+percentage = 1
+train_val_split = 1
 
 TRAIN_DIR = "{}/res_{}/full/train_val_split/train".format(DEST_DIR, res)
 VALIDATION_DIR = "{}/res_{}/full/train_val_split/validation".format(DEST_DIR, res)

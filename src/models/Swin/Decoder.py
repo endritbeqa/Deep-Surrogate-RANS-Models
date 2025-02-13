@@ -41,7 +41,7 @@ class CNN_decoder(nn.Module):
 
 
     def forward(self, x):
-        x = self.upsample(x, reshape=False)
+        x = self.upsample(x, reshape=True)
         for layer in self.conv_layers:
             x = layer(x)
 

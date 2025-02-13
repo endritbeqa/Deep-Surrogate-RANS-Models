@@ -17,8 +17,7 @@ class Swin(nn.Module):
             self.decoder = CNN_decoder(config.CNN_decoder)
         self.device = torch.device(self.config.device if torch.cuda.is_available() else "cpu")
 
-    def forward(self, conditions, x):
-        x = torch.cat([conditions, x], dim=1)
+    def forward(self, x):
         x = self.encoder(x)[0]
         x = self.decoder(x)
 
