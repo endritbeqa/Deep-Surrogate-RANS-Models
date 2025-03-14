@@ -1,7 +1,7 @@
 from src import utils
 
 if __name__ == '__main__':
-    output_dir = "/home/blin/endrit/tests/uncertainty"
+    output_dir = ""
     lines = {
         "Ground Truth": {
             500.0: [

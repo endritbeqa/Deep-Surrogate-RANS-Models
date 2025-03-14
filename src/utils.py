@@ -189,34 +189,38 @@ def plot_std_curves(lines, x, output_dir):
     plt.savefig(os.path.join(output_dir, "average_std_comparison.png"))
 
 
-def plot_mse_ratios(mse_list, plot_label, output_dir, save_plot=True):
-    if not mse_list:
-        raise ValueError("The MSE list cannot be empty.")
-    colors = ['red', 'red', 'green', 'green', 'orange', 'orange']
-    line_styles = ['solid', '--', 'solid', '--', 'solid', '--']
+def plot_mse_ratios(data, output_dir, save_plot=True):
+    fig, axes = plt.subplots(2, 2, squeeze=False, figsize=(15, 12))
 
-    fig = plt.figure(figsize=(10, 8))
+    for i, (mode_region, mse_lists) in enumerate(data.items()):
 
-    plt.xscale("log")
+        row = i//2
+        col = i%2
 
-    for i, (label, mse_list) in enumerate(mse_list):
-        min_curve = mse_list[0]
-        mean_curve = mse_list[1]
-        max_curve = mse_list[2]
+        if not mse_lists:
+            raise ValueError("The MSE list cannot be empty.")
+        colors = ['red', 'red', 'green', 'green', 'orange', 'orange']
+        line_styles = ['solid', '--', 'solid', '--', 'solid', '--']
 
-        length = len(mean_curve)
-        ratios = [idx / (length - 1) for idx in range(length)]
-        plt.plot(mean_curve, ratios, color=colors[i], linestyle=line_styles[i], label=label, scaley="log")
-        plt.fill_betweenx(ratios, min_curve, max_curve, color=colors[i], alpha=0.1)
+        axes[row,col].set_xscale("log")
 
-    plt.xlabel("Mean Squared Error (MSE)", fontsize=12)
-    plt.ylabel("Ratio", fontsize=12)
-    plt.title(plot_label, fontsize=14)
-    plt.grid(True, linestyle='solid')  # , alpha=1.0)
-    plt.legend(fontsize=10)
-    plt.tight_layout()
+        for i, (label, mse_list) in enumerate(mse_lists):
+            min_curve = mse_list[0]
+            mean_curve = mse_list[1]
+            max_curve = mse_list[2]
 
-    plt.savefig(os.path.join(output_dir, f"{plot_label}.png"))
+            length = len(mean_curve)
+            ratios = [idx / (length - 1) for idx in range(length)]
+            axes[row,col].plot(mean_curve, ratios, color=colors[i], linestyle=line_styles[i], label=label, scaley="log")
+            axes[row,col].fill_betweenx(ratios, min_curve, max_curve, color=colors[i], alpha=0.1)
+
+        axes[row,col].set_xlabel("{} Uncertainty MSE".format(mode_region), fontsize=12)
+        axes[row,col].set_ylabel("Ratio", fontsize=12)
+        axes[row,col].grid(True, linestyle='solid')  # , alpha=1.0)
+        axes[row,col].legend(fontsize=10)
+
+    plt.suptitle("MSE Ratios", fontsize=20)
+    plt.savefig(os.path.join(output_dir, "ratio_comparison.png"))
 
 
 def plot_drag_coefficient_distribution(label, targets, predictions, output_dir, num_buckets):
@@ -254,6 +258,109 @@ def plot_drag_coefficient_distribution(label, targets, predictions, output_dir, 
     plt.title('Drag Coefficient distribution')
 
     plt.savefig(os.path.join(output_dir, "{}_drag_comparison.png".format(label)))
+
+
+
+def plot_samples_different_models(samples, label, channel , output_dir):
+        samples = to_numpy(samples)
+        samples = np.rot90(samples, axes=(3, 4))
+
+        Models, B, C, W, H, = samples.shape
+
+        fig, axes = plt.subplots(Models, B, squeeze=False, figsize=(9, 6))
+
+        channel_name = ["Pressure", "X-Velocity", "Y-Velocity"]
+        column_labels = ["Sample {}".format(i) for i in range(1, B+1)]
+        row_labels = ['Target', 'FactFormer', 'Swin', 'DiT']
+
+        for i, ax in enumerate(axes[:,0]):
+            ax.set_ylabel(row_labels[i], rotation=90, size="medium")
+
+        for col in range(B):
+            vmin, vmax = samples[:, col, channel, :, :].min(), samples[:, col, channel, :, :].max()
+            axes[0, col].set_title(column_labels[col], fontsize=12, pad=8)
+            for row in range(Models):
+                ax = axes[row, col]
+                im = ax.imshow(samples[row, col, channel], cmap=cm.magma, vmin=vmin, vmax=vmax)
+                ax.set_xticks([])
+                ax.set_yticks([])
+            cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.03, shrink = 0.8)
+
+        fig.suptitle("{} samples of models and ground truth".format(channel_name[channel]))
+        plt.savefig(os.path.join(output_dir,channel_name[channel] ,"{}.png".format(label)))
+
+
+
+def plot_moment_comparison_models(moments, file_name, output_dir):
+    moments = to_numpy(moments)
+    moments = np.rot90(moments, axes=(2, 3))
+
+    rows, C, H, W = moments.shape
+
+    fig, axes = plt.subplots(rows, C, figsize=(12, 8))
+
+    column_labels = ['µ P', 'µ Ux', 'µ Uy', 'σ P', 'σ Ux', 'σ Uy']
+    row_labels = ['Ground Truth', 'FactFormer', 'Swin', 'DiT']
+
+    for col in range(C):
+        vmin, vmax = moments[:, col, :, :].min(), moments[:, col, :, :].max()
+        axes[0, col].set_title(column_labels[col])
+        for row in range(rows):
+            im = axes[row, col].imshow(moments[row, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
+            axes[row, col].set_xticks([])
+            axes[row, col].set_yticks([])
+        im = axes[0, col].imshow(moments[0, col], cmap=cm.magma, vmin=vmin, vmax=vmax)
+        cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.03, shrink = 0.8)
+
+    for ax, row_label in zip(axes[:, 0], row_labels):
+        ax.set_ylabel(row_label, rotation=90, size='medium')
+
+    fig.suptitle("Moment Comparison")
+    save_path = os.path.join(output_dir, file_name + ".png")
+    plt.savefig(save_path)
+    plt.close()
+
+
+
+def plot_bar_chart(statistics, categories, bar_labels, chart_label, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
+    interpolation_means = statistics["interpolation"]["means"]
+    interpolation_stds = statistics["interpolation"]["stds"]
+    extrapolation_means = statistics["extrapolation"]["means"]
+    extrapolation_stds = statistics["extrapolation"]["stds"]
+
+    num_groups = len(bar_labels)
+    x = np.arange(len(categories))
+    width = 0.25
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+
+    # Colors for different groups
+    colors = ['b', 'g', 'r', 'o', 'p']
+
+    # Plot first bar chart
+    for i in range(num_groups):
+        axes[0].bar(x + i * width - width, interpolation_means[:, i], width, yerr=interpolation_stds[:, i], capsize=5,
+                    color=colors[i], label=bar_labels[i], alpha=0.7)
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels(categories)
+    axes[0].set_ylabel('MSE')
+    axes[0].set_title('Interpolation region')
+    axes[0].legend()
+
+    # Plot second bar chart
+    for i in range(num_groups):
+        axes[1].bar(x + i * width - width, extrapolation_means[:, i], width, yerr=extrapolation_stds[:, i], capsize=5,
+                    color=colors[i], label=bar_labels[i], alpha=0.7)
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(categories)
+    axes[1].set_ylabel('MSE')
+    axes[1].set_title('Extrapolation region')
+    #axes[1].legend()
+
+    plt.savefig(os.path.join(output_dir, "{}.png".format(chart_label)))
+
+
 
 
 

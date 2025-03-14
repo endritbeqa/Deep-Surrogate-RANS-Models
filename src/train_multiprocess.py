@@ -3,7 +3,7 @@ from src import trainers
 from src.train_config import get_config_parametrized, get_config_restart
 
 MAX_WORKERS = 3
-MODE = 'train'  # train or restart
+MODE = 'restart'  # train or restart
 
 
 def train_run(study, model_name, cuda, seed):
@@ -35,10 +35,13 @@ def restart_train_run(checkpoint_path, device="", data_dir="", output_dir=""):
 
 
 def restart_training():
-    checkpoints = ["", "", ""]
-    data_dir = ''
-    output_dir = ''
-    devices = ["", "", ""]
+    checkpoints = [
+                   "/local/disk1/ebeqa/Thesis/results/res128/FactFormer_test/run_1/checkpoints/78.pth",
+                   "/local/disk1/ebeqa/Thesis/results/res128/Swin_test/run_1/checkpoints/80.pth"]
+
+    data_dir = '/local/disk1/ebeqa/Thesis/data/preprocessed/res_128/full/train_val_split'
+    output_dir = '/local/disk1/ebeqa/Thesis/results/res128'
+    devices = ["cuda:0", "cuda:1"]
 
     futures = []
 

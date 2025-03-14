@@ -4,25 +4,29 @@ import shutil
 import numpy as np
 import torch
 import torch.nn.functional as F
+from project_definitions import PROJECT_ROOT_DIR
 
 
-
-SRC_DIR = "/home/blin/endrit/dataset/uncertainty/dataset_diffusion_based_flow_prediction/train" #Directory where the dataset is downloaded
-DEST_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed" #Directory where the data should be moved when preprocessed
+SRC_DIR = f"{PROJECT_ROOT_DIR}/data/original/train" #Directory where the dataset is downloaded
+DEST_DIR = f"/{PROJECT_ROOT_DIR}/data/preprocessed" #Directory where the data should be moved when preprocessed
 
 removePOffset = True
 makeDimLess = True
 fixedAirfoilNormalization = True
 epsilon = 1e-8
-res = 128
+res = 32
+num_snapshots = 5
 percentage = 1
 train_val_split = 0.95
 
+mode = ""
 
-PREPROCESS_DIR = "{}/res_{}/full/case_split".format(DEST_DIR, res)
-TRAIN_DIR = "{}/res_{}/full/train_val_split/train".format(DEST_DIR, res)
-VALIDATION_DIR = "{}/res_{}/full/train_val_split/validation".format(DEST_DIR, res)
-MASK_DIR = "/home/blin/endrit/dataset/uncertainty/preprocessed/res_128/masks".format(DEST_DIR, res)
+
+PREPROCESS_DIR = "{}/res_{}/{}_snapshots/case_split".format(DEST_DIR, res, num_snapshots)
+TRAIN_DIR = "{}/res_{}/{}_snapshots/train_val_split/train".format(DEST_DIR, res, num_snapshots)
+VALIDATION_DIR = "{}/res_{}/{}_snapshots/train_val_split/validation".format(DEST_DIR, res, num_snapshots)
+TEST_DIR = "{}/res_{}/test".format(DEST_DIR, res)
+MASK_DIR = "{}/res_{}/masks".format(DEST_DIR, res)
 
 
 
@@ -133,7 +137,8 @@ def preprocess_files():
         case_path = os.path.join(SRC_DIR, case)
         os.makedirs(os.path.join(PREPROCESS_DIR, case))
 
-        for snapshot in os.listdir(case_path):
+        snapshots = os.listdir(case_path)
+        for snapshot in snapshots[:num_snapshots]:
             snapshot_data = np.load(os.path.join(case_path, snapshot))
             snapshot_data = snapshot_data['a'].astype(np.float32)
             snapshot_data = preprocess_data(snapshot_data)
@@ -188,9 +193,23 @@ def save_masks():
 
 
 
-
 if __name__ == '__main__':
-    preprocess_files()
-    split_train_val()
-    os.rmdir(PREPROCESS_DIR) #remove the case split directory
-    save_masks()
+
+    if mode == "test":
+        SRC_DIR_original = SRC_DIR
+        SRC_DIR = "{}/interpolation".format(SRC_DIR_original)
+        TEST_DIR_original = TEST_DIR
+        PREPROCESS_DIR = "{}/interpolation".format(TEST_DIR_original)
+        preprocess_files()
+
+
+        SRC_DIR = "{}/extrapolation".format(SRC_DIR_original)
+        PREPROCESS_DIR = "{}/extrapolation".format(TEST_DIR_original)
+        preprocess_files()
+
+    else:
+
+        preprocess_files()
+        split_train_val()
+        shutil.rmtree(PREPROCESS_DIR) #remove the case split directory
+        save_masks()

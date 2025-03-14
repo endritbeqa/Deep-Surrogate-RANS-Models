@@ -4,47 +4,8 @@ import numpy as np
 
 from src.utils import NumpyEncoder
 from src import utils
+from project_definitions import PROJECT_ROOT_DIR
 
-'''
-   First read all files and create a dict of list  with the files 
-   { "32":
-   [results/res32/FactFormer_test/run_1/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json,
-   results/res32/FactFormer_test/run_2/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json
-   results/res32/FactFormer_test/run_3/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json]
-
-   "64":
-   [results/res64/FactFormer_test/run_1/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json,
-   results/res64/FactFormer_test/run_2/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json
-   results/res64/FactFormer_test/run_3/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json]
-
-   "128":
-   [results/res128/FactFormer_test/run_1/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json,
-   results/res128/FactFormer_test/run_2/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json
-   results/res128/FactFormer_test/run_3/evaluation/Inter_Extrapolation/interpolation/test_statistics_raw.json]
-   }
-
-   then extract the desired mode (e.g low uncetainty interpolation) from the json files and sort and calculate 
-   min, mean, max values to create the following structure
-   
-
-
-{
-    'mean_low':{
-        '32':[[--min_values--],[--mean_values--],[--max_values--]]
-        '64':[[--min_values--],[--mean_values--],[--max_values--]]
-        '128':[[--min_values--],[--mean_values--],[--max_values--]]
-    }
-
-    'std_low':{
-        '32':[[--min_values--],[--mean_values--],[--max_values--]]
-        '64':[[--min_values--],[--mean_values--],[--max_values--]]
-        '128':[[--min_values--],[--mean_values--],[--max_values--]]
-    }
-
-
-}
-
-'''
 
 
 def calculate_mse_ratios(files):
@@ -67,28 +28,29 @@ def calculate_mse_ratios(files):
     return runs_data
 
 
-def plot_ratios(resolutions, model, mode, uncertainty_region, output_dir):
-    data = []
+def plot_ratios(resolutions, model, output_dir):
+    data = {}
 
-    for res in resolutions:
-        res_paths = []
-        for run in ["run_1", "run_2", "run_3"]:
-            file_path = os.path.join(RESULT_DIR, "res{}".format(res), "{}_test".format(model), run,
-                                     "evaluation/Inter_Extrapolation", mode, "test_statistics_raw.json")
-            res_paths.append(file_path)
+    for mode in ['interpolation', 'extrapolation']:
+        for res in resolutions:
+            paths = []
+            for run in ["run_1", "run_2", "run_3"]:
+                file_path = os.path.join(RESULT_DIR, "res{}".format(res), "{}_test".format(model), run,
+                                         "evaluation/Inter_Extrapolation", mode, "test_statistics_raw.json")
+                paths.append(file_path)
 
-        case_data = calculate_mse_ratios(res_paths)
-        for key, item in case_data.items():
-            if uncertainty_region not in key:
-                continue
-            moment = key.split("_")[0]
-            line_label = "{} {}".format(moment, res)
-            data.append((line_label, item))
+            case_data = calculate_mse_ratios(paths)
+            for key, item in case_data.items():
+                if key in ['std_MSE_all', 'mean_MSE_all']:
+                    continue
+                moment, _, region = key.split("_")
+                line_label = "{} {}".format(moment, res)
+                data.setdefault("{} {}".format(mode.capitalize(), region.capitalize()), []).append((line_label, item))
 
     with open(os.path.join(output_dir, "{}_{}_RatioData.json".format(model, mode)), "w+") as fp:
         json.dump(data, fp, indent=4, cls=NumpyEncoder)
 
-    plot = utils.plot_mse_ratios(data, "{} {} {} uncertainty region".format(model, mode, uncertainty_region), output_dir)
+    plot = utils.plot_mse_ratios(data, output_dir)
     return plot
 
 
@@ -97,22 +59,15 @@ def plot_ratios(resolutions, model, mode, uncertainty_region, output_dir):
 
 if __name__ == '__main__':
 
-    OUTPUT_DIR = "/local/disk1/ebeqa/Thesis/results/Graphs"
-    RESULT_DIR = "/local/disk1/ebeqa/Thesis/results"
+    OUTPUT_DIR = f"{PROJECT_ROOT_DIR}/results/Graphs/MSE_ratio"
+    RESULT_DIR = f"{PROJECT_ROOT_DIR}/results"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     resolutions = [32, 64]
-    models = ["DiT", "FactFormer"]
-    modes = ["interpolation", "extrapolation"]
-    uncertainty_regions = ["high", "low"]
-
-
+    models = ["DiT", "FactFormer", "Swin"]
 
     for model in models:
         output_dir = os.path.join(OUTPUT_DIR, model)
         os.makedirs(output_dir, exist_ok=True)
-        plots = []
-        for mode in modes:
-                for region in uncertainty_regions:
-                    plots.append(plot_ratios(resolutions, model, mode, region, output_dir))
+        plot_ratios(resolutions, model, output_dir)
 

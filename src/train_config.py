@@ -1,5 +1,6 @@
 import os
 from ml_collections import config_dict
+from project_definitions import PROJECT_ROOT_DIR
 
 
 def get_config():
@@ -8,13 +9,13 @@ def get_config():
     config.load_training = False
     config.checkpoint_path = ""
 
-    config.seed = 66826386
+    config.seed = 54345454
     config.trainer = "diffusion"  # diffusion or VAE
-    config.resolution = 64
-    config.study_name = ""
-    config.model_name = "" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_{}/full/train_val_split'.format(config.resolution)
-    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res{}'.format(config.resolution), config.study_name)
+    config.resolution = 32
+    config.study_name = "20_snapshots"
+    config.model_name = "Swin" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
+    config.data_dir = '{}/data/preprocessed/res_{}/20_snapshots/train_val_split'.format(PROJECT_ROOT_DIR, config.resolution)
+    config.output_dir = os.path.join('{}/results/res{}/dataset_size_ablation_study/Swin'.format(PROJECT_ROOT_DIR,config.resolution), config.study_name)
     config.device = 'cuda:1'
     config.num_epochs = 151
     config.batch_size = 20
@@ -48,8 +49,8 @@ def get_config_parametrized(study_name="", model_name="", device="", seed=42, ch
     config.resolution = 64
     config.study_name = study_name
     config.model_name = model_name
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_64/full/train_val_split'.format(config.resolution)
-    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res{}'.format(config.resolution),config.study_name)
+    config.data_dir = '{}/data/preprocessed/res_{}/20_snapshots/train_val_split'.format(PROJECT_ROOT_DIR, config.resolution)
+    config.output_dir = os.path.join('{}/results/res{}/dataset_size_ablation_study/Swin'.format(PROJECT_ROOT_DIR, config.resolution),config.study_name)
     config.device = device
     config.num_epochs = 151
     config.batch_size = 20

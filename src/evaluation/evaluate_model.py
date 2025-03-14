@@ -403,7 +403,7 @@ class Drag_Coefficient_Test(object):
                     dragCoeff_predictions.append(
                         self.calculate_drag(airfoil_shape, samples, float(AoA), float(velocity), cell_length=2 / 64))
                 utils.plot_drag_coefficient_distribution(label, dragCoeff_targets, dragCoeff_predictions,
-                                                         self.interpolation_output_dir, num_buckets=self.num_buckets)
+                                                         self.extrapolation_output_dir, num_buckets=self.num_buckets)
 
 
 class Sampling_Speed_Test(object):
