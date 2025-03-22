@@ -3,7 +3,7 @@ import concurrent.futures
 from src.evaluation import evaluate_model
 from src.evaluation import evaluation_config
 
-MAX_WORKERS = 1
+MAX_WORKERS = 2
 
 def run_evaluation(config):
     if config.inter_extrapolation_test:
@@ -32,13 +32,29 @@ def evaluate_all():
 
 
     experiments = [
-        #"5_snapshots",
-        "10_snapshots",
-        "15_snapshots",
-        "20_snapshots"
+        #"DiT/20_steps",
+        #"DiT/50_steps",
+        #"DiT/100_steps",
+        #"DiT/150_steps",
+        #"DiT/200_steps",
+        "DiT/20_snapshots"
+        #"DiT/10_snapshots",
+        #"Swin/100_steps",
+        #"Swin/150_steps",
+        #"Swin/200_steps",
+        #"FactFormer/20_steps",
+        #"FactFormer/50_steps",
+        #"FactFormer/100_steps",
+        #"FactFormer/150_steps",
+        #"FactFormer/200_steps",
     ]
-    checkpoints = ["Final.pth", "Final.pth", "Final.pth"]#, "Final.pth"]
-    devices = ["cuda:0", "cuda:0", "cuda:0"]#, "cuda:0"]
+    checkpoints = ["Final.pth"]# , "Final.pth", "Final.pth", "Final.pth", "Final.pth", "Final.pth",
+                   #"Final.pth", "Final.pth", "Final.pth", "Final.pth", "Final.pth",
+                   #"Final.pth", "Final.pth", "Final.pth", "Final.pth", "Final.pth"]
+
+    devices = ["cuda:2"]#, "cuda:1" ,"cuda:2", "cuda:2","cuda:2", "cuda:2",
+               #"cuda:2","cuda:2", "cuda:2","cuda:2", "cuda:2",
+               #"cuda:2","cuda:2", "cuda:2","cuda:2", "cuda:2"]
     futures = []
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:

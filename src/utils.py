@@ -10,6 +10,7 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 
 
@@ -261,7 +262,7 @@ def plot_drag_coefficient_distribution(label, targets, predictions, output_dir, 
 
 
 
-def plot_samples_different_models(samples, label, channel , output_dir):
+def plot_samples_different_models(samples, chart_label, row_labels,channel , output_dir):
         samples = to_numpy(samples)
         samples = np.rot90(samples, axes=(3, 4))
 
@@ -271,7 +272,7 @@ def plot_samples_different_models(samples, label, channel , output_dir):
 
         channel_name = ["Pressure", "X-Velocity", "Y-Velocity"]
         column_labels = ["Sample {}".format(i) for i in range(1, B+1)]
-        row_labels = ['Target', 'FactFormer', 'Swin', 'DiT']
+
 
         for i, ax in enumerate(axes[:,0]):
             ax.set_ylabel(row_labels[i], rotation=90, size="medium")
@@ -287,7 +288,7 @@ def plot_samples_different_models(samples, label, channel , output_dir):
             cbar = fig.colorbar(im, ax=axes[:, col], orientation='horizontal', pad=0.03, shrink = 0.8)
 
         fig.suptitle("{} samples of models and ground truth".format(channel_name[channel]))
-        plt.savefig(os.path.join(output_dir,channel_name[channel] ,"{}.png".format(label)))
+        plt.savefig(os.path.join(output_dir,channel_name[channel] ,"{}.png".format(chart_label)))
 
 
 
@@ -322,7 +323,7 @@ def plot_moment_comparison_models(moments, file_name, output_dir):
 
 
 
-def plot_bar_chart(statistics, categories, bar_labels, chart_label, output_dir):
+def plot_bar_chart(statistics, categories, bar_labels, chart_label, x_label, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     interpolation_means = statistics["interpolation"]["means"]
@@ -335,31 +336,83 @@ def plot_bar_chart(statistics, categories, bar_labels, chart_label, output_dir):
     width = 0.25
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
 
-    # Colors for different groups
     colors = ['b', 'g', 'r', 'o', 'p']
 
-    # Plot first bar chart
+    formatter = ticker.ScalarFormatter(useMathText=True)
+    formatter.set_scientific(True)
+    formatter.set_useOffset(False)
+    formatter.set_powerlimits((-4, 0))
+
+
     for i in range(num_groups):
         axes[0].bar(x + i * width - width, interpolation_means[:, i], width, yerr=interpolation_stds[:, i], capsize=5,
                     color=colors[i], label=bar_labels[i], alpha=0.7)
+    axes[0].yaxis.set_major_formatter(formatter)
+    axes[0].yaxis.get_offset_text().set_visible(False)
     axes[0].set_xticks(x)
     axes[0].set_xticklabels(categories)
-    axes[0].set_ylabel('MSE')
+    axes[0].set_ylabel('σ MSE $10^{-4}$')
+    axes[0].set_xlabel(x_label)
     axes[0].set_title('Interpolation region')
     axes[0].legend()
 
-    # Plot second bar chart
     for i in range(num_groups):
         axes[1].bar(x + i * width - width, extrapolation_means[:, i], width, yerr=extrapolation_stds[:, i], capsize=5,
                     color=colors[i], label=bar_labels[i], alpha=0.7)
     axes[1].set_xticks(x)
     axes[1].set_xticklabels(categories)
-    axes[1].set_ylabel('MSE')
+    axes[1].set_ylabel('σ MSE $10^{-4}$')
+    axes[1].set_xlabel(x_label)
     axes[1].set_title('Extrapolation region')
-    #axes[1].legend()
+    axes[1].legend()
 
     plt.savefig(os.path.join(output_dir, "{}.png".format(chart_label)))
 
+
+def plot_sampling_speed_bar_chart(statistics, categories, num_samples_compared, bar_labels, chart_label, output_dir):
+    os.makedirs(output_dir, exist_ok=True)
+
+    num_samples_1_means = statistics[num_samples_compared[0]]["means"]
+    num_samples_1_stds = statistics[num_samples_compared[0]]["stds"]
+    num_samples_2_means = statistics[num_samples_compared[1]]["means"]
+    num_samples_2_stds = statistics[num_samples_compared[1]]["stds"]
+
+    num_groups = len(bar_labels)
+    x = np.arange(len(categories))
+    width = 0.25
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+
+    colors = ['b', 'g', 'r', 'o', 'p']
+
+    formatter = ticker.ScalarFormatter(useMathText=True)
+    formatter.set_scientific(True)
+    formatter.set_useOffset(False)
+    formatter.set_powerlimits((-4, 0))
+
+
+    for i in range(num_groups):
+        axes[0].bar(x + i * width - width, num_samples_1_means[:, i], width, yerr=num_samples_1_stds[:, i], capsize=5,
+                    color=colors[i], label=bar_labels[i], alpha=0.7)
+    axes[0].yaxis.set_major_formatter(formatter)
+    axes[0].yaxis.get_offset_text().set_visible(False)
+    axes[0].set_xticks(x)
+    axes[0].set_xticklabels(categories)
+    axes[0].set_ylabel('Time in seconds')
+    axes[0].set_xlabel('Number of diffusion steps')
+    axes[0].set_title(f'{num_samples_compared[0]} samples generated')
+    axes[0].legend()
+
+    for i in range(num_groups):
+        axes[1].bar(x + i * width - width, num_samples_2_means[:, i], width, yerr=num_samples_2_stds[:, i], capsize=5,
+                    color=colors[i], label=bar_labels[i], alpha=0.7)
+    axes[1].set_xticks(x)
+    axes[1].set_xticklabels(categories)
+    axes[1].set_ylabel('Time in seconds')
+    axes[1].set_xlabel('Number of diffusion steps')
+    axes[1].set_title(f'{num_samples_compared[1]} samples generated')
+    axes[1].legend()
+
+    plt.savefig(os.path.join(output_dir, "{}.png".format(chart_label)))
 
 
 

@@ -11,18 +11,18 @@ def get_config():
     config.end_beta = 0.01
     config.decoder = "CNN"
 
-    config.patch_size = 2
+    config.patch_size = 4
     config.in_dim = 6
     config.out_dim = 3
     config.dim = 128
-    config.heads = 4
-    config.depth = 8
+    config.heads = 12
+    config.depth = 6
     config.dim_head = 64
     config.kernel_multiplier = 2
     config.pos_in_dim = 2
     config.pos_out_dim = 2
     config.positional_embedding = 'rotary'
-    config.resolution = 32
+    config.resolution = 64
 
 
     config.MLP_decoder = ConfigDict()
@@ -33,10 +33,17 @@ def get_config():
 
     config.CNN_decoder = ConfigDict()
     config.CNN_decoder.upsample_res = (config.resolution, config.resolution)
-    config.CNN_decoder.input_dim =  [config.dim, config.dim // 2, config.dim // 4]
-    config.CNN_decoder.hidden_dim = [config.dim, config.dim // 2, config.dim // 4]
-    config.CNN_decoder.output_dim = [config.dim // 2, config.dim // 4, 3]
-    config.CNN_decoder.kernel_size = [3, 3, 1]
+    config.CNN_decoder.input_dim = [config.dim, config.dim, config.dim // 2, config.dim // 4]
+    config.CNN_decoder.hidden_dim = [config.dim, config.dim, config.dim // 2, config.dim // 4]
+    config.CNN_decoder.output_dim = [config.dim, config.dim // 2, config.dim // 4, 3]
+    config.CNN_decoder.kernel_size = [7, 7, 3, 3]
 
+    '''
+    config.CNN_decoder = ConfigDict()
+    config.CNN_decoder.input_size = (config.resolution, config.resolution)
+    config.CNN_decoder.input_dim = config.dim
+    #config.CNN_decoder.conv_1_output_dim = config.dim
+    config.CNN_decoder.output_dim = (3, config.resolution, config.resolution)
+'''
 
     return config

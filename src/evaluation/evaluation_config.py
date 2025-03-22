@@ -12,10 +12,10 @@ def get_config():
     config.model_folder = os.path.join("{}/results/res32".format(PROJECT_ROOT_DIR), config.test_name)
     config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
     config.data_dir = '{}/data/preprocessed/res_32/test'.format(PROJECT_ROOT_DIR)
-    config.output_dir = os.path.join(config.model_folder, "evaluation_test2")
+    config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
-    config.num_samples = 25
-    config.device = 'cuda:1'
+    config.num_samples = 5
+    config.device = 'cuda:0'
     config.eta = 1.0
 
     config.inter_extrapolation_test = False
@@ -58,10 +58,10 @@ def get_config_parametrized(experiment:str, device = "cuda:0", checkpoint = "Fin
 
     config = config_dict.ConfigDict()
     config.test_name = experiment
-    config.model_folder = os.path.join("{}/results/res32/dataSize_ablation_study/Swin".format(PROJECT_ROOT_DIR), config.test_name)
+    config.model_folder = os.path.join("{}/results/res32/dataSize_ablation_study".format(PROJECT_ROOT_DIR), config.test_name)
     config.checkpoint = os.path.join(config.model_folder, "checkpoints", checkpoint)
     config.data_dir = '{}/data/preprocessed/res_32/test'.format(PROJECT_ROOT_DIR)
-    config.output_dir = os.path.join(config.model_folder, "evaluation")
+    config.output_dir = os.path.join(config.model_folder, "evaluation3")
     config.batch_size = 1  # TODO this is only needed for the dataset __init__. Maybe can get rid of it??
     config.num_samples = 100
     config.device = device

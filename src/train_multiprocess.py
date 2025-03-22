@@ -1,8 +1,9 @@
 import concurrent.futures
 from src import trainers
 from src.train_config import get_config_parametrized, get_config_restart
+from project_definitions import PROJECT_ROOT_DIR
 
-MAX_WORKERS = 3
+MAX_WORKERS = 2
 MODE = 'restart'  # train or restart
 
 
@@ -35,13 +36,11 @@ def restart_train_run(checkpoint_path, device="", data_dir="", output_dir=""):
 
 
 def restart_training():
-    checkpoints = [
-                   "/local/disk1/ebeqa/Thesis/results/res128/FactFormer_test/run_1/checkpoints/78.pth",
-                   "/local/disk1/ebeqa/Thesis/results/res128/Swin_test/run_1/checkpoints/80.pth"]
+    checkpoints = []
 
-    data_dir = '/local/disk1/ebeqa/Thesis/data/preprocessed/res_128/full/train_val_split'
-    output_dir = '/local/disk1/ebeqa/Thesis/results/res128'
-    devices = ["cuda:0", "cuda:1"]
+    data_dir = f'{PROJECT_ROOT_DIR}/data/preprocessed/res_128/full/train_val_split'
+    output_dir = f'{PROJECT_ROOT_DIR}/results/res32'
+    devices = ["cuda:2", "cuda:3"]
 
     futures = []
 
