@@ -1,5 +1,8 @@
+import numpy as np
 import torch
 import math
+
+epsilon =1e-8
 
 kernel_dx = torch.Tensor([[-1, 0, 1],
                           [-2, 0, 2],
@@ -68,55 +71,72 @@ def get_lift_drag_coef(airfoil_shape, fields, AoA, velocity, viscosity=1e-5, den
         return drag / energy
 
 
-def reverse_preprocess_data(data, removePOffset, makeDimLess, fixedAirfoilNormalization) -> torch.Tensor:
-    if not any((removePOffset, makeDimLess, fixedAirfoilNormalization)):
+def to_numpy(data):
+    if isinstance(data, torch.Tensor):
+        if data.is_cuda:
+            data = data.cpu()
+        return data.numpy()
+    elif isinstance(data, np.ndarray):
         return data
-
-    boundary = ~data[2].flatten().bool()
-    c, h, w = data.shape
-    num_field_elements = boundary.sum()
-    data = data.reshape((c, h * w))
-    fields = data[:, boundary].reshape((6, num_field_elements))
-
-    # Retrieve normalization values
-    if fixedAirfoilNormalization:
-        max_inputs_0 = 100.
-        max_inputs_1 = 38.5
-        max_inputs_2 = 1.0
-
-        if makeDimLess:
-            max_targets_0 = 4.3
-            max_targets_1 = 2.15
-            max_targets_2 = 2.35
-        else:
-            max_targets_0 = 40000.
-            max_targets_1 = 200.
-            max_targets_2 = 216.
     else:
-        max_inputs_0 = fields[0].max() if fields[0].max() != 0 else self.epsilon
-        max_inputs_1 = fields[1].max() if fields[1].max() != 0 else self.epsilon
-        max_targets_0 = fields[3].max() if fields[3].max() != 0 else self.epsilon
-        max_targets_1 = fields[4].max() if fields[4].max() != 0 else self.epsilon
-        max_targets_2 = fields[5].max() if fields[5].max() != 0 else self.epsilon
+        raise TypeError("Input must be a PyTorch tensor or a NumPy array.")
 
-    # Reverse normalization
-    data[0, boundary] *= max_inputs_0
-    data[1, boundary] *= max_inputs_1
-    data[3, boundary] *= max_targets_0
-    data[4, boundary] *= max_targets_1
-    data[5, boundary] *= max_targets_2
 
-    # Reverse dimensionless transformation
-    if makeDimLess:
-        v_norm = (fields[0].abs().max() ** 2 + fields[1].abs().max() ** 2).sqrt()
-        data[3, boundary] *= (v_norm ** 2 + self.epsilon)
-        data[4, boundary] *= (v_norm + self.epsilon)
-        data[5, boundary] *= (v_norm + self.epsilon)
 
-    # Reverse pressure offset removal
-    if removePOffset:
-        p_mean = fields[3].mean()
-        data[3, boundary] += p_mean
+def reverse_preprocess_data(batch, removePOffset, makeDimLess, fixedAirfoilNormalization) -> np.array:
+    batch = to_numpy(batch)
+    reversed_batch = []
 
-    data = data.reshape((c, h, w))
-    return data
+    for data in batch:
+        if not any((removePOffset, makeDimLess, fixedAirfoilNormalization)):
+            return data
+
+        boundary = ~data[2].flatten().bool()
+        c, h, w = data.shape
+        num_field_elements = boundary.sum()
+        data = data.reshape((c, h * w))
+        fields = data[:, boundary].reshape((6, num_field_elements))
+
+        # Retrieve normalization values
+        if fixedAirfoilNormalization:
+            max_inputs_0 = 100.
+            max_inputs_1 = 38.5
+            max_inputs_2 = 1.0
+
+            if makeDimLess:
+                max_targets_0 = 4.3
+                max_targets_1 = 2.15
+                max_targets_2 = 2.35
+            else:
+                max_targets_0 = 40000.
+                max_targets_1 = 200.
+                max_targets_2 = 216.
+        else:
+            max_inputs_0 = fields[0].max() if fields[0].max() != 0 else  epsilon
+            max_inputs_1 = fields[1].max() if fields[1].max() != 0 else  epsilon
+            max_targets_0 = fields[3].max() if fields[3].max() != 0 else epsilon
+            max_targets_1 = fields[4].max() if fields[4].max() != 0 else epsilon
+            max_targets_2 = fields[5].max() if fields[5].max() != 0 else epsilon
+
+        # Reverse normalization
+        data[0, boundary] *= max_inputs_0
+        data[1, boundary] *= max_inputs_1
+        data[3, boundary] *= max_targets_0
+        data[4, boundary] *= max_targets_1
+        data[5, boundary] *= max_targets_2
+
+        # Reverse dimensionless transformation
+        if makeDimLess:
+            v_norm = (fields[0].abs().max() ** 2 + fields[1].abs().max() ** 2).sqrt()
+            data[3, boundary] *= (v_norm ** 2 + epsilon)
+            data[4, boundary] *= (v_norm + epsilon)
+            data[5, boundary] *= (v_norm + epsilon)
+
+        # Reverse pressure offset removal
+        if removePOffset:
+            p_mean = fields[3].mean()
+            data[3, boundary] += p_mean
+
+        data = data.reshape((c, h, w))
+        reversed_batch.append(data)
+    return np.array(reversed_batch)

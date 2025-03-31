@@ -9,16 +9,16 @@ def get_config():
     config.load_training = False
     config.checkpoint_path = ""
 
-    config.seed = 897454
+    config.seed = 4454666
     config.trainer = "diffusion"  # diffusion or VAE
-    config.resolution = 32
-    config.study_name = "FactFormer_full_200_steps"
-    config.model_name = "FactFormer" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
-    config.data_dir = '{}/data/preprocessed/res_{}/full/train_val_split'.format(PROJECT_ROOT_DIR, config.resolution)
+    config.resolution = 128
+    config.study_name = "Swin_big"
+    config.model_name = "Swin" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
+    config.data_dir = '{}/data/preprocessed/res_{}/10_snapshots/tiny/train_val_split'.format(PROJECT_ROOT_DIR, config.resolution)
     config.output_dir = os.path.join('{}/results/res{}/'.format(PROJECT_ROOT_DIR,config.resolution), config.study_name)
-    config.device = 'cuda:3'
-    config.num_epochs = 151
-    config.batch_size = 20
+    config.device = 'cuda:0'
+    config.num_epochs = 251
+    config.batch_size = 15
     config.optimizer = 'AdamW'  # available are AdamW, Adam
     config.scheduler = 'lambda'  # cosine or lambda
     config.cosine_anneling_TMax = 0

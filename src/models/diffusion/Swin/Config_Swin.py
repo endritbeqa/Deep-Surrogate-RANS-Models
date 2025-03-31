@@ -7,19 +7,19 @@ def get_config():
 
     config.device = 'cuda:0'
     config.noise_scheduler = 'cosine'
-    config.timesteps = 200
+    config.timesteps = 50
     config.start_beta = 1e-6
     config.end_beta = 1
     config.decoder = "CNN"
-    config.image_size = 32
+    config.image_size = 128
 
     config.encoder = config_dict.ConfigDict()
     config.encoder.image_size = config.image_size
     config.encoder.num_channels = 6
-    config.encoder.embed_dim = 160
-    config.encoder.patch_size = 2
-    config.encoder.depths = [12]
-    config.encoder.num_heads = [4]
+    config.encoder.embed_dim = 224
+    config.encoder.patch_size = 4
+    config.encoder.depths = [16]
+    config.encoder.num_heads = [8]
     config.encoder.window_size = 4
     config.encoder.qkv_bias = True
     config.encoder.attention_probs_dropout_prob = 0.0
@@ -37,9 +37,9 @@ def get_config():
 
     config.CNN_decoder = config_dict.ConfigDict()
     config.CNN_decoder.upsample_res = (config.image_size, config.image_size)
-    config.CNN_decoder.input_dim =  [config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4]
-    config.CNN_decoder.hidden_dim = [config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4]
-    config.CNN_decoder.output_dim = [config.encoder.embed_dim // 2, config.encoder.embed_dim // 4, 3]
-    config.CNN_decoder.kernel_size = [3, 3, 1]
+    config.CNN_decoder.input_dim   = [config.encoder.embed_dim, config.encoder.embed_dim,    config.encoder.embed_dim//2, config.encoder.embed_dim // 2, config.encoder.embed_dim//4, config.encoder.embed_dim // 4]
+    config.CNN_decoder.hidden_dim  = [config.encoder.embed_dim, config.encoder.embed_dim,    config.encoder.embed_dim//2, config.encoder.embed_dim // 2, config.encoder.embed_dim//4, config.encoder.embed_dim // 4]
+    config.CNN_decoder.output_dim  = [config.encoder.embed_dim, config.encoder.embed_dim//2, config.encoder.embed_dim//2, config.encoder.embed_dim // 4, config.encoder.embed_dim//4, 3]
+    config.CNN_decoder.kernel_size = [11, 11, 7, 7, 3, 3]
 
     return config

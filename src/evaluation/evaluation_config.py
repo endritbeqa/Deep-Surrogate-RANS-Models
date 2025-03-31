@@ -8,17 +8,17 @@ from project_definitions import PROJECT_ROOT_DIR
 def get_config():
 
     config = config_dict.ConfigDict()
-    config.test_name = 'FactFormer_test/run_1'
-    config.model_folder = os.path.join("{}/results/res32".format(PROJECT_ROOT_DIR), config.test_name)
+    config.test_name = 'Swin_big'
+    config.model_folder = os.path.join("{}/results/res128".format(PROJECT_ROOT_DIR), config.test_name)
     config.checkpoint = os.path.join(config.model_folder, "checkpoints", "Final.pth")
-    config.data_dir = '{}/data/preprocessed/res_32/test'.format(PROJECT_ROOT_DIR)
+    config.data_dir = '{}/data/preprocessed/res_128/test'.format(PROJECT_ROOT_DIR)
     config.output_dir = os.path.join(config.model_folder, "evaluation")
     config.batch_size = 1 #TODO this is only needed for the dataset __init__. Maybe can get rid of it??
-    config.num_samples = 5
+    config.num_samples = 100
     config.device = 'cuda:0'
     config.eta = 1.0
 
-    config.inter_extrapolation_test = False
+    config.inter_extrapolation_test = True
     config.raf30_test = False
     config.drag_coefficient_test = True
     config.sampling_speed_test = False

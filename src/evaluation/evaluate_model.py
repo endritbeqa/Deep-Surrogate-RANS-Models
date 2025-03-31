@@ -378,6 +378,11 @@ class Drag_Coefficient_Test(object):
         self.model.eval()
         with torch.no_grad():
             for idx, (conditions, targets, label) in tqdm(enumerate(self.interpolation_dataloader), total=len(self.interpolation_dataloader)):
+                data = torch.concat((conditions, targets), dim=1)
+                data = drag_coefficient_utils.reverse_preprocess_data(data, True, True, True)
+                data = torch.tensor(data)
+                conditions, targets = data[:, 0:3, :, :], data[:, 3:, :, :]
+
                 condition = conditions[0].squeeze(dim=0)
                 airfoil_shape = condition[2]
                 airfoil_name, AoA, velocity = label.split("_")
