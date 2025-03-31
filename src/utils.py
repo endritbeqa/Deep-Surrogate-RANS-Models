@@ -415,6 +415,43 @@ def plot_sampling_speed_bar_chart(statistics, categories, num_samples_compared, 
     plt.savefig(os.path.join(output_dir, "{}.png".format(chart_label)))
 
 
+def plot_all_mse_ratios(data, output_dir):
+    fig, axes = plt.subplots(3, 4, squeeze=False, figsize=(20, 15))
+    colors = ['red', 'red', 'green', 'green', 'orange', 'orange']
+    line_styles = ['solid', '--', 'solid', '--', 'solid', '--']
+
+    for row, (model, ratio_statistics) in enumerate(data.items()):
+
+        for col, (mode_region, mse_lists) in enumerate(ratio_statistics.items()):
+
+            if not mse_lists:
+                raise ValueError("The MSE list cannot be empty.")
+
+            axes[row,col].set_xscale("log")
+
+            for j, (label, mse_list) in enumerate(mse_lists):
+                min_curve = mse_list[0]
+                mean_curve = mse_list[1]
+                max_curve = mse_list[2]
+
+                length = len(mean_curve)
+                ratios = [idx / (length - 1) for idx in range(length)]
+                axes[row,col].plot(mean_curve, ratios, color=colors[j], linestyle=line_styles[j], label=label, scaley="log")
+                axes[row,col].fill_betweenx(ratios, min_curve, max_curve, color=colors[j], alpha=0.1)
+
+            if row == 0:
+                axes[row,col].set_title("{} Uncertainty MSE".format(mode_region), fontsize=12)
+            if col==0:
+                axes[row, col].set_ylabel(model, fontsize=12)
+            else:
+                axes[row,col].set_ylabel("Ratio", fontsize=12)
+            axes[row,col].grid(True, linestyle='solid')  # , alpha=1.0)
+            axes[row,col].legend(fontsize=10)
+
+    #plt.suptitle("MSE Ratios", fontsize=20)
+    plt.savefig(os.path.join(output_dir, "ratio_comparison.png"))
+
+
 
 
 class NumpyEncoder(json.JSONEncoder):

@@ -28,7 +28,7 @@ def calculate_mse_ratios(files):
     return runs_data
 
 
-def plot_ratios(resolutions, model, output_dir):
+def read_ratios(resolutions, model):
     data = {}
 
     for mode in ['interpolation', 'extrapolation']:
@@ -51,11 +51,8 @@ def plot_ratios(resolutions, model, output_dir):
                 line_label = "{} {}x{}".format(moment, res, res)
                 data.setdefault("{} {}".format(mode.capitalize(), region.capitalize()), []).append((line_label, item))
 
-    with open(os.path.join(output_dir, "{}_{}_RatioData.json".format(model, mode)), "w+") as fp:
-        json.dump(data, fp, indent=4, cls=NumpyEncoder)
 
-    plot = utils.plot_mse_ratios(data, output_dir)
-    return plot
+    return data
 
 
 
@@ -63,15 +60,17 @@ def plot_ratios(resolutions, model, output_dir):
 
 if __name__ == '__main__':
 
-    OUTPUT_DIR = f"{PROJECT_ROOT_DIR}/results/Graphs/MSE_ratio"
+    OUTPUT_DIR = f"{PROJECT_ROOT_DIR}/results/Graphs/all_MSE_ratio"
     RESULT_DIR = f"{PROJECT_ROOT_DIR}/results"
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     resolutions = [32, 64]
-    models = ["DiT", "FactFormer", "Swin"]
+    models = ["FactFormer", "Swin", "DiT"]
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    data = {}
 
     for model in models:
-        output_dir = os.path.join(OUTPUT_DIR, model)
-        os.makedirs(output_dir, exist_ok=True)
-        plot_ratios(resolutions, model, output_dir)
+        data[model] = read_ratios(resolutions, model)
 
+    utils.plot_all_mse_ratios(data, OUTPUT_DIR)
