@@ -1,1 +1,0 @@
-Average test loss: 0.09153429495377673

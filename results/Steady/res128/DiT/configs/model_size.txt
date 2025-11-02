@@ -1,1 +1,0 @@
-Number of model parameters: 1716646
