@@ -40,9 +40,8 @@ class FactFormer(nn.Module):
         elif config.decoder == "CNN":
             self.decoder = CNN_decoder(config.CNN_decoder)
 
-    def forward(self, x, condition):
+    def forward(self, x):
 
-        x = torch.cat([condition, x], dim=1)
         x = self.encoder(x)
         x = einops.rearrange(x, 'b h w c -> b c h w')
         x = self.decoder(x)

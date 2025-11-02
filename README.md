@@ -19,10 +19,21 @@ representation is created through the patch merging in the encoder and upsamplin
 Checkpoint, Configs, train/validation curve and model predictions are located in the `results` folder. 
 
 
-1. **Tiny (~1 million parameters):**  Achieved 4.3% mean relative error.
+1. ** SwinV2 Unet Tiny (~1 million parameters):**  Achieved 4.3% mean relative error.
 
 ![](./results/tiny/predictions/images/e342_9554_661.png)
 
+2. ** ViT-CNN (~2 million parameters):**  Achieved 9.1% mean relative error.
+
+![](./results/Steady/res128/DiT/evaluation/images/goe501_1056_138.png)
+
+3. ** FactFormer-CNN (~2 million parameters):** Achieved 3% mean relative error.
+
+![](./results/Steady/res128/FactFormer/evaluation/images/e221_9303_-3092.png)
+
+4. ** SwinV2-CNN (~2 million parameters):** Achieved % mean relative error.
+
+![](./results/Steady/res128/Swin/evaluation/images/ah94156_4596_668.png)
 
 ## Installation 
 Create a pip virtual environment and install the packages in the requirements.txt file.

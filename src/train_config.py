@@ -8,15 +8,14 @@ def get_config():
     config.load_training = False
     config.checkpoint_path = ""
 
-    config.seed = 66826386
-    config.trainer = "diffusion"  # diffusion or VAE
-    config.resolution = 64
-    config.study_name = ""
-    config.model_name = "" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
-    config.data_dir = '/home/blin/endrit/dataset/uncertainty/preprocessed/res_{}/full/train_val_split'.format(config.resolution)
-    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/res{}'.format(config.resolution), config.study_name)
-    config.device = 'cuda:1'
-    config.num_epochs = 151
+    config.seed = 83638473
+    config.resolution = 128
+    config.study_name = "Swin"
+    config.model_name = "Swin" # DiT, Swin, FactFormer, Swin_UNet or Swin_NVAE
+    config.data_dir = '/home/blin/endrit/dataset/steady/preprocessed/combined/res_{}/full/train_val_split'.format(config.resolution)
+    config.output_dir = os.path.join('/home/blin/PycharmProjects/Thesis/results/Steady/res{}'.format(config.resolution), config.study_name)
+    config.device = 'cuda:0'
+    config.num_epochs = 101
     config.batch_size = 20
     config.optimizer = 'AdamW'  # available are AdamW, Adam
     config.scheduler = 'lambda'  # cosine or lambda
@@ -44,7 +43,6 @@ def get_config_parametrized(study_name="", model_name="", device="", seed=42, ch
     config.checkpoint_path = checkpoint
 
     config.seed = seed
-    config.trainer = "diffusion"  # diffusion or VAE
     config.resolution = 64
     config.study_name = study_name
     config.model_name = model_name

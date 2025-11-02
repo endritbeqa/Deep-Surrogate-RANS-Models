@@ -38,8 +38,7 @@ class Swinv2PatchEmbeddings(nn.Module):
             pixel_values = nn.functional.pad(pixel_values, pad_values)
         return pixel_values
 
-    def forward(self, pixel_values: Optional[torch.FloatTensor], t) -> Tuple[torch.Tensor, Tuple[int]]:
-        pixel_values = self.time_embedding(pixel_values, t)
+    def forward(self, pixel_values: Optional[torch.FloatTensor]) -> Tuple[torch.Tensor, Tuple[int]]:
         _, num_channels, height, width = pixel_values.shape
         # pad the input to be divisible by self.patch_size, if needed
         pixel_values = self.maybe_pad(pixel_values, height, width)
@@ -62,7 +61,7 @@ class Conv_layer(nn.Module):
         self.norm1 = nn.GroupNorm(num_groups=hidden_dim // 4, num_channels=hidden_dim)
         self.norm2 = nn.GroupNorm(num_groups=hidden_dim // 4, num_channels=hidden_dim)
 
-    def forward(self, x, t):
+    def forward(self, x):
         x_initial = x
         x = self.conv1(x)
         x = self.non_linearity(x)
@@ -131,7 +130,6 @@ class Swinv2Stage(nn.Module):
     def forward(
         self,
         hidden_states: torch.Tensor,
-        timestep,
         input_dimensions: Tuple[int, int],
     ) -> Tuple[torch.Tensor]:
         height, width = input_dimensions
@@ -184,13 +182,13 @@ class Swin_Encoder(nn.Module):
             layers.append(stage)
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, hidden_states: torch.Tensor, timestep, input_dimensions: Tuple[int, int]) -> List[torch.Tensor]:
+    def forward(self, hidden_states: torch.Tensor, input_dimensions: Tuple[int, int]) -> List[torch.Tensor]:
 
         batch_size, _, hidden_size = hidden_states.shape
         all_hidden_states = [hidden_states]# these are after patch embedding
 
         for i, layer_module in enumerate(self.layers):
-            layer_outputs = layer_module(hidden_states, timestep, input_dimensions)
+            layer_outputs = layer_module(hidden_states, input_dimensions)
             hidden_states = layer_outputs[0]
             all_hidden_states.append(hidden_states)
             output_dimensions = layer_outputs[2]

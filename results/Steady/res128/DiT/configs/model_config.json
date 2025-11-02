@@ -1,0 +1,56 @@
+{
+    "CNN_decoder": {
+        "hidden_dim": [
+            64,
+            64,
+            32,
+            16
+        ],
+        "input_dim": [
+            64,
+            64,
+            32,
+            16
+        ],
+        "kernel_size": [
+            11,
+            7,
+            3,
+            3
+        ],
+        "output_dim": [
+            64,
+            32,
+            16,
+            3
+        ],
+        "upsample_res": [
+            128,
+            128
+        ]
+    },
+    "MLP_decoder": {
+        "encoder_dim": 16384,
+        "latent_dim_1": 8192,
+        "latent_dim_2": 4096,
+        "output_dim": [
+            3,
+            128,
+            128
+        ]
+    },
+    "decoder": "CNN",
+    "depths": [
+        4
+    ],
+    "device": "cuda:0",
+    "image_size": 128,
+    "init_dim": 64,
+    "input_dim": 3,
+    "mlp_ratio": 4.0,
+    "num_heads": [
+        4
+    ],
+    "output_dim": 3,
+    "patch_size": 8
+}

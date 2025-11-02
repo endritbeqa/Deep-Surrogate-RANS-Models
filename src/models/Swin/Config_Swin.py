@@ -6,19 +6,15 @@ def get_config():
     config = config_dict.ConfigDict()
 
     config.device = 'cuda:0'
-    config.noise_scheduler = 'cosine'
-    config.timesteps = 200
-    config.start_beta = 1e-6
-    config.end_beta = 1
     config.decoder = "CNN"
-    config.image_size = 64
+    config.image_size = 128
 
     config.encoder = config_dict.ConfigDict()
     config.encoder.image_size = config.image_size
-    config.encoder.num_channels = 6
-    config.encoder.embed_dim = 160
-    config.encoder.patch_size = 4
-    config.encoder.depths = [16]
+    config.encoder.num_channels = 3
+    config.encoder.embed_dim = 64
+    config.encoder.patch_size = 8
+    config.encoder.depths = [4]
     config.encoder.num_heads = [4]
     config.encoder.window_size = 4
     config.encoder.qkv_bias = True
@@ -40,6 +36,6 @@ def get_config():
     config.CNN_decoder.input_dim = [config.encoder.embed_dim, config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4]
     config.CNN_decoder.hidden_dim = [config.encoder.embed_dim, config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4]
     config.CNN_decoder.output_dim = [config.encoder.embed_dim, config.encoder.embed_dim // 2, config.encoder.embed_dim // 4, 3]
-    config.CNN_decoder.kernel_size = [7, 7, 3, 3]
+    config.CNN_decoder.kernel_size = [11, 7, 7, 3]
 
     return config

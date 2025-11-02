@@ -13,9 +13,9 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         patches, grid_size = self.patch_embedding(x)
-        skip_connections = self.swin_encoder(patches, grid_size)
+        hidden_states = self.swin_encoder(patches, grid_size)
 
-        return skip_connections
+        return hidden_states
 
 
 

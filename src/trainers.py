@@ -182,7 +182,7 @@ class Trainer(object):
             for conditions, targets, label in self.train_dataloader:
                 self.optimizer.zero_grad()
                 conditions, targets = conditions.to(self.device), targets.to(self.device)
-                predictions = self.model(conditions, targets)
+                predictions = self.model(conditions)
 
                 loss = self.loss_func(predictions, targets)
                 loss.backward()
@@ -198,7 +198,7 @@ class Trainer(object):
             with torch.no_grad():
                 for conditions, targets, label in self.val_dataloader:
                     conditions, targets = conditions.to(self.device), targets.to(self.device)
-                    predictions = self.model(conditions, targets)
+                    predictions = self.model(conditions)
 
                     loss = self.loss_func(predictions, targets)
                     val_loss += loss.item()
@@ -211,8 +211,6 @@ class Trainer(object):
 
             if epoch % self.train_config.checkpoint_every == 0:
                 self.save_checkpoint(epoch)
-                target_output_dir = os.path.join(self.output_dir, "samples", "target", epoch)
-                prediction_output_dir = os.path.join(self.output_dir, "samples", "prediction", epoch)
 
             self.plot_loss_curve(train_curve, val_curve)
 

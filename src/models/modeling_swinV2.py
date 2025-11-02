@@ -24,7 +24,6 @@ import torch
 import torch.utils.checkpoint
 from torch import Tensor, nn
 from torch.nn import BCEWithLogitsLoss, CrossEntropyLoss, MSELoss
-from src.models.diffusion.Time_embedding import TimeEmbedding
 
 from transformers.activations import ACT2FN
 from transformers.modeling_outputs import BackboneOutput

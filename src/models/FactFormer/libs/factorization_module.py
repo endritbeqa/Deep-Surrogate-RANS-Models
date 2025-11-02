@@ -3,8 +3,8 @@ import torch.nn as nn
 import numpy as np
 from einops import rearrange
 from einops.layers.torch import Rearrange
-from src.models.diffusion.FactFormer.libs.basics import PreNorm, GeAct, MLP, GroupNorm
-from src.models.diffusion.FactFormer.libs.attention import LowRankKernel
+from src.models.FactFormer.libs.basics import PreNorm, GeAct, MLP, GroupNorm
+from src.models.FactFormer.libs.attention import LowRankKernel
 
 
 class PoolingReducer(nn.Module):

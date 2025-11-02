@@ -16,9 +16,8 @@ class DiT(nn.Module):
             self.decoder = CNN_decoder(config.CNN_decoder)
         self.device = torch.device(self.config.device if torch.cuda.is_available() else "cpu")
 
-    def forward(self, x, condition):
+    def forward(self, x):
 
-        x = torch.cat([condition, x], dim=1)
         x = self.encoder(x)
         x = self.decoder(x)
         return x

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from src.models.ViT_UNet.layers import ViTBlock, PatchEmbedding
+from src.models.DiT.layers import ViTBlock, PatchEmbedding
 
 
 class Encoder(nn.Module):
@@ -21,10 +21,10 @@ class Encoder(nn.Module):
                 blocks.append(ViTBlock(dim, self.num_heads[i], self.mlp_ratio))
             self.layers.append(blocks)
 
-    def forward(self, x, t):
+    def forward(self, x):
         x = self.patch_embed(x)
         for layer in self.layers:
             for vit_block in layer[:]:
-                x = vit_block(x, t)
+                x = vit_block(x)
 
         return x

@@ -78,7 +78,7 @@ def plot_moment_comparison(targets, predictions, file_name, output_dir, plot_del
 
     fig, axes = plt.subplots(rows, C, figsize=(12, 8))
 
-    column_labels = ['mean_P', 'mean_Ux', 'mean_Uy', 'std_P', 'std_Ux', 'std_Uy']
+    column_labels = ['P', 'Ux', 'Uy']
     row_labels = ['Target', 'Prediction', 'Delta']
 
     for col in range(C):
