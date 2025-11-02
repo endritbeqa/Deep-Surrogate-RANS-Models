@@ -1,9 +1,10 @@
-import os
 import json
+import os
 
 import numpy as np
-from src.utils import plot_bar_chart
+
 from project_definitions import PROJECT_ROOT_DIR
+from src.utils import plot_bar_chart
 
 
 def plot_bar_statistics():

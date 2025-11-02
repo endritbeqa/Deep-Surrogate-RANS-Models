@@ -1,12 +1,12 @@
 import os
-import torch
 
+import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from src.data import dataset
-from src import utils
 from project_definitions import PROJECT_ROOT_DIR
+from src import utils
+from src.data import dataset
 from src.evaluation.evaluation_config import get_config
 
 

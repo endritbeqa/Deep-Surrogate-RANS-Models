@@ -1,8 +1,11 @@
-import os
 import multiprocessing
+import os
 import shutil
+
 from ml_collections import config_dict
-import simFunctions, utils
+
+import simFunctions
+import utils
 from config import get_config
 
 config = get_config()

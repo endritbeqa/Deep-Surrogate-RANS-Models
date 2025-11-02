@@ -1,14 +1,15 @@
 import os
 import random
 import shutil
+
 import numpy as np
 import torch
 import torch.nn.functional as F
+
 from project_definitions import PROJECT_ROOT_DIR
 
-
-SRC_DIR = f"{PROJECT_ROOT_DIR}/data/original/train" #Directory where the dataset is downloaded
-DEST_DIR = f"/{PROJECT_ROOT_DIR}/data/preprocessed" #Directory where the data should be moved when preprocessed
+SRC_DIR = f"{PROJECT_ROOT_DIR}/data/original/train"  # Directory where the dataset is downloaded
+DEST_DIR = f"/{PROJECT_ROOT_DIR}/data/preprocessed"  # Directory where the data should be moved when preprocessed
 
 removePOffset = True
 makeDimLess = True
@@ -29,7 +30,6 @@ TEST_DIR = "{}/res_{}/test".format(DEST_DIR, res)
 MASK_DIR = "{}/res_{}/masks".format(DEST_DIR, res)
 
 
-
 def split_train_val():
 
     os.makedirs(TRAIN_DIR, exist_ok=True)
@@ -38,21 +38,21 @@ def split_train_val():
     dirs = [os.path.join(PREPROCESS_DIR, d) for d in os.listdir(PREPROCESS_DIR) if os.path.isdir(os.path.join(PREPROCESS_DIR, d))]
     random.shuffle(dirs)
     train_count = int(len(dirs) * train_val_split)
-    
+
     train_dirs = dirs[:train_count]
     validation_dirs = dirs[train_count:]
-    
+
     print(f"Copying {len(train_dirs)} directories to the train set...")
     for dir_path in train_dirs:
-        if len(os.listdir(dir_path))==0:
+        if len(os.listdir(dir_path)) == 0:
             print("Empty directory")
             continue
         for file in os.listdir(dir_path):
             shutil.copy(os.path.join(dir_path, file), os.path.join(TRAIN_DIR, file))
-    
+
     print(f"Copying {len(validation_dirs)} directories to the validation set...")
     for dir_path in validation_dirs:
-        if len(os.listdir(dir_path))==0:
+        if len(os.listdir(dir_path)) == 0:
             print("Empty directory")
             continue
         for file in os.listdir(dir_path):
@@ -61,13 +61,12 @@ def split_train_val():
     print("Data split completed!")
 
 
-
 def preprocess_data(data) -> np.ndarray:
 
     if not any((removePOffset, makeDimLess, fixedAirfoilNormalization)):
         return data
 
-    boundary = ~ data[2].flatten().astype(bool)
+    boundary = ~data[2].flatten().astype(bool)
     num_field_elements = np.sum(boundary)
     c, h, w = data.shape
 
@@ -82,13 +81,13 @@ def preprocess_data(data) -> np.ndarray:
         data[3][boundary][data[3][boundary] == 0] = epsilon
 
     if makeDimLess:
-        data[3][boundary] /= (v_norm ** 2 + epsilon)
-        data[4][boundary] /= (v_norm + epsilon)
-        data[5][boundary] /= (v_norm + epsilon)
+        data[3][boundary] /= v_norm**2 + epsilon
+        data[4][boundary] /= v_norm + epsilon
+        data[5][boundary] /= v_norm + epsilon
 
     if fixedAirfoilNormalization:
         # hard coded maxima , inputs dont change
-        max_inputs_0 = 100.
+        max_inputs_0 = 100.0
         max_inputs_1 = 38.5
         max_inputs_2 = 1.0
 
@@ -99,9 +98,9 @@ def preprocess_data(data) -> np.ndarray:
             max_targets_2 = 2.35
 
         else:  # full range
-            max_targets_0 = 40000.
-            max_targets_1 = 200.
-            max_targets_2 = 216.
+            max_targets_0 = 40000.0
+            max_targets_1 = 200.0
+            max_targets_2 = 216.0
 
     else:
         max_inputs_0 = np.max(fields[0]) if np.max(fields[0]) != 0 else epsilon
@@ -111,41 +110,42 @@ def preprocess_data(data) -> np.ndarray:
         max_targets_1 = np.max(fields[4]) if np.max(fields[4]) != 0 else epsilon
         max_targets_2 = np.max(fields[5]) if np.max(fields[5]) != 0 else epsilon
 
-    data[0][boundary] *= (1.0 / max_inputs_0)
-    data[1][boundary] *= (1.0 / max_inputs_1)
+    data[0][boundary] *= 1.0 / max_inputs_0
+    data[1][boundary] *= 1.0 / max_inputs_1
 
-    data[3][boundary] *= (1.0 / max_targets_0)
-    data[4][boundary] *= (1.0 / max_targets_1)
-    data[5][boundary] *= (1.0 / max_targets_2)
+    data[3][boundary] *= 1.0 / max_targets_0
+    data[4][boundary] *= 1.0 / max_targets_1
+    data[5][boundary] *= 1.0 / max_targets_2
 
     data = data.reshape((c, h, w))
 
     return data
 
 
-
 def preprocess_files():
     all_cases = os.listdir(SRC_DIR)
     random.shuffle(all_cases)
-    num_cases = int(len(all_cases)*percentage)
+    num_cases = int(len(all_cases) * percentage)
     cases = all_cases[:num_cases]
 
     os.makedirs(PREPROCESS_DIR, exist_ok=True)
 
     for i, case in enumerate(cases):
-        print("Case: {}/{}".format(i+1, num_cases))
+        print("Case: {}/{}".format(i + 1, num_cases))
         case_path = os.path.join(SRC_DIR, case)
         os.makedirs(os.path.join(PREPROCESS_DIR, case))
 
         snapshots = os.listdir(case_path)
         for snapshot in snapshots[:num_snapshots]:
             snapshot_data = np.load(os.path.join(case_path, snapshot))
-            snapshot_data = snapshot_data['a'].astype(np.float32)
+            snapshot_data = snapshot_data["a"].astype(np.float32)
             snapshot_data = preprocess_data(snapshot_data)
 
             arrays = torch.tensor(snapshot_data, dtype=torch.float32)
             arrays = torch.unsqueeze(arrays, dim=0)
-            arrays = F.interpolate(arrays, size=(res, res), mode='bilinear', align_corners=False)
+            arrays = F.interpolate(
+                arrays, size=(res, res), mode="bilinear", align_corners=False
+            )
             arrays = torch.squeeze(arrays)
             arrays = arrays.numpy()
 
@@ -165,7 +165,7 @@ def save_masks():
     airfoils = {}
 
     for case in all_cases:
-        airfoil_name = case.split('_')[0]
+        airfoil_name = case.split("_")[0]
         if airfoil_name not in airfoils:
             snapshot = os.listdir(os.path.join(SRC_DIR, case))[0]
             airfoils[airfoil_name] = os.path.join(SRC_DIR, case, snapshot)
@@ -174,26 +174,27 @@ def save_masks():
 
     for airfoil_name, snapshot_path in airfoils.items():
 
-            snapshot_data = np.load(snapshot_path)
-            snapshot_data = snapshot_data['a'].astype(np.float32)
+        snapshot_data = np.load(snapshot_path)
+        snapshot_data = snapshot_data["a"].astype(np.float32)
 
-            arrays = torch.tensor(snapshot_data, dtype=torch.float32)
-            mask = arrays[2] != 0
-            arrays[2][mask] = 1
+        arrays = torch.tensor(snapshot_data, dtype=torch.float32)
+        mask = arrays[2] != 0
+        arrays[2][mask] = 1
 
-            arrays = torch.unsqueeze(arrays, dim=0)
-            arrays = F.interpolate(arrays, size=(res, res), mode='bilinear', align_corners=False)
-            arrays = torch.squeeze(arrays)
-            arrays = arrays.numpy()
-            arrays = arrays[2]
+        arrays = torch.unsqueeze(arrays, dim=0)
+        arrays = F.interpolate(
+            arrays, size=(res, res), mode="bilinear", align_corners=False
+        )
+        arrays = torch.squeeze(arrays)
+        arrays = arrays.numpy()
+        arrays = arrays[2]
 
-            output_path = "{}/{}".format(MASK_DIR, airfoil_name)
-            save_path = os.path.join(output_path)
-            np.savez(save_path, a=arrays)
+        output_path = "{}/{}".format(MASK_DIR, airfoil_name)
+        save_path = os.path.join(output_path)
+        np.savez(save_path, a=arrays)
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     if mode == "test":
         SRC_DIR_original = SRC_DIR
@@ -201,7 +202,6 @@ if __name__ == '__main__':
         TEST_DIR_original = TEST_DIR
         PREPROCESS_DIR = "{}/interpolation".format(TEST_DIR_original)
         preprocess_files()
-
 
         SRC_DIR = "{}/extrapolation".format(SRC_DIR_original)
         PREPROCESS_DIR = "{}/extrapolation".format(TEST_DIR_original)
@@ -211,5 +211,5 @@ if __name__ == '__main__':
 
         preprocess_files()
         split_train_val()
-        shutil.rmtree(PREPROCESS_DIR) #remove the case split directory
+        shutil.rmtree(PREPROCESS_DIR)  # remove the case split directory
         save_masks()

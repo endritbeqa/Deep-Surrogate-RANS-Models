@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 from project_definitions import PROJECT_ROOT_DIR
 

@@ -1,9 +1,8 @@
 import json
 import os
+
 import numpy as np
 
-from src.utils import NumpyEncoder
-from src import utils
 from project_definitions import PROJECT_ROOT_DIR
 
 

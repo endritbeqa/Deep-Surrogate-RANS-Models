@@ -1,10 +1,10 @@
-import os
 import json
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from project_definitions import PROJECT_ROOT_DIR
+import os
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+from project_definitions import PROJECT_ROOT_DIR
 
 
 def plot_sampling_time_statistics(model):

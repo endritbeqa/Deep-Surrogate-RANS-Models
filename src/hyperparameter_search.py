@@ -1,8 +1,10 @@
 import os
+
 import optuna
-from src import trainers
-from src import train_config
 from sqlalchemy import create_engine
+
+from src import trainers
+from src.train_configs import train_uncertainty_config
 
 
 def objective(trial):

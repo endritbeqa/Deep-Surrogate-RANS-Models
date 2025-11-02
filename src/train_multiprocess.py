@@ -1,7 +1,8 @@
 import concurrent.futures
-from src import trainers
-from src.train_config import get_config_parametrized, get_config_restart
+
 from project_definitions import PROJECT_ROOT_DIR
+from src import trainers
+from src.train_configs.train_uncertainty_config import get_config_parametrized, get_config_restart
 
 MAX_WORKERS = 2
 MODE = 'restart'  # train or restart

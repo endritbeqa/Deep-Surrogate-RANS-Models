@@ -1,10 +1,11 @@
 import math
 import os
 import random
+import shutil
+
 import numpy as np
 from PIL import Image
 from matplotlib import cm
-import shutil
 from ml_collections import config_dict
 
 
@@ -12,6 +13,7 @@ def makeDirs(directoryList):
     for directory in directoryList:
         if not os.path.exists(directory):
             os.makedirs(directory)
+
 
 def saveAsImage(res, filename, field_param):
     field = np.copy(field_param)
@@ -27,24 +29,41 @@ def saveAsImage(res, filename, field_param):
     im = im.resize((res, res))
     im.save(filename)
 
-def generate_uniform_random_parameters(sample_times,name_airfoil=None,path_airfoil_database  = "./airfoil_database/",min_velocity=10,max_velocity=100,min_AoA=-math.pi/8.0,max_AoA=math.pi/8.0):
+
+def generate_uniform_random_parameters(
+    sample_times,
+    name_airfoil=None,
+    path_airfoil_database="./airfoil_database/",
+    min_velocity=10,
+    max_velocity=100,
+    min_AoA=-math.pi / 8.0,
+    max_AoA=math.pi / 8.0,
+):
     seed = 42
     np.random.seed(seed)
     if name_airfoil is None:
         files = os.listdir(path_airfoil_database)
-        if len(files)==0:
+        if len(files) == 0:
             print("error - no airfoils found in {}".format(path_airfoil_database))
             exit(1)
     results = []
     for i in range(sample_times):
         if name_airfoil is None:
-            name = os.path.splitext(os.path.basename(files[np.random.randint(0, len(files))]))[0]
+            name = os.path.splitext(
+                os.path.basename(files[np.random.randint(0, len(files))])
+            )[0]
             name = name + ".dat"
         else:
-            name = name_airfoil+'.dat'
-        results.append([i,name,np.random.uniform(min_velocity, max_velocity),np.random.uniform(min_AoA, max_AoA) ])
+            name = name_airfoil + ".dat"
+        results.append(
+            [
+                i,
+                name,
+                np.random.uniform(min_velocity, max_velocity),
+                np.random.uniform(min_AoA, max_AoA),
+            ]
+        )
     return results
-
 
 
 def write_control_dict(file_path: str, config: config_dict):
@@ -55,22 +74,22 @@ def write_control_dict(file_path: str, config: config_dict):
 
     new_contents = []
 
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         contents = file.readlines()
 
     for line in contents:
         if insert_endTime_position in line:
-            new_contents.append("endTime         "+str(config.end_time)+";")
+            new_contents.append("endTime         " + str(config.end_time) + ";")
             continue
         elif insert_writeInterval_position in line:
-            new_contents.append("writeInterval   "+str(config.write_interval)+";")
+            new_contents.append("writeInterval   " + str(config.write_interval) + ";")
             continue
         elif insert_purgeWrite_position in line:
-            new_contents.append("purgeWrite      "+str(config.purge_write)+";")
+            new_contents.append("purgeWrite      " + str(config.purge_write) + ";")
             continue
         new_contents.append(line)
 
-    with open('OpenFOAM/system/controlDict', 'w') as file:
+    with open("OpenFOAM/system/controlDict", "w") as file:
         file.writelines(new_contents)
 
 
@@ -81,28 +100,28 @@ def write_point_coordinates(file_path: str, res: int):
     y_range = (-1, 1)
     new_contents = []
 
-    with open(file_path, 'r') as file:
+    with open(file_path, "r") as file:
         contents = file.readlines()
 
     point_coordinates = "points\n(\n"
 
     for y in np.linspace(y_range[0], y_range[1], res, endpoint=False):
         for x in np.linspace(x_range[0], x_range[1], res, endpoint=False):
-            point_coordinates += '(' + str(x) + ' ' + str(y) + ' 0.5)\n'
+            point_coordinates += "(" + str(x) + " " + str(y) + " 0.5)\n"
 
-    point_coordinates += ');'
+    point_coordinates += ");"
 
     for line in contents:
         if insert_position in line:
-            new_contents.append('\n' + point_coordinates + '\n')
+            new_contents.append("\n" + point_coordinates + "\n")
             continue
         new_contents.append(line)
 
-    with open('OpenFOAM/system/internalCloud', 'w') as file:
+    with open("OpenFOAM/system/internalCloud", "w") as file:
         file.writelines(new_contents)
 
 
-def clean_res_dir(config: config_dict,res_dir: str):
+def clean_res_dir(config: config_dict, res_dir: str):
     os.chdir(res_dir)
     os.mkdir("./pictures")
     os.mkdir("./data")
@@ -138,7 +157,11 @@ def split_files_train_val(source_dir, validation_split):
     os.mkdir(validation_dir)
 
     for file_name in train_files:
-        shutil.move(os.path.join(source_dir,file_name), os.path.join(train_dir,file_name))
+        shutil.move(
+            os.path.join(source_dir, file_name), os.path.join(train_dir, file_name)
+        )
 
     for file_name in validation_files:
-        shutil.move(os.path.join(source_dir,file_name), os.path.join(validation_dir,file_name))
+        shutil.move(
+            os.path.join(source_dir, file_name), os.path.join(validation_dir, file_name)
+        )

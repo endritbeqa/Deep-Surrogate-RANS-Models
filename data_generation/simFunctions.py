@@ -1,8 +1,12 @@
-import os, signal, math
+import math
+import os
+import signal
 import subprocess
 import threading
+
 import numpy as np
 from ml_collections import config_dict
+
 import utils
 
 
@@ -13,17 +17,17 @@ class Command(object):
 
     def run(self, timeout):
         def target():
-            print('Thread with following command {} started'.format(self.cmd))
+            print("Thread with following command {} started".format(self.cmd))
             self.process = subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid)
             self.process.communicate()
-            print('Thread with following command {} finished'.format(self.cmd))
+            print("Thread with following command {} finished".format(self.cmd))
 
         thread = threading.Thread(target=target)
         thread.start()
 
         thread.join(timeout)
         if thread.is_alive():
-            print('Terminating process')
+            print("Terminating process")
             os.killpg(self.process.pid, signal.SIGTERM)
             thread.join()
             return self.process.returncode
@@ -40,7 +44,9 @@ def genMesh(config: config_dict, airfoilFile):
     output = ""
     pointIndex = 1000
     for n in range(ar.shape[0]):
-        output += "Point({}) = {{ {}, {}, 0.00000000, 0.005}};\n".format(pointIndex, ar[n][0], ar[n][1])
+        output += "Point({}) = {{ {}, {}, 0.00000000, 0.005}};\n".format(
+            pointIndex, ar[n][0], ar[n][1]
+        )
         pointIndex += 1
 
     with open("airfoil_template.geo", "rt") as inFile:
@@ -50,7 +56,9 @@ def genMesh(config: config_dict, airfoilFile):
                 line = line.replace("LAST_POINT_INDEX", "{}".format(pointIndex - 1))
                 outFile.write(line)
 
-    command_gmsh = Command("gmsh -format msh2 airfoil.geo -3 -o airfoil.msh > /dev/null")
+    command_gmsh = Command(
+        "gmsh -format msh2 airfoil.geo -3 -o airfoil.msh > /dev/null"
+    )
     if command_gmsh.run(config.gmsh_timeout) != 0:
         print("gmsh timed out, moving on")
         return -1
@@ -97,10 +105,16 @@ def runSim(config: config_dict, freestreamX: float, freestreamY: float):
 
 
 # TODO save input(freestreamX, freestreamY, mask) only once and the outputs(pressure, velocityX, velocityY) during time steps
-def outputProcessing(config: config_dict, basename: str, freestreamX: float, freestreamY: float, imageIndex=0):
+def outputProcessing(
+    config: config_dict,
+    basename: str,
+    freestreamX: float,
+    freestreamY: float,
+    imageIndex=0,
+):
     for timeStep in config.save_timestep:
-        pfile = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_p.xy'.format(timeStep)
-        ufile = 'OpenFOAM/postProcessing/internalCloud/{}/cloud_U.xy'.format(timeStep)
+        pfile = "OpenFOAM/postProcessing/internalCloud/{}/cloud_p.xy".format(timeStep)
+        ufile = "OpenFOAM/postProcessing/internalCloud/{}/cloud_U.xy".format(timeStep)
 
         # output layout channels:
         # [0] freestream field X + boundary
@@ -118,7 +132,10 @@ def outputProcessing(config: config_dict, basename: str, freestreamX: float, fre
             for x in range(config.res):
                 xf = (x / config.res - 0.5) * 2 + 0.5
                 yf = (y / config.res - 0.5) * 2
-                if abs(ar_p[curIndex][0] - xf) < 1e-4 and abs(ar_p[curIndex][1] - yf) < 1e-4:
+                if (
+                    abs(ar_p[curIndex][0] - xf) < 1e-4
+                    and abs(ar_p[curIndex][1] - yf) < 1e-4
+                ):
                     npOutput[0][x][y] = freestreamX
                     npOutput[1][x][y] = freestreamY
                     npOutput[2][x][y] = 1.0
@@ -128,17 +145,44 @@ def outputProcessing(config: config_dict, basename: str, freestreamX: float, fre
                     curIndex += 1
 
         if config.save_images:
-            os.makedirs('data_pictures/%04d' % (imageIndex), exist_ok=True)
-            utils.saveAsImage(config.res, 'data_pictures/%04d/inputX_%d.png' % (imageIndex, timeStep), npOutput[0])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/inputY_%d.png' % (imageIndex, timeStep), npOutput[1])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/mask_%d.png' % (imageIndex, timeStep), npOutput[2])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/pressured_%d.png' % (imageIndex, timeStep), npOutput[3])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/velX_%d.png' % (imageIndex, timeStep), npOutput[4])
-            utils.saveAsImage(config.res, 'data_pictures/%04d/velY_%d.png' % (imageIndex, timeStep), npOutput[5])
-
+            os.makedirs("data_pictures/%04d" % (imageIndex), exist_ok=True)
+            utils.saveAsImage(
+                config.res,
+                "data_pictures/%04d/inputX_%d.png" % (imageIndex, timeStep),
+                npOutput[0],
+            )
+            utils.saveAsImage(
+                config.res,
+                "data_pictures/%04d/inputY_%d.png" % (imageIndex, timeStep),
+                npOutput[1],
+            )
+            utils.saveAsImage(
+                config.res,
+                "data_pictures/%04d/mask_%d.png" % (imageIndex, timeStep),
+                npOutput[2],
+            )
+            utils.saveAsImage(
+                config.res,
+                "data_pictures/%04d/pressured_%d.png" % (imageIndex, timeStep),
+                npOutput[3],
+            )
+            utils.saveAsImage(
+                config.res,
+                "data_pictures/%04d/velX_%d.png" % (imageIndex, timeStep),
+                npOutput[4],
+            )
+            utils.saveAsImage(
+                config.res,
+                "data_pictures/%04d/velY_%d.png" % (imageIndex, timeStep),
+                npOutput[5],
+            )
 
         fileName = config.output_dir + "%s_%d_%d_%d" % (
-            basename, int(freestreamX * 100), int(freestreamY * 100), timeStep)
+            basename,
+            int(freestreamX * 100),
+            int(freestreamY * 100),
+            timeStep,
+        )
         print("\tsaving in " + fileName + ".npz")
         np.savez_compressed(fileName, a=npOutput)
 
@@ -173,6 +217,13 @@ def create_sample(config: config_dict, params: list):
 
 def generator(config: config_dict, samples: list, working_directory: str):
     os.chdir(working_directory)
-    utils.makeDirs(["./data_pictures", "./train", "./OpenFOAM/constant/polyMesh/sets", "./OpenFOAM/constant/polyMesh"])
+    utils.makeDirs(
+        [
+            "./data_pictures",
+            "./train",
+            "./OpenFOAM/constant/polyMesh/sets",
+            "./OpenFOAM/constant/polyMesh",
+        ]
+    )
     for params in samples:
         create_sample(config, params)
