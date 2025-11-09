@@ -2,10 +2,25 @@ import concurrent.futures
 
 from project_definitions import PROJECT_ROOT_DIR
 from src import trainers
-from src.train_configs.train_uncertainty_config import get_config_parametrized, get_config_restart
+from src.trainers.unceartainty.trainer_factory import trainer_factory, TrainerType
+from src.train_configs.train_uncertainty_config import get_config
 
 MAX_WORKERS = 2
-MODE = 'restart'  # train or restart
+
+
+if __name__ == '__main__':
+
+    trainer_type = TrainerType.DIFFUSION
+    train_configs = [()]
+
+
+    with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        for (study_name, model_name, device, seed, checkpoint) in train_configs:
+            train_config = get_config(study_name, model_name, device, seed, checkpoint)
+            trainer = trainer_factory.create_trainer(train_config)
+
+        for future in futures:
+            print(future.result())
 
 
 def train_run(study, model_name, cuda, seed):

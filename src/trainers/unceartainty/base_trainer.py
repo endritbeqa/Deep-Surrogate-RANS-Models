@@ -10,13 +10,13 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
 from torch.utils.data import DataLoader
 
 from src import utils
-from src.data import dataset
+from src.data.steady_state import dataset
 from src.models.uncertainty import model_select
 
 
 class Base_Trainer(object):
     def __init__(self, train_config):
-        if train_config.load_training:
+        if train_config.checkpoint is not None:
             self.load_training(train_config)
         else:
             self.train_config = train_config
@@ -109,7 +109,8 @@ class Base_Trainer(object):
 
         return lr_lambda
 
-    def loss_select(self, loss: str):
+    @staticmethod
+    def loss_select(loss: str):
         def mean_relative_loss_function(input, target):
             epsilon = 1e-10
             relative_difference = torch.abs(input - target) / torch.max(
